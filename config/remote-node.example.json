@@ -1,0 +1,10 @@
+{
+  "nodeId":"5bao",
+  "harness":"opencode",
+  "model":"opencode/opencode/gpt-5.5",
+  "repo":"/srv/source-repo",
+  "spool":"/var/lib/p1/jobs",
+  "opencode":"/usr/local/bin/opencode",
+  "hmacKeyPath":"/etc/p1/node-secret.hmac",
+  "timeoutSec":3600
+}

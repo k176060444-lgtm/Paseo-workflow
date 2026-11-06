@@ -1,0 +1,19 @@
+name: Offline contract tests (no model calls)
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  controller:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JS syntax
+        run: npm run check
+      - name: Offline Node tests (no install needed)
+        run: npm test
+      - name: Offline Python remote-runner test
+        run: python3 -m unittest discover -s remote/tests -v
