@@ -2,7 +2,7 @@
 
 ## 初始限制
 
-本仓库是用户授权的 V2.1 实施候选，GitHub 只做代码交付。请本地 Agent 保持独立结论，不把提交者的 11+1 离线测试说成真实联调通过。
+本仓库是用户授权的 V2.1 实施候选，GitHub 只做代码交付。请本地 Agent 保持独立结论，不把提交者的 12+1 离线测试说成真实联调通过。
 
 现状（由用户提供）：21bao 为 Windows 且已有 OpenCode+Codex，但没有 Paseo；5bao、9bao 为 Debian，已有 OpenCode、没有 Paseo；rusty 是华为云远端，已具备自己的 Harness，可选、不强制。
 
