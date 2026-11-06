@@ -32,6 +32,7 @@ export function within(base, p) {
 export function freezeConfig(configFile, intentFile) {
   const configPath = realpathSync(configFile);
   const root = path.dirname(configPath);
+  const assetRoot = path.resolve(root, '..'); // config/ and souls/ are siblings in this project
   const config = JSON.parse(readFileSync(configPath, 'utf8'));
   assert(config.schema === 1, 'role matrix schema must be 1');
   assert(config.project && typeof config.project.repo === 'string', 'missing project.repo');
@@ -47,7 +48,7 @@ export function freezeConfig(configFile, intentFile) {
     assert(typeof item.model === 'string' && item.model.includes('/') && !item.model.includes('<'), `unapproved provider/model for ${role}`);
     assert(item.model.split('/')[0] === item.harness, `harness/model mismatch for ${role}`);
     assert(typeof item.soul === 'string', `missing soul for ${role}`);
-    const source = within(root, item.soul);
+    const source = within(assetRoot, path.resolve(root, item.soul));
     const data = readFileSync(source, 'utf8');
     assert(data.trim().length > 50, `empty soul: ${role}`);
     souls[role] = { text: data, sha256: sha256(data) };
@@ -57,7 +58,7 @@ export function freezeConfig(configFile, intentFile) {
     const item = config.roles?.[role];
     if (!item) continue;
     assert(typeof item.soul === 'string', `missing soul ${role}`);
-    const data = readFileSync(within(root, item.soul), 'utf8');
+    const data = readFileSync(within(assetRoot, path.resolve(root, item.soul)), 'utf8');
     souls[role] = { text:data, sha256:sha256(data) };
   }
   const intent = readFileSync(intentFile, 'utf8');
