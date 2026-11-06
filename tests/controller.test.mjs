@@ -118,3 +118,25 @@ test('human gate requires precise digest and explicit approval text',()=>{
  const x=setup();try{assert.throws(()=>x.c.approve({id:'TASK1234',gate:'0.2',digest:'f'.repeat(64),actor:'user',receipt:'User approved the wrong SHA.'}),/gate not awaiting/);
  }finally{finish(x);}
 });
+
+test('real config/ and souls/ sibling layout freezes without path escape',async()=>{
+ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-layout-'));
+ const configdir=path.join(tmp,'config'); const soulsdir=path.join(tmp,'souls');
+ fs.mkdirSync(configdir); fs.mkdirSync(soulsdir);
+ const roles={};
+ for(const role of Object.keys(ROLE_PERMISSIONS)){
+   fs.writeFileSync(path.join(soulsdir,`${role}.md`),`# ${role}\nApproved role instructions for this stage with fixed duties and immutable evidence contracts.\n`);
+   roles[role]={soul:`../souls/${role}.md`};
+   if(!role.startsWith('blind_'))Object.assign(roles[role],{harness:'codex',model:'codex/approved-model'});
+ }
+ const cf=path.join(configdir,'matrix.json'),intent=path.join(configdir,'intent.md');
+ fs.writeFileSync(cf,JSON.stringify({schema:1,project:{repo:'../source',baseRef:'HEAD'},tests:{commands:[['node','--test']]},roles}));
+ fs.writeFileSync(intent,'The human-approved intent is a documented test feature with independent review.');
+ const store=new Store(path.join(tmp,'state'));
+ try{
+   const c=new WorkflowController({store,runtime:null,p0:null});
+   const res=c.create({id:'TASK5678',configFile:cf,intentFile:intent});
+   assert.equal(res.stage,'WAIT_GATE_01');
+   assert.equal(Object.keys(c.required('TASK5678').frozen.souls).length,11);
+ }finally{store.close();fs.rmSync(tmp,{recursive:true,force:true});}
+});
