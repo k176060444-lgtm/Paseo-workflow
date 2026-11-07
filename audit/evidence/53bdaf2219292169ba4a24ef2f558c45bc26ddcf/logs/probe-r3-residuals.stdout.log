@@ -1,0 +1,19 @@
+R3-001 CONFIRMED: recovery accepted the forged frozen digest as its basis
+R3-001 LATER-PREFLIGHT=frozen config digest mismatch
+R3-002 p0.mjs:72 direct store.event: store.event(task.id,'P0_OPTIONAL_NOT_DISPATCHED',{cycle,nodeId:node.id});
+R3-003 taskkill options: shell:false,windowsHide:true,stdio:'ignore'
+R3-004 Popen block head: subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'execute','--config',str(Path(args.config).resolve()),'--job',job_id], |                 stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=(jobdir/'runner.log').open('ab'),start_new_session=True) |             atomic(jobdir/'pid',str(p.pid).encode('ascii'))
+R3-005 CONFIRMED: recover --id TASK1234 --actor NAME --receipt FILE --sha EXACT_COMMIT\n  recover --id TASK1234 --actor NAME --receipt FILE --basis FROZEN_SPE
+✔ R3-001 residual: authorizeRecovery accepts a forged frozen digest after event() re-anchors (52.5009ms)
+✔ R3-002 static: p0.mjs calls store.event() directly with no verify/transaction wrapper (4.7415ms)
+✔ R3-003 static: taskkill spawn in git.mjs does not use childEnv (0.5193ms)
+✔ R3-004 static: p0_runner Popen for execute does not pass env (0.4568ms)
+✔ R3-005 static: CLI usage contains a literal backslash-n instead of a newline (0.4192ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 165.1147

@@ -1,0 +1,20 @@
+✔ F2: two distinct seats 5bao+rusty pass while 9bao is unavailable (70.0678ms)
+✔ F2: two distinct seats 5bao+9bao pass while rusty is unavailable (65.3265ms)
+✔ F2: two distinct seats 9bao+rusty pass while 5bao is unavailable (64.4189ms)
+✔ F2: third seat finishing with FAIL at cancel is included and blocks (99.286ms)
+✔ F2: third seat finishing PASS at cancel is included without blocking (104.3ms)
+✔ F2: cancellation ACK with the wrong node identity blocks (78.3858ms)
+✔ F3: duplicated HMAC key bytes at distinct paths never dispatch (26.7951ms)
+✔ F3: signed physicalId mismatch is rejected (23.8901ms)
+✔ F6: provider permission matrix is fixed and deny-by-default for unknown roles/harnesses (0.4449ms)
+✔ F1/F5: verdict helpers are consistent at the trust boundary (1.032ms)
+✔ F7: an empty event table is rejected (24.8479ms)
+✔ F10: a read-only store does not create a missing state directory (0.4472ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 664.2337

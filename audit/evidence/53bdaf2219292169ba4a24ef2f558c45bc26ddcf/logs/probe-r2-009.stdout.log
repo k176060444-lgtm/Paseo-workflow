@@ -1,0 +1,37 @@
+✔ R2-009 tracked .env modification is rejected (282.638ms)
+✔ R2-009 untracked .env is rejected (182.5961ms)
+✔ R2-009 .env.production is rejected (182.9538ms)
+✔ R2-009 rename ordinary -> .env.production checks the destination (208.5276ms)
+✔ R2-009 rename .env.production -> ordinary checks the source (321.1139ms)
+✔ R2-009 copy ordinary -> .env.production is rejected (213.6327ms)
+✔ R2-009 nested sub/.env is rejected (184.3466ms)
+✔ R2-009 uppercase .ENV is rejected (181.6761ms)
+✔ R2-009 .envrc and .pem/id_rsa names are rejected (1086.8171ms)
+✔ R2-009 ordinary names such as foo.env are accepted (533.4706ms)
+R2-009-RESIDUAL CONFIRMED: leading-space " .env" was committed as .env
+✔ R2-009 RESIDUAL: leading-space " .env" bypasses the sensitive-path check and is committed (551.0716ms)
+R2-009-NESTED-LEADING-SPACE=ACCEPTED
+R2-009-TRAILING-SPACE-STATUS=[".env "]
+✔ R2-009 RESIDUAL: nested leading-space "sub/ .env" also bypasses (504.4217ms)
+R2-009-TRAILING-SPACE=REJECTED git add failed (128): error: open(".env "): No such file or directory
+error: unable to index file '.env '
+fatal: adding files failed
+
+SYMLINK-CREATE-FAILED EPERM EPERM: operation not permitted, symlink 'ordinary.txt' -> 'C:\Users\KK\AppData\Local\Temp\p1-r2009-1Iw5Aj\link'
+R2-009-SYMLINK=NOT_VERIFIED_WINDOWS_PERMISSION
+R2-009-GITLINK=NOT_VERIFIED Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r2009-EI8edT -c protocol.file.allow=always submodule add ./p1-r2009-sub-pqf4gO submodule
+✔ R2-009 trailing-space .env name is recorded on Windows (248.8592ms)
+✔ R2-009 porcelain -z parser handles rename and copy records (0.6742ms)
+✔ R2-009 symlink in the working tree is rejected (or NOT_VERIFIABLE on Windows) (142.1609ms)
+✔ R2-009 real local submodule gitlink is rejected (1318.3468ms)
+R2-009-TRAVERSAL=PARSER_RETURNS_PATH_SAFECHANGE_RESOLVE_GUARD_STATIC
+✔ R2-009 index pre-staged sensitive path is rejected (210.0713ms)
+✔ R2-009 path traversal string is rejected by the parser/safety layer (0.2651ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6447.6162

@@ -1,0 +1,8 @@
+T1 verify after tamper REJECTED: persisted task state differs from ledger
+T1 store.event ACCEPTED (re-anchor possible)
+T1 verify after event ACCEPTED -> RE-ANCHORED
+T1 state now aRound= 0 bRound= 0
+T2 raw status JSON= "??  .env\u0000"
+T2 porcelainPaths= [" .env"]
+T2 commitWorktree ACCEPTED sha= f40c9cfe1c3746029116b43a20a6d8b92c7b4c09
+T2 committed files= .env

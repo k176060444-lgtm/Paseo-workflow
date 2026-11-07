@@ -1,0 +1,14 @@
+✔ R2-005 childEnv omits an unrelated synthetic secret (1.8038ms)
+✔ R2-005 real child process cannot see the synthetic secret (69.1957ms)
+✔ R2-005 explicit extra env is passed through (67.758ms)
+✔ R2-005 childEnv keeps required runtime variables but not arbitrary secrets (0.4065ms)
+R2-005 truncation code=0 signal=null
+✔ R2-005 execArgv rejects a truncated/oversized child output and kills it (236.873ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 714.7873

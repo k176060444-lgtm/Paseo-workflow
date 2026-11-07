@@ -1,0 +1,74 @@
+{
+  "schema": "paseo-s0-r2-environment/v1",
+  "generated_at": "2026-11-07T22:56:28.267670+08:00",
+  "host": "21bao",
+  "os": "Windows 10 10.0.19044",
+  "machine": "AMD64",
+  "python_executable": "C:\\Users\\KK\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\python.exe",
+  "versions": {
+    "node": "v26.6.0",
+    "npm": "11.18.0",
+    "python": "Python 3.11.15",
+    "git": "git version 2.54.0.windows.1",
+    "codex": "codex-cli 0.166.0",
+    "opencode": "1.19.3",
+    "probe_note": "npm and codex are resolved through the interactive bash PATH; a bare Python subprocess PATH does not include them."
+  },
+  "config_hashes": {
+    "before": {
+      "codex_config": "0f360f805b2879e7d45a5dee1db41d1dca53ca0791ec874bdb76f33dd14b1f8b",
+      "opencode_config": "3228e544d38fb57d576a5f976e4636d40a5232a31c27e9fac280b8863c377ff2",
+      "hermes_config": "21dea749e82a00ff9750c279f2dbeff3e64dbe745ad9d5640823fb7bf6b99bba"
+    },
+    "after": {
+      "codex_config": "0f360f805b2879e7d45a5dee1db41d1dca53ca0791ec874bdb76f33dd14b1f8b",
+      "opencode_config": "3228e544d38fb57d576a5f976e4636d40a5232a31c27e9fac280b8863c377ff2",
+      "hermes_config": "21dea749e82a00ff9750c279f2dbeff3e64dbe745ad9d5640823fb7bf6b99bba"
+    },
+    "unchanged": {
+      "codex_config": true,
+      "opencode_config": true,
+      "hermes_config": true
+    }
+  },
+  "binaries": {
+    "codex_wrapper": "D:\\codex\\codex",
+    "codex_wrapper_size": 177,
+    "opencode_wrapper": "D:\\opencode\\opencode",
+    "opencode_wrapper_size": 210
+  },
+  "audit_workspace": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r2",
+  "audited_source_copy": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r2\\offline-copy",
+  "state_db_test_isolation": "%TEMP%/p1-* disposable directories, removed after each test",
+  "cli_reviews": {
+    "codex": {
+      "status": "NOT_AVAILABLE",
+      "exit_code": 1,
+      "reason": "Codex CLI usage limit before any report was produced",
+      "stderr_log": "cli_reports/codex.stderr.log"
+    },
+    "opencode_attempt1": {
+      "status": "TIMEOUT",
+      "exit_code": 124,
+      "model": "magpie/group/deepseek-v4-pro",
+      "log": "cli_reports/OPENCODE_REPORT.md",
+      "stderr_log": "cli_reports/opencode.stderr.log"
+    },
+    "opencode_focused": {
+      "status": "SEE_FILE",
+      "model": "magpie/group/deepseek-v4-pro",
+      "agent": "p1-audit (read-only)",
+      "log": "cli_reports/OPENCODE_FOCUSED_REPORT.md",
+      "stderr_log": "cli_reports/opencode2.stderr.log"
+    }
+  },
+  "protected_not_modified": [
+    "Hermes gateway/config",
+    "Codex global config",
+    "OpenCode global config",
+    "Magpie/proxy/model/auth settings",
+    "system PATH",
+    "services",
+    "user working directories"
+  ]
+}

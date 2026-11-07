@@ -1,0 +1,48 @@
+Paseo-workflow S0-R2 第三轮独立审计 — 测试结果
+被审 Commit: 53bdaf2219292169ba4a24ef2f558c45bc26ddcf
+父 Commit: 6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4
+
+环境: Windows 10 (21bao); Node v26.6.0; npm 11.18.0; Python 3.11.15; Git 2.54.0.windows.1; Codex 0.166.0; OpenCode 1.19.3
+注意: 探针 PASS 表示探针断言成立；其中多条是缺陷复现探针，不代表产品通过。
+
+批次                              用例  PASS  FAIL  ERR  SKIP  exit
+npm-check                        -     -     -    -     -     0
+npm-test                        34    34     0    0     0     0
+python-full                      4     4     0    0     0     0
+probe-r2-001                    17    17     0    0     0     0
+probe-r2-002-004                10    10     0    0     0     0
+probe-r2-005-node                5     5     0    0     0     0
+probe-r2-006                    14    14     0    0     0     0
+probe-r2-008                    11    11     0    0     0     0
+probe-r2-009                    18    18     0    0     0     0
+probe-r2-010                     4     4     0    0     0     0
+probe-f-regression              12    12     0    0     0     0
+probe-r3-residuals               5     5     0    0     0     0
+probe-r2-005-007-python         26    26     0    0     0     0
+合计(有计数批次)                      160   160     0    0     0
+
+逐批命令与日志：
+- npm-check: npm run check | cwd=offline-copy | exit=0 | log=logs/npm-check.stdout.log
+- npm-test: npm test (node --test tests/*.test.mjs) | cwd=offline-copy | exit=0 | log=logs/npm-test.stdout.log
+- python-full: python -B -m unittest discover -s remote/tests -p 'test*.py' -v | cwd=offline-copy | exit=0 | log=logs/python-full.stderr.log
+- probe-r2-001: node --test --test-reporter=spec probes/r2_001_matrix.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r2-001.stdout.log
+- probe-r2-002-004: node --test --test-reporter=spec probes/r2_002_003_004.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r2-002-004.stdout.log
+- probe-r2-005-node: node --test --test-reporter=spec probes/r2_005_env.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r2-005-node.stdout.log
+- probe-r2-006: node --test --test-reporter=spec probes/r2_006_parser_soul.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r2-006.stdout.log
+- probe-r2-008: node --test --test-reporter=spec probes/r2_008_recovery.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r2-008.stdout.log
+- probe-r2-009: node --test --test-reporter=spec probes/r2_009_git.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r2-009.stdout.log
+- probe-r2-010: node --test --test-reporter=spec probes/r2_010_pair.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r2-010.stdout.log
+- probe-f-regression: node --test --test-reporter=spec probes/f_regression.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-f-regression.stdout.log
+- probe-r3-residuals: node --test --test-reporter=spec probes/r3_residuals.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r3-residuals.stdout.log
+- probe-r2-005-007-python: python -B probes/r2_005_007_remote.py | cwd=offline-copy | exit=0 | log=logs/probe-r2-005-007-python.stderr.log
+
+Python 原始套件原始 stderr（完整）：
+test_explicit_env_allowlist_only_passes_whitelisted_names (test_r2_runner.R2RemoteRunnerTests.test_explicit_env_allowlist_only_passes_whitelisted_names) ... ok
+test_legacy_verdict_and_markdown_final_envelope (test_r2_runner.R2RemoteRunnerTests.test_legacy_verdict_and_markdown_final_envelope) ... ok
+test_remote_git_helper_excludes_unrelated_secret_environment (test_r2_runner.R2RemoteRunnerTests.test_remote_git_helper_excludes_unrelated_secret_environment) ... ok
+test_native_harness_durable_job_and_hmac (test_runner.RemoteRunnerTests.test_native_harness_durable_job_and_hmac) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.844s
+
+OK

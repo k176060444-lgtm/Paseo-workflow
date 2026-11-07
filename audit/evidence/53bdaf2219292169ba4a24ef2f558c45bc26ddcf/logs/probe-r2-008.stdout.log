@@ -1,0 +1,19 @@
+✔ R2-008 pre-spec BLOCKED recovers with frozen config digest as basis (41.7183ms)
+✔ R2-008 post-spec pre-worktree BLOCKED recovers to PREPARE with taskSpecSha (37.4757ms)
+✔ R2-008 post-worktree BLOCKED recovers to A_WORKER with taskSpecSha (38.7025ms)
+✔ R2-008 wrong basis is rejected and state stays BLOCKED (32.8218ms)
+✔ R2-008 pre-commit recovery must not invent a Git SHA (37.8012ms)
+✔ R2-008 outstanding dispatch blocks recovery (32.8913ms)
+✔ R2-008 corrupted ledger blocks recovery (34.8822ms)
+✔ R2-008 non-BLOCKED task cannot be recovered (25.0462ms)
+✔ R2-008 CLI recover --basis succeeds for a pre-commit BLOCKED task (122.2526ms)
+✔ R2-008 CLI recover without sha or basis fails closed (113.4715ms)
+✔ R2-008 CLI recover with wrong basis fails closed (104.301ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 724.6718

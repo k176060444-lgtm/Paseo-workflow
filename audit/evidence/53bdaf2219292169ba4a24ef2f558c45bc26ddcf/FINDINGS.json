@@ -1,0 +1,580 @@
+{
+  "schema": "paseo-s0-r2-third-round-audit/v1",
+  "audited_commit": "53bdaf2219292169ba4a24ef2f558c45bc26ddcf",
+  "parent_commit": "6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4",
+  "tree": "8a96a79f86ed0d4622bc420f4844c1e1839165d8",
+  "remediation_doc": "docs/R2_REMEDIATION_20261107.md",
+  "audit_status": "COMPLETE",
+  "code_verdict": "FAIL",
+  "live_integration_status": "BLOCKED",
+  "counting_note": "Original F1-F10 IDs are preserved. R2-001..R2-010 are the prior-round new findings. R3-001..R3-008 are residual/new defects found in this round. A disposition of FIXED is limited to the stated subparts and never implies live acceptance.",
+  "original_findings": [
+    {
+      "id": "F1",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "PASS with blocking findings must not advance Gate A",
+      "sources": [
+        "src/policy.mjs:94-129",
+        "src/controller.mjs:70-72",
+        "src/controller.mjs:110-112"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log",
+        "logs/probe-f-regression.stdout.log"
+      ],
+      "observed": "parseAgentOutput rejects PASS with any finding, APPROVE_WITH_COMMENTS with non-LOW findings, invalid verdicts, empty summaries and non-string findings; verdict helpers PASS/PAUSE are consistent. No regression.",
+      "residual": "Free-text severity detection remains prefix-based; real Reviewer output is not exercised."
+    },
+    {
+      "id": "F2",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Any two seats, optional preflight, third-seat window, cancellation and lost ACK",
+      "sources": [
+        "src/p0.mjs:60-141",
+        "remote/p0_runner.py:38-87"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log",
+        "logs/probe-f-regression.stdout.log"
+      ],
+      "subparts": {
+        "all_three_two_seat_combinations": "FIXED_OFFLINE",
+        "third_seat_finished_at_cancel_included": "FIXED_OFFLINE",
+        "cancel_ack_wrong_node_blocks": "FIXED_OFFLINE",
+        "lost_ack_not_retried": "FIXED_OFFLINE",
+        "real_two_hosts_and_600_seconds": "NOT_VERIFIED",
+        "linux_process_group_zero_residual": "NOT_VERIFIED"
+      },
+      "residual": "Real SSH/P0 was not contacted. Lost ACK leaves acknowledged jobs and NEEDS_RECONCILIATION; it is not proof every remote job stopped."
+    },
+    {
+      "id": "F3",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Duplicate HMAC key bytes and physical identity",
+      "sources": [
+        "src/p0.mjs:27-59"
+      ],
+      "evidence": [
+        "logs/probe-f-regression.stdout.log"
+      ],
+      "subparts": {
+        "different_paths_same_key_bytes": "FIXED",
+        "signed_physical_id_mismatch": "FIXED",
+        "actual_distinct_physical_hosts": "NOT_VERIFIED"
+      },
+      "residual": "HMAC authenticates possession of configured keys; physicalId is a management-side claim, not hardware attestation."
+    },
+    {
+      "id": "F4",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Paseo waitForFinish numeric timeout call shape",
+      "sources": [
+        "src/agents.mjs:28"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "observed": "The adapter passes numeric 3600000 to a SDK-shaped stub. Real SDK/daemon timeout and disconnection remain NOT_VERIFIED."
+    },
+    {
+      "id": "F5",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Historical Soul, verdict and legal deliverable contract",
+      "sources": [
+        "src/policy.mjs:94-129",
+        "remote/p0_runner.py:140-190",
+        "docs/SOUL_V21_MIGRATION_PENDING.md",
+        "docs/SOUL_PROVENANCE.md"
+      ],
+      "evidence": [
+        "logs/probe-r2-006.stdout.log",
+        "logs/probe-r2-005-007-python.stderr.log"
+      ],
+      "subparts": {
+        "local_legacy_verdict_aliases": "FIXED",
+        "markdown_then_final_json": "FIXED",
+        "remote_legacy_verdict": "FIXED",
+        "approved_Soul_migration": "NOT_FIXED",
+        "markdown_json_deliverable_mapping": "NOT_FIXED"
+      },
+      "residual": "All 11 Soul blobs match provenance, but 6 Soul files still contain legacy APPROVE/REQUEST_CHANGES/Pro-Audit text. No Controller-side legal Markdown deliverable mapping exists."
+    },
+    {
+      "id": "F6",
+      "severity": "BLOCKER",
+      "disposition": "NOT_VERIFIED",
+      "title": "Windows OS boundary and TEST_ONLY add/review/merge",
+      "sources": [
+        "src/policy.mjs:75-90",
+        "docs/SECURITY.md:8-11"
+      ],
+      "evidence": [
+        "logs/probe-f-regression.stdout.log"
+      ],
+      "observed": "Only the provider-permission matrix and offline fixtures were exercised. No Windows SID/ACL/network/Job Object proof, no TEST_ONLY new-test incorporation, no real SDK or remote Harness acceptance.",
+      "live_status": "BLOCKED"
+    },
+    {
+      "id": "F7",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "SQLite transactions, dispatch summary and evidence hash chain",
+      "sources": [
+        "src/store.mjs:21-26",
+        "src/store.mjs:63-140"
+      ],
+      "evidence": [
+        "logs/probe-r2-001.stdout.log",
+        "logs/probe-r2-002-004.stdout.log",
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "subparts": {
+        "transactional_writes": "FIXED",
+        "dispatch_and_artifact_digest": "FIXED",
+        "evidence_file_hash": "FIXED",
+        "unverified_event_write_path": "OPEN"
+      },
+      "residual": "Store.event() itself performs no verify and no transaction; p0.mjs:72 calls it directly. An attacker or a crash-recovery path can append an event that re-anchors a tampered state. The unkeyed local chain still cannot resist a privileged full-ledger rewrite."
+    },
+    {
+      "id": "F8",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Compliance stop and human recovery",
+      "sources": [
+        "src/controller.mjs:255-286",
+        "src/controller.mjs:295-320",
+        "src/store.mjs:70-79"
+      ],
+      "evidence": [
+        "logs/probe-r2-001.stdout.log",
+        "logs/probe-r2-008.stdout.log",
+        "logs/probe-r2-010.stdout.log"
+      ],
+      "subparts": {
+        "compliance_stop_line": "FIXED",
+        "pre_commit_recovery_basis": "FIXED",
+        "outstanding_dispatch_blocks_recovery": "FIXED",
+        "event_reanchor_open": "OPEN",
+        "reconciliation_status_overwritten": "OPEN"
+      },
+      "residual": "A preflight failure on a task whose stage is not TERMINAL overwrites status NEEDS_RECONCILIATION with BLOCKED, losing the reconciliation context."
+    },
+    {
+      "id": "F9",
+      "severity": "HIGH",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Child-process environment and raw-log Secret boundary",
+      "sources": [
+        "src/git.mjs:8-34",
+        "src/git.mjs:19-21",
+        "remote/p0_runner.py:26-36",
+        "remote/p0_runner.py:107-110",
+        "remote/p0_runner.py:304-305"
+      ],
+      "evidence": [
+        "logs/probe-r2-005-node.stdout.log",
+        "logs/probe-r2-005-007-python.stderr.log",
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "subparts": {
+        "node_git_test_children": "FIXED",
+        "remote_git_helpers": "FIXED",
+        "remote_harness": "FIXED",
+        "windows_taskkill_child": "OPEN",
+        "remote_popen_execute_child": "OPEN",
+        "raw_log_redaction_and_acl": "NOT_VERIFIED"
+      },
+      "residual": "The synthetic sentinel is filtered for Git/Harness. taskkill and the Popen execute worker still inherit the full parent environment. Raw model output is persisted without redaction; Windows ACL is unverified."
+    },
+    {
+      "id": "F10",
+      "severity": "MEDIUM",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Query, Git/worktree and process lifecycle side effects",
+      "sources": [
+        "src/store.mjs:7-19",
+        "src/store.mjs:141-146",
+        "remote/p0_runner.py:112-138"
+      ],
+      "evidence": [
+        "logs/probe-r2-002-004.stdout.log",
+        "logs/probe-r2-005-007-python.stderr.log"
+      ],
+      "subparts": {
+        "missing_state_query_does_not_create": "FIXED",
+        "consistent_inspection_snapshot": "FIXED",
+        "windows_liveness_check": "FIXED",
+        "wal_companion_files_documented": "FIXED",
+        "real_process_tree_termination": "NOT_VERIFIED"
+      },
+      "residual": "Read-only WAL access still creates persistent -wal/-shm side files (main DB bytes unchanged). Windows Job Object / full process-tree termination is not verified."
+    }
+  ],
+  "r2_findings": [
+    {
+      "id": "R2-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "kind": "code_defect",
+      "title": "Preflight re-anchoring fixed for five entries, but Store.event() remains an unverified re-anchor write path",
+      "sources": [
+        "src/controller.mjs:255-267",
+        "src/controller.mjs:295-320",
+        "src/store.mjs:63-140",
+        "src/store.mjs:70-79",
+        "src/p0.mjs:72"
+      ],
+      "evidence": [
+        "logs/probe-r2-001.stdout.log",
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "observed": "Tampering aRound (10->0), bRound (9->0), status, stage, history or frozen policy is rejected by run, approve, recover, artifact, recordIntent, recordAck and recordTerminal; corrupt state stays detected and 10+10 budgets remain consumed after controlled recovery. However Store.event() has no verify and no transaction, and p0.mjs:72 calls it directly. After tampering aRound=0/bRound=0, one store.event() call makes verify() accept the tampered state (budget reset).",
+      "residual": "This is a re-anchor write path reachable from production code. It requires local state corruption or a hostile in-process caller, but it defeats the stated R2-001 invariant.",
+      "minimal_fix": "Make Store.event() private/asserting: run verify() and wrap in a transaction, or remove the direct p0.mjs call and route it through a verified save. Add a regression test that every public write method rejects a tampered ledger."
+    },
+    {
+      "id": "R2-002",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "kind": "code_defect",
+      "title": "Artifact registration failure, orphans, same-name retry and directory anomalies fail closed",
+      "sources": [
+        "src/store.mjs:33-50",
+        "src/store.mjs:110-140"
+      ],
+      "evidence": [
+        "logs/probe-r2-002-004.stdout.log"
+      ],
+      "observed": "An injected ARTIFACT_REGISTERED failure leaves an orphan file; verify() rejects it as unregistered; same-name retry is rejected; a regular file in place of the evidence directory, a subdirectory, a missing registered artifact and an altered artifact all fail closed. No automatic repair API exists.",
+      "residual": "Detection-only mitigation; no crash-recovery protocol. Orphans require manual reconciliation and are never silently deleted."
+    },
+    {
+      "id": "R2-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "kind": "code_defect",
+      "title": "inspect() reads one consistent SQLite snapshot",
+      "sources": [
+        "src/controller.mjs:288-293",
+        "src/store.mjs:141-146"
+      ],
+      "evidence": [
+        "logs/probe-r2-002-004.stdout.log"
+      ],
+      "observed": "With two real SQLite connections and a deterministic concurrent writer, readSnapshot sees the old aRound while the writer commits a new one; the post-snapshot read sees the new value; verification inside the snapshot uses the same version; rollback on failure is clean."
+    },
+    {
+      "id": "R2-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "kind": "hardening",
+      "title": "Read-only WAL access side files are documented",
+      "sources": [
+        "src/store.mjs:7-19",
+        "src/cli.mjs:36"
+      ],
+      "evidence": [
+        "logs/probe-r2-002-004.stdout.log"
+      ],
+      "observed": "Opening an existing WAL database read-only creates and retains workflow.sqlite-wal and workflow.sqlite-shm; the main database bytes are unchanged (SHA-256 equal before/after). The remediation document discloses this and deliberately does not use immutable=1 on a live WAL database.",
+      "residual": "Filesystem side effect remains by design."
+    },
+    {
+      "id": "R2-005",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "kind": "code_defect",
+      "title": "Minimal environment is enforced for Git helpers and Harness, but not for every child process",
+      "sources": [
+        "src/git.mjs:8-34",
+        "src/git.mjs:19-21",
+        "remote/p0_runner.py:26-36",
+        "remote/p0_runner.py:107-110",
+        "remote/p0_runner.py:304-305"
+      ],
+      "evidence": [
+        "logs/probe-r2-005-node.stdout.log",
+        "logs/probe-r2-005-007-python.stderr.log",
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "observed": "Node childEnv and Python child_env filter a synthetic unrelated secret; the remote run() wrapper and the Harness subprocess use the allowlist; valid envAllowList entries pass and invalid names are rejected. However git.mjs:20 spawns taskkill without childEnv, and p0_runner.py:304 spawns the execute worker via Popen without env, inheriting the full runner environment.",
+      "residual": "taskkill and the execute worker are not Git helpers or the paid Harness, so the original R2-005 defect (remote Git helper inheriting secrets) is fixed. The remaining inheritance is a defense-in-depth gap and should be closed.",
+      "minimal_fix": "Pass env:childEnv() to the taskkill spawn and env=child_env(config) to the Popen execute worker."
+    },
+    {
+      "id": "R2-006",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "kind": "integration_gap",
+      "title": "Parser compatibility fixed; approved Soul migration and deliverable mapping still absent",
+      "sources": [
+        "src/policy.mjs:94-129",
+        "remote/p0_runner.py:140-190",
+        "docs/SOUL_V21_MIGRATION_PENDING.md",
+        "docs/SOUL_PROVENANCE.md"
+      ],
+      "evidence": [
+        "logs/probe-r2-006.stdout.log",
+        "logs/probe-r2-005-007-python.stderr.log"
+      ],
+      "observed": "Local Markdown+bare JSON, fenced JSON, CRLF, legacy APPROVE/REQUEST_CHANGES, PASS+BLOCKER and APPROVE_WITH_COMMENTS severity gates all behave correctly. Remote Markdown+bare/fenced JSON and legacy verdicts normalize; PASS with any finding becomes FAIL. Indented JSON after Markdown is rejected locally and becomes QUESTION remotely (conservative). All 11 Soul blobs match provenance, but 6 Souls still carry legacy verdict/Pro-Audit text and no legal Markdown/JSON deliverable mapping exists.",
+      "residual": "Parser compatibility is not Soul approval. The V2.1 migration remains unapproved; output contract still lacks task_id/role/phase/commit/Soul SHA/legal Markdown/raw test receipts."
+    },
+    {
+      "id": "R2-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "kind": "integration_gap",
+      "title": "Original Python suite is green on the actual Windows host",
+      "sources": [
+        "remote/p0_runner.py:112-138",
+        "remote/tests/test_runner.py",
+        "remote/tests/test_r2_runner.py"
+      ],
+      "evidence": [
+        "logs/python-full.stderr.log",
+        "logs/probe-r2-005-007-python.stderr.log"
+      ],
+      "observed": "python -B -m unittest discover -s remote/tests -p 'test*.py' -v ran 4 tests, 4 passed, exit 0, with no WinError 87 / status failure / temporary-directory cleanup error in stderr. process_alive returns true for self, false for a dead pid, false for a nonexistent pid, and does not crash for PID 4 (no permission => false). status QUEUED/RUNNING/FINISHED/CANCELLED/CANCEL_REQUESTED/UNKNOWN paths were exercised; cancel on Windows returns CANCEL_UNCERTAIN.",
+      "residual": "Real Linux Runner acceptance, process-group zero-residual and 600-second timing remain NOT_VERIFIED. process_alive proves liveness, not ownership."
+    },
+    {
+      "id": "R2-008",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "kind": "code_defect",
+      "title": "Pre-commit BLOCKED recovery is available through an explicit frozen basis",
+      "sources": [
+        "src/cli.mjs:27",
+        "src/cli.mjs:44",
+        "src/controller.mjs:295-320"
+      ],
+      "evidence": [
+        "logs/probe-r2-008.stdout.log",
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "observed": "A pre-spec BLOCKED task recovers to PLANNER with frozen.digest; a post-spec pre-worktree task recovers to PREPARE with taskSpecSha; a post-worktree task recovers to A_WORKER; wrong basis, an invented Git SHA, an outstanding dispatch, a corrupted ledger and a non-BLOCKED task are all rejected. The CLI --basis path succeeds end-to-end and fails closed without/with a wrong basis.",
+      "residual": "authorizeRecovery compares the basis string only and does not re-hash the frozen object; combined with the Store.event() re-anchor path it accepts a forged frozen digest (R3-002). The later live preflight still rejects the forged config."
+    },
+    {
+      "id": "R2-009",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "kind": "code_defect",
+      "title": "Most sensitive-path checks fixed, but leading-space filenames still bypass and are committed",
+      "sources": [
+        "src/git.mjs:54-104"
+      ],
+      "evidence": [
+        "logs/probe-r2-009.stdout.log"
+      ],
+      "observed": "Tracked .env edits, untracked .env, .env.production, both rename directions, copy to .env.production, nested sub/.env, uppercase .ENV, .envrc, *.pem, id_rsa, id_ed25519, pre-staged sensitive paths and malformed porcelain records are all rejected. A filename with a leading space (' .env' and 'sub/ .env') does NOT match SENSITIVE_PATH, is returned by porcelainPaths, passes safeChange, and commitWorktree commits it as .env. A trailing-space name could not be added by git on Windows.",
+      "residual": "Confirms the user-requested leading-space probe still results in a sensitive path being committed to a local disposable repository. No remote and only synthetic content were used.",
+      "minimal_fix": "Normalize/trim each path component before matching (and reject any path whose basename differs from its trimmed form), or use git check-ignore / explicit basename deny-list on the normalized name. Add leading/trailing-space regression tests."
+    },
+    {
+      "id": "R2-010",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "kind": "code_defect",
+      "title": "Successful reviewer evidence is preserved; reconciliation status can still be overwritten by a later preflight",
+      "sources": [
+        "src/controller.mjs:80-113",
+        "src/agents.mjs:13-33"
+      ],
+      "evidence": [
+        "logs/probe-r2-010.stdout.log"
+      ],
+      "observed": "With the real PaseoAgentRuntime and an in-process fake SDK, one success + one provider loss preserves the successful seat artifact (role/agentId/verdict/summary/findings/raw), history entry and evidence hash; the failed seat's dispatch remains ACKNOWLEDGED; a second run does not redispatch either seat. Both-success records two artifacts and two TERMINAL dispatches. Duplicate Agent IDs are recorded then fail closed. However a run on the NEEDS_RECONCILIATION task with the live flags unset overwrites status/stage with BLOCKED (R3-003).",
+      "residual": "Evidence preservation is fixed. The reconciliation-context loss is a separate state-machine defect."
+    }
+  ],
+  "residual_findings": [
+    {
+      "id": "R3-001",
+      "severity": "BLOCKER",
+      "kind": "code_defect",
+      "title": "Store.event() has no verify/transaction and is called directly from p0.mjs, re-anchoring tampered state and resetting the 10+10 budget",
+      "sources": [
+        "src/store.mjs:70-79",
+        "src/p0.mjs:72"
+      ],
+      "evidence": [
+        "logs/probe-r2-001.stdout.log",
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "repro": "Init a task with aRound=10/bRound=9; UPDATE tasks SET data with aRound=0/bRound=0; verify() rejects; call store.event(id,'P0_OPTIONAL_NOT_DISPATCHED',{...}); verify() now accepts; aRound=0/bRound=0.",
+      "impact": "Any production path that calls Store.event() (p0.mjs probe-skip) or any future caller can turn a detected tamper into a trusted ledger head and restore exhausted Gate A/B budget.",
+      "minimal_fix": "Add verify() + transaction inside Store.event() or make it a private helper; replace p0.mjs's direct call with a verified store method."
+    },
+    {
+      "id": "R3-002",
+      "severity": "MEDIUM",
+      "kind": "code_defect",
+      "title": "authorizeRecovery does not re-hash the frozen config before accepting it as recovery basis",
+      "sources": [
+        "src/controller.mjs:295-320"
+      ],
+      "evidence": [
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "repro": "Tamper frozen.intent without touching frozen.digest; re-anchor via store.event(); authorizeRecovery with expectedBasis=frozen.digest succeeds and moves to PLANNER.",
+      "impact": "A forged frozen digest is accepted as a trusted recovery basis. A later live preflight rejects the forged config, so this is not a direct execution bypass, but it writes a HUMAN_CONTROLLED_RECOVERY event on a forged basis.",
+      "minimal_fix": "Assert frozen.digest === sha256(frozen without digest) at the top of authorizeRecovery, sharing the livePreflight check."
+    },
+    {
+      "id": "R3-003",
+      "severity": "MEDIUM",
+      "kind": "code_defect",
+      "title": "run() preflight failure overwrites status NEEDS_RECONCILIATION with BLOCKED when stage is not TERMINAL",
+      "sources": [
+        "src/controller.mjs:255-267",
+        "src/policy.mjs:16-17"
+      ],
+      "evidence": [
+        "logs/probe-r2-010.stdout.log"
+      ],
+      "repro": "Create a review-pair failure (status=NEEDS_RECONCILIATION, stage=A_REVIEW); call run() with P1_LIVE_ALLOWED unset; observe status=BLOCKED, stage=BLOCKED and pendingHuman replaced by 'Preflight failed: live dispatch disabled...'.",
+      "impact": "The reconciliation context and the original failure reason are lost; an operator may see BLOCKED instead of 'concurrent reviewer execution uncertain'. Outstanding ACKNOWLEDGED dispatches still block recovery, so this is not an execution bypass.",
+      "minimal_fix": "In the preflight catch, do not mutate a task whose status is NEEDS_RECONCILIATION or whose inflight is set; only seal BLOCKED from an otherwise READY/WAITING stage."
+    },
+    {
+      "id": "R3-004",
+      "severity": "LOW",
+      "kind": "hardening",
+      "title": "Windows taskkill helper inherits the full parent environment",
+      "sources": [
+        "src/git.mjs:19-21"
+      ],
+      "evidence": [
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "repro": "Static: spawn('taskkill',[...],{shell:false,windowsHide:true,stdio:'ignore'}) has no env option.",
+      "impact": "Defense-in-depth gap; taskkill does not forward the environment, but it is outside the stated minimal-environment policy.",
+      "minimal_fix": "Add env:childEnv() to the taskkill spawn."
+    },
+    {
+      "id": "R3-005",
+      "severity": "LOW",
+      "kind": "hardening",
+      "title": "Remote Popen execute worker inherits the full runner environment",
+      "sources": [
+        "remote/p0_runner.py:304-305"
+      ],
+      "evidence": [
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "repro": "Static: subprocess.Popen([...], stdin=..., stdout=..., stderr=..., start_new_session=True) has no env argument.",
+      "impact": "The execute worker itself sees the full runner environment; it does filter the Harness and Git helpers with child_env. Defense-in-depth gap.",
+      "minimal_fix": "Pass env=child_env(config) to the Popen execute worker."
+    },
+    {
+      "id": "R3-006",
+      "severity": "LOW",
+      "kind": "documentation_defect",
+      "title": "CLI usage contains a literal backslash-n instead of a newline",
+      "sources": [
+        "src/cli.mjs:27"
+      ],
+      "evidence": [
+        "logs/probe-r3-residuals.stdout.log"
+      ],
+      "observed": "The recover usage line prints 'EXACT_COMMIT\\n  recover ...' literally.",
+      "minimal_fix": "Replace '\\\\n' with a real newline in the template string."
+    },
+    {
+      "id": "R3-007",
+      "severity": "LOW",
+      "kind": "contract_inconsistency",
+      "title": "APPROVE_WITH_COMMENTS handling differs between local and remote parsers",
+      "sources": [
+        "src/policy.mjs:118-129",
+        "remote/p0_runner.py:182-189"
+      ],
+      "evidence": [
+        "logs/probe-r2-006.stdout.log",
+        "logs/probe-r2-005-007-python.stderr.log"
+      ],
+      "observed": "Local APPROVE_WITH_COMMENTS with only LOW/INFO findings is accepted; the remote parser downgrades APPROVE_WITH_COMMENTS with ANY finding to FAIL.",
+      "impact": "Conservative but inconsistent; a low-severity comment can change the cross-seat outcome depending on which boundary parses it.",
+      "minimal_fix": "Use the same severity gate at both boundaries or document the remote stricter rule as intentional."
+    },
+    {
+      "id": "R3-008",
+      "severity": "LOW",
+      "kind": "parser_edge",
+      "title": "Indented final JSON after Markdown is rejected (local throw / remote QUESTION)",
+      "sources": [
+        "src/policy.mjs:94-110",
+        "remote/p0_runner.py:140-161"
+      ],
+      "evidence": [
+        "logs/probe-r2-006.stdout.log",
+        "logs/probe-r2-005-007-python.stderr.log"
+      ],
+      "observed": "A final JSON object indented by two spaces after a Markdown report fails both parsers; multi-line pretty JSON at column 0 is accepted remotely.",
+      "impact": "Conservative fail-closed; may misclassify a legitimate model output and force manual reconciliation.",
+      "minimal_fix": "Accept a final brace-delimited object with optional leading whitespace, and require it to be the last non-whitespace content."
+    }
+  ],
+  "mandatory_unverified": [
+    "Windows distinct process identity/SID, file ACL and network boundary",
+    "TEST_ONLY newly added tests, independent review and merge into final commit",
+    "Real Paseo SDK/daemon authentication, timeout, disconnection and Agent lifecycle",
+    "Real remote OpenCode JSONL, permissions and job lifecycle",
+    "Two different physical P0 hosts and trusted host/key mapping",
+    "Real 600-second third-seat grace and Linux/Windows process-group/Job Object cancellation",
+    "OS crash/power-loss and sustained multi-process SQLite stress",
+    "External immutable evidence anchor and approval-principal authentication",
+    "Windows symlink (120000) and gitlink (160000) commit rejection could not be executed due to host permissions"
+  ],
+  "independent_reports": [
+    {
+      "name": "Codex",
+      "status": "NOT_AVAILABLE",
+      "reason": "Codex CLI returned a usage-limit error before producing a report.",
+      "exit_code": 1,
+      "stderr_log": "cli_reports/codex.stderr.log",
+      "started": "2026-11-07T22:40:11+08:00",
+      "finished": "2026-11-07T22:40:31+08:00",
+      "observed_error": "You've hit your usage limit. Try again at Nov 10th, 2026 3:58 PM."
+    },
+    {
+      "name": "OpenCode",
+      "status": "SEE_OPENCODE_REPORT",
+      "model": "magpie/group/deepseek-v4-pro",
+      "agent": "p1-audit (read-only, bash denied)",
+      "report": "OPENCODE_REPORT.md",
+      "stderr_log": "cli_reports/opencode.stderr.log"
+    }
+  ],
+  "summary": {
+    "original_total": 10,
+    "original_dispositions": {
+      "FIXED": 2,
+      "PARTIAL": 2,
+      "MITIGATED_FAIL_CLOSED": 4,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 1
+    },
+    "r2_total": 10,
+    "r2_dispositions": {
+      "FIXED": 5,
+      "PARTIAL": 5,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    },
+    "residual_total": 8,
+    "residual_severities": {
+      "BLOCKER": 1,
+      "MEDIUM": 2,
+      "LOW": 5
+    }
+  }
+}

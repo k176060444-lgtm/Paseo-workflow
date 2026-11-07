@@ -1,0 +1,10 @@
+{
+  "schema": "paseo-s0-r2-package-receipt/v1",
+  "audited_commit": "53bdaf2219292169ba4a24ef2f558c45bc26ddcf",
+  "zip": "Paseo-S0-R2-53bdaf2-Review.zip",
+  "zip_bytes": 109242,
+  "zip_sha256": "eee4aaf72d577e4fc5b321edffdff24c8d5672e5892bb005a2edfc871a62e46c",
+  "manifest_file_count": 87,
+  "manifest_total_bytes": 216349,
+  "generated_at": "2026-11-07T23:00:16.539206+08:00"
+}

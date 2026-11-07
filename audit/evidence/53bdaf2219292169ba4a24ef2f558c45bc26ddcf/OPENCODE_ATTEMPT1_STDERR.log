@@ -1,0 +1,30 @@
+[0m
+> p1-audit · group/deepseek-v4-pro
+[0m
+[0m→ [0mRead docs/R2_REMEDIATION_20261107.md
+[0m→ [0mRead src/store.mjs
+[0m→ [0mRead src/git.mjs
+[0m→ [0mRead src/controller.mjs
+[0m→ [0mRead src/policy.mjs
+[0m→ [0mRead src/p0.mjs
+[0m→ [0mRead remote/p0_runner.py
+[0m→ [0mRead docs/ARCHITECTURE.md
+[0m→ [0mRead docs/SECURITY.md
+[0m→ [0mRead docs/SOUL_V21_MIGRATION_PENDING.md
+[0m✱ [0mGlob "src/**/*.mjs"[90m in . · 7 matches[0m
+[0m✱ [0mGlob "tests/**/*"[90m in . · 5 matches[0m
+[0m→ [0mRead tests/r2_regression.test.mjs
+[0m→ [0mRead remote/tests/test_r2_runner.py
+[0m→ [0mRead tests/controller.test.mjs
+[0m→ [0mRead src/cli.mjs
+[0m→ [0mRead tests/security_regression.test.mjs
+[0m→ [0mRead src/agents.mjs
+[0m→ [0mRead tests/p0_regression.test.mjs
+[0m✱ [0mGlob "docs/**/*"[90m in . · 8 matches[0m
+[0m→ [0mRead tests/p0.test.mjs
+[0m→ [0mRead docs/SOUL_PROVENANCE.md
+[0m→ [0mRead docs/AUDIT_HANDOFF.md
+[0m✱ [0mGlob "remote/**/*.py"[90m in . · 3 matches[0m
+[0m→ [0mRead docs/S0_REMEDIATION_20261107.md
+[0m→ [0mRead remote/tests/test_runner.py
+[0m→ [0mRead docs/PASEO_LOCAL_TEST_PLAN.md

@@ -1,0 +1,26 @@
+R2-001-RESIDUAL CONFIRMED: event() re-anchored aRound=0 bRound=0 and verify() accepts it
+✔ R2-001 run refuses tampered state: aRound 10->0 (42.4163ms)
+✔ R2-001 run refuses tampered state: bRound 9->0 (28.9361ms)
+✔ R2-001 run refuses tampered state: status BLOCKED->READY (29.7575ms)
+✔ R2-001 run refuses tampered state: stage BLOCKED->CLOSED (31.3244ms)
+✔ R2-001 run refuses tampered state: history appended (29.1041ms)
+✔ R2-001 run refuses tampered state: frozen policy maxA->1 (34.6377ms)
+✔ R2-001 approve refuses tampered state and does not write approval (28.5901ms)
+✔ R2-001 recover refuses tampered state (23.9078ms)
+✔ R2-001 artifact refuses tampered state and writes no file (31.7237ms)
+✔ R2-001 dispatch intent/ack/terminal refuse tampered state (34.6697ms)
+✔ R2-001 event tamper is detected on all entry points (33.3751ms)
+✔ R2-001 deleted last event is detected (25.2864ms)
+✔ R2-001 dispatch row tamper is detected (31.0002ms)
+✔ R2-001 artifact manifest tamper is detected (32.7623ms)
+✔ R2-001 exhausted A budget is preserved after controlled recovery (40.3763ms)
+✔ R2-001 exhausted B budget is preserved after controlled recovery (41.2054ms)
+✔ R2-001 RESIDUAL: Store.event() re-anchors a tampered budget without verify (36.1721ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 660.4481

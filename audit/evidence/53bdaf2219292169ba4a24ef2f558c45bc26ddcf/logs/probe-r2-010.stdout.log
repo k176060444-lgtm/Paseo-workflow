@@ -1,0 +1,13 @@
+R2-010-F8-AFTER-RUN status=BLOCKED stage=BLOCKED pendingHuman=Preflight failed: live dispatch disabled; set P1_LIVE_ALLOWED=YES after audit
+✔ R2-010 one success + one failure preserves the successful seat raw evidence (64.2329ms)
+✔ R2-010 both seats succeed and are both recorded (62.4467ms)
+✔ R2-010 duplicate reviewer Agent IDs are recorded then fail closed (66.3233ms)
+✔ R2-010 F8 RESIDUAL: preflight failure overwrites NEEDS_RECONCILIATION status (61.2123ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 351.713

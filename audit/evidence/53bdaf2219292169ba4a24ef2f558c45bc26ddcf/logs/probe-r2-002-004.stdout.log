@@ -1,0 +1,25 @@
+R2-004 beforeFiles=["tasks","workflow.sqlite"]
+R2-004 duringFiles=["tasks","workflow.sqlite","workflow.sqlite-shm","workflow.sqlite-wal"]
+R2-004 mainHashUnchanged=true
+R2-004 walExistsDuring=true
+R2-004 shmExistsDuring=true
+R2-004 afterFiles=["tasks","workflow.sqlite","workflow.sqlite-shm","workflow.sqlite-wal"]
+R2-004 mainHashAfter=d6623df2702e1a2e23cdd98710e4e61f395c3808c65faa072fecc80b42238e4f
+✔ R2-002 injected registration failure leaves an orphan and verify fails closed (35.4858ms)
+✔ R2-002 evidence directory replaced by a regular file fails closed (25.741ms)
+✔ R2-002 non-regular entry inside evidence fails closed (27.563ms)
+✔ R2-002 missing registered artifact fails closed (31.422ms)
+✔ R2-002 altered registered artifact fails closed (42.7864ms)
+✔ R2-002 same-name registered retry is rejected by exclusive create (31.4429ms)
+✔ R2-003 readSnapshot keeps one SQLite version across a concurrent writer (44.4668ms)
+✔ R2-003 readSnapshot rolls back cleanly when verification fails (42.1085ms)
+✔ R2-003 inspect returns a self-consistent snapshot object (23.4946ms)
+✔ R2-004 read-only verification of an existing WAL database records companion files (37.4315ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 442.8292

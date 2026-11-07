@@ -1,0 +1,31 @@
+test_atomic_replace_is_atomic_and_complete (__main__.RemoteProbe.test_atomic_replace_is_atomic_and_complete) ... ok
+test_cancel_on_windows_is_uncertain (__main__.RemoteProbe.test_cancel_on_windows_is_uncertain) ... ok
+test_child_env_omits_unrelated_sentinel (__main__.RemoteProbe.test_child_env_omits_unrelated_sentinel) ... ok
+test_env_allowlist_rejects_invalid_names (__main__.RemoteProbe.test_env_allowlist_rejects_invalid_names) ... ok
+test_env_allowlist_valid_name_passes (__main__.RemoteProbe.test_env_allowlist_valid_name_passes) ... ok
+test_parse_output_approve_with_comments_low_becomes_fail_remotely (__main__.RemoteProbe.test_parse_output_approve_with_comments_low_becomes_fail_remotely) ... ok
+test_parse_output_fenced_json (__main__.RemoteProbe.test_parse_output_fenced_json) ... ok
+test_parse_output_indented_json_after_markdown (__main__.RemoteProbe.test_parse_output_indented_json_after_markdown) ... ok
+test_parse_output_legacy_request_changes (__main__.RemoteProbe.test_parse_output_legacy_request_changes) ... ok
+test_parse_output_markdown_then_bare_json (__main__.RemoteProbe.test_parse_output_markdown_then_bare_json) ... ok
+test_parse_output_multiline_json_after_markdown (__main__.RemoteProbe.test_parse_output_multiline_json_after_markdown) ... ok
+test_parse_output_no_envelope_returns_question (__main__.RemoteProbe.test_parse_output_no_envelope_returns_question) ... ok
+test_parse_output_pass_with_finding_becomes_fail (__main__.RemoteProbe.test_parse_output_pass_with_finding_becomes_fail) ... ok
+test_process_alive_dead_false (__main__.RemoteProbe.test_process_alive_dead_false) ... ok
+test_process_alive_nonexistent_false (__main__.RemoteProbe.test_process_alive_nonexistent_false) ... ok
+test_process_alive_self_true (__main__.RemoteProbe.test_process_alive_self_true) ... ok
+test_process_alive_system_pid_no_crash (__main__.RemoteProbe.test_process_alive_system_pid_no_crash) ... ok
+test_run_helper_omits_unrelated_sentinel (__main__.RemoteProbe.test_run_helper_omits_unrelated_sentinel) ... ok
+test_run_helper_only_gets_allowlisted_extra (__main__.RemoteProbe.test_run_helper_only_gets_allowlisted_extra) ... ok
+test_status_cancel_requested (__main__.RemoteProbe.test_status_cancel_requested) ... ok
+test_status_cancelled (__main__.RemoteProbe.test_status_cancelled) ... ok
+test_status_finished (__main__.RemoteProbe.test_status_finished) ... ok
+test_status_queued (__main__.RemoteProbe.test_status_queued) ... ok
+test_status_running_for_current_process (__main__.RemoteProbe.test_status_running_for_current_process) ... ok
+test_status_unknown (__main__.RemoteProbe.test_status_unknown) ... ok
+test_status_unknown_for_dead_pid (__main__.RemoteProbe.test_status_unknown_for_dead_pid) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 1.574s
+
+OK

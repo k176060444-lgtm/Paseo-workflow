@@ -1,0 +1,46 @@
+
+> paseo-workflow@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ happy path uses exactly one Gate A and Gate B round, skips remediation and arbitration (1942.7129ms)
+✔ changed Gate B commit forces P0 again on precise final SHA (622.8098ms)
+✔ Gate A exactly ten rounds and no eleventh dispatch (399.5465ms)
+✔ Gate B exactly ten rounds, no reset on remediation failure (674.3538ms)
+✔ post-dispatch ambiguous result blocks without silent redispatch (66.3172ms)
+✔ config SHA/role permissions and SQL ledger resist casual drift (64.9283ms)
+✔ permission policy is code-fixed and TEST_ONLY agent is read-only; no dangerous access (0.3157ms)
+✔ human gate requires precise digest and explicit approval text (153.3604ms)
+✔ real config/ and souls/ sibling layout freezes without path escape (35.0609ms)
+✔ P0: two distinct signed nodes pass; third nonmandatory after extra window (844.2369ms)
+✔ P0: spoofed MAC cannot count toward quorum (615.6234ms)
+✔ P0: same physical identity fails before dispatch (184.67ms)
+✔ F3: distinct key paths with identical key bytes never dispatch (382.5863ms)
+✔ F2: optional third probe failure does not prevent two valid seats (996.967ms)
+✔ F2: lingering optional third is cancelled and separately receipted (485.0043ms)
+✔ F2: optional third lost submit ACK never silently passes (94.3446ms)
+✔ F3: signed physicalId mismatch cannot pass (116.085ms)
+✔ P0 failover: 5bao unavailable, 9bao + rusty form two physical seats (85.3229ms)
+✔ R2-001 tampered budget never re-anchored by run or recovery (350.0705ms)
+✔ R2-002 orphan artifacts fail verification instead of silently accepting (376.1325ms)
+✔ R2-003 readSnapshot uses one SQLite version despite concurrent writer (317.3275ms)
+✔ R2-006 final Markdown plus bare/fenced JSON and alias (0.9414ms)
+✔ R2-008 early blocked task recovers only on matching frozen basis (418.2353ms)
+✔ R2-009 raw porcelain preserves leading status space and rename original (1.2894ms)
+✔ R2-009 tracked .env edit cannot be committed (594.5761ms)
+✔ R2-009 staged rename to .env.production cannot be committed (237.2711ms)
+✔ R2-010 successful reviewer report survives peer failure (53.3588ms)
+✔ F1: legacy verdict normalization and PASS with BLOCKER finding fail closed (2.1446ms)
+✔ F1: synthetic alternative runtime cannot pass a review pair with BLOCKER finding (851.3493ms)
+✔ F7: ledger detects an altered dispatch row and evidence file (469.4941ms)
+✔ F7: dispatch intent and ledger event write together (rollback on duplicate) (229.1855ms)
+✔ F10: read-only store refuses to create missing state directory or database (0.5048ms)
+✔ F4: exact SDK waitForFinish API receives numeric timeout (221.0184ms)
+✔ F9: Git/test child process env omits arbitrary gateway secrets (0.602ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4071.6709
