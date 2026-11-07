@@ -36,7 +36,7 @@ test('F3: distinct key paths with identical key bytes never dispatch',async()=>{
   }finally{w.close();}
 });
 
-test('F2: optional third probe failure does not prevent two verified primary seats',async()=>{
+test('F2: optional third probe failure does not prevent two valid seats',async()=>{
   const w=fixture();try{
     const adapter=new SshP0Adapter(w.nodes,{pollMs:0,extraThirdMs:0,sleep:async()=>{}});
     const requests=new Map();let thirdSubmitted=false;
@@ -93,5 +93,24 @@ test('F3: signed physicalId mismatch cannot pass',()=>{
     envelope.body.physicalId='impostor';
     envelope.mac=createHmac('sha256',fs.readFileSync(w.nodes[0].hmacKeyPath)).update(canonical(envelope.body)).digest('hex');
     assert.throws(()=>a.verify(w.nodes[0],envelope,'job-id',commit),/physical inventory mismatch/);
+  }finally{w.close();}
+});
+
+
+test('P0 failover: 5bao unavailable, 9bao + rusty form two physical seats',async()=>{
+  const w=fixture();try{
+    const adapter=new SshP0Adapter(w.nodes,{pollMs:0,extraThirdMs:0,sleep:async()=>{}});
+    adapter.ssh=async(node,action,payload)=>{
+      if(action==='probe') {
+        if(node.id==='5bao')throw new Error('node offline before dispatch');
+        return {status:'READY',nodeId:node.id,physicalId:node.physicalId};
+      }
+      if(action==='submit')return{jobId:payload.jobId,status:'ACCEPTED'};
+      if(action==='status')return{jobId:payload.jobId,status:'FINISHED',result:signed(node,payload.jobId,commit)};
+    };
+    const result=await adapter.review({task:w.task,commit,taskSpec:'spec',store:w.store,cycle:'initial-A1'});
+    assert.equal(result.passed,true);
+    assert.deepEqual(new Set(result.reports.map(x=>x.nodeId)),new Set(['9bao','rusty']));
+    assert.deepEqual(result.missing,['5bao']);
   }finally{w.close();}
 });

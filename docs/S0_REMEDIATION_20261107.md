@@ -7,7 +7,7 @@
 | Finding | 代码变更 | 修复判定 |
 | --- | --- | --- |
 | F1 BLOCKER | 检查 `PASS + findings` 自相矛盾；严重度标记 `BLOCKER/HIGH/P0/P1` 不得放行；兼容旧 `APPROVE/REQUEST_CHANGES`；反例测试 | 离线回归覆盖；真实 Reviewer 结构化输出 **NOT_VERIFIED** |
-| F2 BLOCKER | P0 各席 `probe` 后独立提交；第三席预探测失败可不派发，已派发却丢 ACK 必须停线；双席后第三席最多 600 秒；在途第三席走 `cancel`，无确定取消 ACK 不放行 | Python/Linux 子进程组终止、OpenCode 自身后台服务及真实 600 秒 **NOT_VERIFIED** |
+| F2 BLOCKER | P0 各席 `probe` 后独立提交；第三席预探测失败可不派发，已派发却丢 ACK 必须停线；任意两台不同物理节点形成双席，双席后第三席最多 600 秒；在途第三席走 `cancel`，无确定取消 ACK 不放行 | Python/Linux 子进程组终止、OpenCode 自身后台服务及真实 600 秒 **NOT_VERIFIED** |
 | F3 BLOCKER | 同内容不同路径的 HMAC key 在派发前拒绝；远端签名报告绑定 `physicalId`，确认 SSH 节点别名不同 | `physicalId` 仍是管理侧核验的身份声明，**不是物理硬件证明**；5bao/9bao 实机独立性 BLOCKED |
 | F4 HIGH | Paseo 0.15.2 `agent.waitForFinish(3600000)` 数字参数；模拟验证调用参数 | 真实 SDK/daemon 超时、断线仍 BLOCKED |
 | F5 HIGH | 解析器兼容旧 Reviewer 判决 `APPROVE/REQUEST_CHANGES`；另附 Soul 迁移清单 | **Soul 1.1.0 尚不能作为已批准 V2.1 新版本**；用户审查后才可替换，完整 Markdown/JSON 法定交付物映射未完成 |

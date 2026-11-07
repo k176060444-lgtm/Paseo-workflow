@@ -60,14 +60,14 @@ export class SshP0Adapter {
   async review({task,commit,taskSpec,store,cycle}) {
     this.validateInventory();
     const active=[];const skipped=[];
-    // Probe before any paid dispatch. An optional node unavailable at this point
-    // can be excluded without a lost-ACK risk. After submit, uncertainty blocks.
+    // Probe before any paid dispatch. ANY two of the three independent nodes
+    // may form quorum; rusty is optional, not a mandatory seat. After submission,
+    // missing ACK is uncertain and must block regardless of which node failed.
     for(let i=0;i<this.nodes.length;i++){
-      const node=this.nodes[i], optional=i>=2;
+      const node=this.nodes[i];
       let probe;
       try { probe=await this.ssh(node,'probe'); }
       catch(e) {
-        if(!optional) throw new Error(`mandatory P0 ${node.id} unavailable before dispatch: ${e.message}`);
         skipped.push({nodeId:node.id,reason:'optional preflight unavailable; no dispatch attempted'});
         store.event(task.id,'P0_OPTIONAL_NOT_DISPATCHED',{cycle,nodeId:node.id});
         continue;
@@ -76,7 +76,7 @@ export class SshP0Adapter {
         `P0 ${node.id} preflight inventory mismatch`);
       active.push(node);
     }
-    assert(active.length>=2,'P0 preflight did not retain two mandatory nodes');
+    assert(active.length>=2,'P0 preflight lacks two reachable distinct nodes');
     const jobs=[];
     for(const node of active){
       const role=node.role??'blind_a';
