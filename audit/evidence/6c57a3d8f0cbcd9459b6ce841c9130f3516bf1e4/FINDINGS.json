@@ -1,0 +1,452 @@
+{
+  "schema": "paseo-s0-remediation-audit/v1",
+  "audited_commit": "6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4",
+  "baseline_commit": "8fe13211271dabc4de7a7ba02b9853f3d6196979",
+  "original_findings_source": "../original/S0-local-static-report.md",
+  "audit_status": "COMPLETE",
+  "code_verdict": "FAIL",
+  "live_acceptance": "BLOCKED",
+  "counting_note": "Original F1-F10 IDs are preserved. An overall item is not FIXED when a required identity/integration subpart is unverified. New mechanisms have separate R2 IDs; the old F7 transactional/simple-drift checks are not reopened merely because an unkeyed local chain is not WORM.",
+  "original_findings": [
+    {
+      "id": "F1",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "PASS with blocking findings must not advance Gate A",
+      "sources": [
+        "src/policy.mjs:92-115",
+        "src/controller.mjs:70-72",
+        "src/controller.mjs:98-100"
+      ],
+      "evidence": [
+        "../logs/node-full.stdout.log",
+        "../logs/supplemental-node.stdout.log#R-F1"
+      ],
+      "observed": "Actual step() with synthetic PASS+BLOCKER returns A_WORKER; contradictory parser output is rejected. No real Reviewer output was used.",
+      "residual": "Free-text severity and real Soul/SDK integration remain scoped separately."
+    },
+    {
+      "id": "F2",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Any two seats, optional preflight, cancellation and lost ACK",
+      "sources": [
+        "src/p0.mjs:60-140",
+        "src/controller.mjs:112-121",
+        "remote/p0_runner.py:38-87"
+      ],
+      "evidence": [
+        "../logs/supplemental-node.stdout.log#R-F2",
+        "../logs/cross-validation-node.stdout.log#X-F2"
+      ],
+      "subparts": {
+        "all_three_two_seat_combinations": "FIXED_OFFLINE_ONLY",
+        "third_probe_unavailable": "FIXED_OFFLINE_ONLY",
+        "cancel_ack_uncertain": "MITIGATED_FAIL_CLOSED",
+        "submit_ack_lost": "MITIGATED_FAIL_CLOSED",
+        "late_signed_fail_at_cancel": "REJECTED_AS_REQUIRED",
+        "real_host_identity": "NOT_VERIFIED",
+        "real_600_seconds_and_remote_process_groups": "NOT_VERIFIED"
+      },
+      "residual": "Lost ACK retains acknowledged/intended jobs and NEEDS_RECONCILIATION; it is not proof every remote job was stopped. No real SSH/P0 was contacted."
+    },
+    {
+      "id": "F3",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Duplicate HMAC bytes and physical identity",
+      "sources": [
+        "src/p0.mjs:27-58",
+        "remote/p0_runner.py:219-223"
+      ],
+      "evidence": [
+        "../logs/supplemental-node.stdout.log#R-F3",
+        "../logs/supplemental-python.observations.json#PY-F3-CANONICAL"
+      ],
+      "subparts": {
+        "different_paths_same_key_bytes": "FIXED",
+        "signed_physical_id_mismatch": "REJECTED_AS_REQUIRED",
+        "JS_Python_canonical_bytes_with_mutation_control": "VERIFIED_LOCAL",
+        "actual_distinct_physical_hosts": "NOT_VERIFIED"
+      },
+      "residual": "HMAC authenticates possession of configured keys; management-side identity strings do not attest separate physical hardware."
+    },
+    {
+      "id": "F4",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Paseo waitForFinish numeric timeout call shape",
+      "sources": [
+        "src/agents.mjs:20-32"
+      ],
+      "evidence": [
+        "../logs/node-full.stdout.log",
+        "../logs/supplemental-node.stdout.log#R-F4"
+      ],
+      "observed": "Actual adapter passes numeric 3600000 to an SDK-shaped stub.",
+      "residual": "Real SDK, daemon auth, timeout/disconnection and Agent lifecycle NOT_VERIFIED; this FIXED applies only to the original argument-type bug."
+    },
+    {
+      "id": "F5",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Historical Soul, verdict and legal deliverable contract",
+      "sources": [
+        "src/controller.mjs:7",
+        "src/policy.mjs:92-109",
+        "remote/p0_runner.py:113-133",
+        "docs/SOUL_V21_MIGRATION_PENDING.md:5-15"
+      ],
+      "evidence": [
+        "../logs/supplemental-node.stdout.log#R-F5",
+        "../logs/supplemental-python.observations.json#PY-F5-REMOTE-LEGACY"
+      ],
+      "subparts": {
+        "local_legacy_verdict_aliases": "FIXED",
+        "Markdown_then_final_JSON": "REJECTED_IN_OFFLINE_PROBE",
+        "remote_legacy_APPROVE": "NORMALIZES_TO_QUESTION_INSTEAD_OF_PASS",
+        "approved_Soul_migration_and_deliverable_mapping": "NOT_VERIFIED"
+      },
+      "related_new_findings": [
+        "R2-006"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "BLOCKER",
+      "disposition": "NOT_VERIFIED",
+      "title": "Windows OS boundary and TEST_ONLY add/review/merge",
+      "sources": [
+        "src/policy.mjs:75-87",
+        "src/controller.mjs:102-110",
+        "docs/SECURITY.md:8-11"
+      ],
+      "evidence": [
+        "../logs/node-full.stdout.log"
+      ],
+      "observed": "Only permission declarations and offline fixtures were exercised. No Windows SID/ACL/network/Job Object proof, new-test incorporation, real SDK or real remote Harness acceptance exists.",
+      "live_status": "BLOCKED"
+    },
+    {
+      "id": "F7",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Original SQLite state/dispatch transaction, missing-event and evidence-hash checks",
+      "sources": [
+        "src/store.mjs:21-25",
+        "src/store.mjs:50-56",
+        "src/store.mjs:62-101",
+        "src/store.mjs:104-122",
+        "src/cli.mjs:37-43"
+      ],
+      "evidence": [
+        "../logs/supplemental-node.stdout.log#R-F7",
+        "../logs/cross-validation-node.stdout.log#X-F7"
+      ],
+      "observed": "Injected event-write failures roll back init/intent/ack/terminal SQL mutations; altered events, deleted dispatches/artifact entries, modified/missing evidence and empty event tables are detected. approve/recover share the task lock at CLI level.",
+      "residual": "No physical crash/power-loss test or external immutable anchor. New artifact-orphan and reanchoring/read-snapshot mechanisms are separately reported.",
+      "related_new_findings": [
+        "R2-001",
+        "R2-002",
+        "R2-003"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Compliance stop and human recovery",
+      "sources": [
+        "src/controller.mjs:243-252",
+        "src/controller.mjs:278-295",
+        "src/store.mjs:62-76"
+      ],
+      "evidence": [
+        "../logs/supplemental-node.stdout.log#DEFECT-R8-01",
+        "../logs/confirmed-defects-node.stdout.log#DEFECT-R2-001",
+        "../logs/cross-validation-node.stdout.log#X-F8"
+      ],
+      "observed": "Genuine over-budget tasks block and retain their budget; unresolved dispatches cannot recover. However detected tampering is saved on the preflight error path and becomes valid under verify(), and recovery retains the lowered budget.",
+      "related_new_findings": [
+        "R2-001"
+      ],
+      "refuted_claim": "Existing NEEDS_RECONCILIATION stage is in TERMINAL and is not overwritten by the preflight catch."
+    },
+    {
+      "id": "F9",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Child-process environment and raw-log Secret boundary",
+      "sources": [
+        "src/git.mjs:8-15",
+        "remote/p0_runner.py:23-36",
+        "remote/p0_runner.py:107-108",
+        "remote/p0_runner.py:152-194"
+      ],
+      "evidence": [
+        "../logs/supplemental-node.stdout.log#R-F9",
+        "../logs/supplemental-python.observations.json#DEFECT-PY-F9-GIT-ENV"
+      ],
+      "observed": "Local Node children and remote Harness child_env omit the synthetic sentinel; remote Git run() still inherits it in a real local subprocess. No real user secret was read or exfiltrated.",
+      "residual": "Raw logs, auth compatibility and real OS/remote ACL remain NOT_VERIFIED.",
+      "related_new_findings": [
+        "R2-005"
+      ]
+    },
+    {
+      "id": "F10",
+      "severity": "MEDIUM",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Query, Git/worktree and process lifecycle side effects",
+      "sources": [
+        "src/store.mjs:7-18",
+        "src/controller.mjs:274-276",
+        "remote/p0_runner.py:264-270",
+        "src/git.mjs:15-33"
+      ],
+      "evidence": [
+        "../logs/supplemental-node.stdout.log#R-F10",
+        "../logs/cross-validation-node.stdout.log#DEFECT-X-F10",
+        "../logs/confirmed-defects-node.stdout.log#DEFECT-R2-003",
+        "../logs/python-diagnostic-replay.receipt.json"
+      ],
+      "subparts": {
+        "missing_state_query_does_not_create": "FIXED",
+        "existing_WAL_query_creates_companion_files": "VERIFIED_LOCAL_FILESYSTEM_SIDE_EFFECT",
+        "consistent_inspection_snapshot": "NOT_FIXED",
+        "Windows_original_Python_test": "ERROR",
+        "real_process_tree_termination": "NOT_VERIFIED"
+      },
+      "related_new_findings": [
+        "R2-003",
+        "R2-004",
+        "R2-007"
+      ]
+    }
+  ],
+  "new_findings": [
+    {
+      "id": "R2-001",
+      "severity": "BLOCKER",
+      "kind": "code_defect",
+      "title": "Preflight catch reanchors already-detected tampered task state; recovery preserves a lowered budget",
+      "sources": [
+        "src/controller.mjs:243-252",
+        "src/controller.mjs:278-295",
+        "src/store.mjs:62-76"
+      ],
+      "evidence": [
+        "../logs/confirmed-defects-node.stdout.log#DEFECT-R2-001"
+      ],
+      "precondition": "Local state row was corrupted or modified outside the event writer. A later explicit recovery call is required for the observed budget restart; this is not a demonstrated unauthenticated remote exploit.",
+      "observed": "bRound 9 -> raw task row 0 -> verify rejects -> run preflight rejects but saves BLOCKED -> verify now accepts -> fixture human recovery retains 0 -> B_ENTER increments to 1; actual model calls 0.",
+      "minimal_fix": "Validate before all mutations; quarantine a corrupted task without hashing it into a new trusted state. Recovery must verify/reconstruct the last trusted state and preserve consumed budget; apply the same check before approval/recovery writes."
+    },
+    {
+      "id": "R2-002",
+      "severity": "MEDIUM",
+      "kind": "code_defect",
+      "title": "Artifact file is durable before its SQLite transaction, leaving accepted unregistered orphans and EEXIST retry failures",
+      "sources": [
+        "src/store.mjs:33-48",
+        "src/store.mjs:117-120"
+      ],
+      "evidence": [
+        "../logs/confirmed-defects-node.stdout.log#DEFECT-R2-002"
+      ],
+      "observed": "Injected ARTIFACT_REGISTERED event failure rolls back manifest but leaves orphan.json. verify accepts the task; same-name retry returns EEXIST. No actual power failure was injected.",
+      "minimal_fix": "Introduce recoverable pending artifact/temporary-file protocol and compare manifest with directory contents; define crash/retry reconciliation without silent deletion."
+    },
+    {
+      "id": "R2-003",
+      "severity": "MEDIUM",
+      "kind": "code_defect",
+      "title": "inspect() combines different database versions without a read transaction",
+      "sources": [
+        "src/controller.mjs:274-276",
+        "src/store.mjs:104-122"
+      ],
+      "evidence": [
+        "../logs/confirmed-defects-node.stdout.log#DEFECT-R2-003"
+      ],
+      "observed": "Two real SQLite connections, with a deterministic writer between SELECTs: inspect reports aRound 1 while its successfully verified ledger belongs to aRound 2. This is controlled interleaving, not a concurrency stress benchmark.",
+      "minimal_fix": "Read task, dispatches, events and artifact manifests from a single read transaction/version; report the version with the response."
+    },
+    {
+      "id": "R2-004",
+      "severity": "LOW",
+      "kind": "hardening",
+      "title": "Readonly status of an existing WAL database creates persistent -wal/-shm files",
+      "sources": [
+        "src/store.mjs:10-14",
+        "src/cli.mjs:32-36"
+      ],
+      "evidence": [
+        "../logs/cross-validation-node.stdout.log#DEFECT-X-F10"
+      ],
+      "observed": "Real status CLI exits 0, leaves workflow.sqlite-wal and workflow.sqlite-shm; main DB bytes unchanged. This is SQLite filesystem behavior, not evidence of database data writes.",
+      "minimal_fix": "Specify readOnly as database-level semantics, or provide a consistent offline read-only snapshot. Do not use immutable=1 on a live changing WAL database merely to suppress side files."
+    },
+    {
+      "id": "R2-005",
+      "severity": "HIGH",
+      "kind": "code_defect",
+      "title": "Remote Git helper remains outside the environment allowlist",
+      "sources": [
+        "remote/p0_runner.py:107-108",
+        "remote/p0_runner.py:152-158",
+        "remote/p0_runner.py:193-194"
+      ],
+      "evidence": [
+        "../logs/supplemental-python.observations.json#DEFECT-PY-F9-GIT-ENV"
+      ],
+      "observed": "A real subprocess invoked through remote.run observes the synthetic unrelated environment sentinel; child_env-protected Harness does not.",
+      "minimal_fix": "Pass an explicit minimal environment to every remote Git/helper/spawn path; test optional envAllowList entries and authentication without reading credentials."
+    },
+    {
+      "id": "R2-006",
+      "severity": "HIGH",
+      "kind": "integration_gap",
+      "title": "Markdown deliverables and remote legacy verdicts still lack a consistent approved contract",
+      "sources": [
+        "src/controller.mjs:7",
+        "src/policy.mjs:92-109",
+        "remote/p0_runner.py:113-133",
+        "docs/SOUL_V21_MIGRATION_PENDING.md:5-15"
+      ],
+      "evidence": [
+        "../logs/supplemental-node.stdout.log#R-F5",
+        "../logs/supplemental-python.observations.json#PY-F5-REMOTE-LEGACY"
+      ],
+      "observed": "Markdown followed by final JSON is rejected locally; raw legacy APPROVE becomes QUESTION remotely. Historical Soul migration is explicitly pending.",
+      "minimal_fix": "Obtain approval for the Soul migration and Markdown/JSON/commit/phase/evidence mapping; use the same verdict normalization at local and remote boundaries and verify real outputs later."
+    },
+    {
+      "id": "R2-007",
+      "severity": "MEDIUM",
+      "kind": "integration_gap",
+      "title": "Original Python offline test is not green on the actual Windows host",
+      "sources": [
+        "remote/tests/test_runner.py:40-45",
+        "remote/p0_runner.py:264-270"
+      ],
+      "evidence": [
+        "../logs/python-full.stderr.log",
+        "../logs/python-diagnostic-replay.receipt.json",
+        "../logs/supplemental-python.observations.json#PY-F10-STATUS-PRIMITIVE"
+      ],
+      "observed": "Original suite: one ERROR, exit 1; diagnostic repeat records status exit 1 / WinError 87 before the cleanup error. A signal-mocked path confirms it reaches os.kill(pid,0); no extra OS signal was sent by the probe.",
+      "minimal_fix": "Declare Runner target-platform support and separate/implement platform-aware liveness. Retain primary stderr and wait for owned fixture jobs before cleanup. A real Linux Runner acceptance remains separately NOT_VERIFIED; this local failure does not prove Linux fails."
+    },
+    {
+      "id": "R2-008",
+      "severity": "MEDIUM",
+      "kind": "code_defect",
+      "title": "Early BLOCKED tasks without a currentSha cannot use the public recovery CLI",
+      "sources": [
+        "src/cli.mjs:18-19",
+        "src/cli.mjs:44",
+        "src/controller.mjs:278-295"
+      ],
+      "evidence": [
+        "../logs/post-review-node.stdout.log#POST-R2-008"
+      ],
+      "observed": "An early definitely BLOCKED fixture has currentSha=null. recover without --sha exits 1 (required --sha); with a nonempty SHA exits 1 (not the approved recovery basis). No model or SDK was connected. This does not claim the direct JavaScript API cannot accept null.",
+      "minimal_fix": "Define an explicit no-commit recovery basis for pre-commit phases, bind it to the frozen task/spec digest and preserve the approval receipt; test CLI and API consistently."
+    },
+    {
+      "id": "R2-009",
+      "severity": "HIGH",
+      "kind": "code_defect",
+      "title": "Porcelain parsing and trim() bypass sensitive-path commit checks",
+      "sources": [
+        "src/git.mjs:35-38",
+        "src/git.mjs:54-65"
+      ],
+      "evidence": [
+        "../logs/post-review-node.stdout.log#POST-R2-009a",
+        "../logs/post-review-node.stdout.log#POST-R2-009b"
+      ],
+      "observed": "Real disposable repositories with synthetic .env contents only: rename raw R ordinary.txt / .env is checked as ordinary.txt and v, then committed. For a tracked .env edit, must().trim() removes the leading status space, checked path becomes env, and the change is committed. Neither repository has a remote; no real credential or GitHub write occurred.",
+      "minimal_fix": "Preserve raw porcelain bytes without trimming, parse NUL-separated status and rename/copy pairs correctly, and validate both original and destination paths plus staged object modes before commit."
+    },
+    {
+      "id": "R2-010",
+      "severity": "MEDIUM",
+      "kind": "code_defect",
+      "title": "One successful reviewer result is omitted from Controller evidence when its peer fails",
+      "sources": [
+        "src/controller.mjs:80-95",
+        "src/agents.mjs:27-32"
+      ],
+      "evidence": [
+        "../logs/post-review-node.stdout.log#POST-R2-010"
+      ],
+      "observed": "The actual PaseoAgentRuntime.execute with an in-process fake SDK produces one TERMINAL dispatch and one ACKNOWLEDGED dispatch. invokePair saves only peer errors, no successful raw report artifact/history; verify accepts the event chain. Workflow stops; this is missing evidence, not a gate bypass. External daemon transcript storage was not examined.",
+      "minimal_fix": "Persist each settled result, its role/phase/agent/dispatch IDs and raw evidence separately before recording the pair failure; retain uncertainty for the failed seat and prohibit blind redispatch."
+    }
+  ],
+  "mandatory_unverified": [
+    "Windows distinct process identity/SID, file ACL and network boundary",
+    "TEST_ONLY newly added tests, independent review and merge into final commit",
+    "Real Paseo SDK/daemon authentication, timeout/disconnection and lifecycle",
+    "Real remote OpenCode JSONL, permissions and job lifecycle",
+    "Two different physical P0 hosts and trusted host/key mapping",
+    "Real 600-second third-seat grace and Linux/Windows process-group/Job Object cancellation",
+    "OS crash/power-loss and sustained multi-process SQLite stress",
+    "External immutable evidence anchor and approval-subject authentication"
+  ],
+  "summary": {
+    "original_total": 10,
+    "original_dispositions": {
+      "FIXED": 3,
+      "MITIGATED_FAIL_CLOSED": 3,
+      "NOT_FIXED": 3,
+      "NOT_VERIFIED": 1
+    },
+    "new_total": 10,
+    "new_severities": {
+      "BLOCKER": 1,
+      "MEDIUM": 5,
+      "LOW": 1,
+      "HIGH": 3
+    },
+    "new_kinds": {
+      "code_defect": 7,
+      "hardening": 1,
+      "integration_gap": 2
+    }
+  },
+  "independent_reports": [
+    {
+      "name": "Codex",
+      "report": "CODEX_REPORT.md",
+      "source_directory": "reviewers/codex",
+      "session_or_thread_id": "01a1b552-1ad6-7d21-8b7e-ee0438d405f4",
+      "exit_code": 0,
+      "report_bytes": 27641,
+      "report_sha256": "4cc7dd8be107d413cff349a3465c227202d94a9c32b17e250efdbbfb8761616a",
+      "started_at": "2026-11-07T17:23:38.638580+08:00",
+      "finished_at": "2026-11-07T17:26:32.385381+08:00",
+      "scope": "full fixed-source/diff material",
+      "personally_ran_tests": false,
+      "input_included_other_current_reviewer_report": false
+    },
+    {
+      "name": "OpenCode",
+      "report": "OPENCODE_REPORT.md",
+      "source_directory": "reviewers/opencode/attempt-04-compact",
+      "session_or_thread_id": "ses_e4a9126feffeAu0DB62kXxNVqf",
+      "exit_code": 0,
+      "report_bytes": 12803,
+      "report_sha256": "f955202ba4e2ae74c9cddd7215045a9c8389ee9205b808bdb5e8278dd87b98ee",
+      "started_at": "2026-11-07T17:55:01.576085+08:00",
+      "finished_at": "2026-11-07T17:58:39.135251+08:00",
+      "scope": "15 core files, complete compact stdin; not all 39 files",
+      "personally_ran_tests": false,
+      "input_included_other_current_reviewer_report": false
+    }
+  ],
+  "cross_review_validation": "CROSS_REVIEW_VALIDATION.md",
+  "generated_at": "2026-11-07T19:32:37.153599+08:00"
+}

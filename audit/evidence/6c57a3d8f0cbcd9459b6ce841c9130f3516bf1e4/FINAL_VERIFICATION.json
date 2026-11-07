@@ -1,0 +1,156 @@
+{
+  "verified_at": "2026-11-07T19:32:37.153599+08:00",
+  "source_snapshots": [
+    {
+      "folder": "snapshot",
+      "commit": "6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4",
+      "tree": "31084b689af34414dafd4c5c3f136f96e6f29d43",
+      "verified": 39,
+      "expected": 39,
+      "all_match": true
+    },
+    {
+      "folder": "baseline",
+      "commit": "8fe13211271dabc4de7a7ba02b9853f3d6196979",
+      "tree": "0e24ec541ee4b880396b22f35a79041f84096cbb",
+      "verified": 34,
+      "expected": 34,
+      "all_match": true
+    },
+    {
+      "folder": "offline-copy",
+      "commit": "6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4",
+      "tree": "31084b689af34414dafd4c5c3f136f96e6f29d43",
+      "verified": 39,
+      "expected": 39,
+      "all_match": true
+    }
+  ],
+  "existing_configuration_and_wrappers": [
+    {
+      "path": "C:\\Users\\KK\\.codex\\config.toml",
+      "baseline_sha256": "28ef096584cdb51edee96c8a8182afadc5774bbcfc8b16813ac6532406657944",
+      "after_audit_cli_runs_sha256": "28ef096584cdb51edee96c8a8182afadc5774bbcfc8b16813ac6532406657944",
+      "unchanged_during_audit_cli_runs": true,
+      "current_sha256": "0f360f805b2879e7d45a5dee1db41d1dca53ca0791ec874bdb76f33dd14b1f8b",
+      "unchanged_at_packaging_recheck": false,
+      "current_mtime": "2026-11-07T18:48:28.927675+08:00",
+      "note": "Concurrent external change after 18:31 audit completion (not modified by this audit task)"
+    },
+    {
+      "path": "C:\\Users\\KK\\.config\\opencode\\opencode.jsonc",
+      "baseline_sha256": "3228e544d38fb57d576a5f976e4636d40a5232a31c27e9fac280b8863c377ff2",
+      "after_audit_cli_runs_sha256": "3228e544d38fb57d576a5f976e4636d40a5232a31c27e9fac280b8863c377ff2",
+      "unchanged_during_audit_cli_runs": true,
+      "current_sha256": "3228e544d38fb57d576a5f976e4636d40a5232a31c27e9fac280b8863c377ff2",
+      "unchanged_at_packaging_recheck": true,
+      "current_mtime": "2026-11-06T18:09:13.133030+08:00",
+      "note": null
+    },
+    {
+      "path": "D:\\codex\\codex",
+      "baseline_sha256": "5f34b300d29c47f8799f438fa8373fbfc8c5c490b1b96f01503f54cfef47164b",
+      "after_audit_cli_runs_sha256": "5f34b300d29c47f8799f438fa8373fbfc8c5c490b1b96f01503f54cfef47164b",
+      "unchanged_during_audit_cli_runs": true,
+      "current_sha256": "5f34b300d29c47f8799f438fa8373fbfc8c5c490b1b96f01503f54cfef47164b",
+      "unchanged_at_packaging_recheck": true,
+      "current_mtime": "2026-10-31T21:25:01.541602+08:00",
+      "note": null
+    },
+    {
+      "path": "D:\\opencode\\opencode",
+      "baseline_sha256": "3e49a6d3723cd8c7b7197faf1830ce9907c45687c706cd9b278c784516e89462",
+      "after_audit_cli_runs_sha256": "3e49a6d3723cd8c7b7197faf1830ce9907c45687c706cd9b278c784516e89462",
+      "unchanged_during_audit_cli_runs": true,
+      "current_sha256": "3e49a6d3723cd8c7b7197faf1830ce9907c45687c706cd9b278c784516e89462",
+      "unchanged_at_packaging_recheck": true,
+      "current_mtime": "2026-10-17T22:15:17.143366+08:00",
+      "note": null
+    },
+    {
+      "path": "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\config.yaml",
+      "baseline_sha256": "c4001d4b933fead8a33b517145797fd7958d6e068cd57aad53b1735b8c46741d",
+      "after_audit_cli_runs_sha256": "c4001d4b933fead8a33b517145797fd7958d6e068cd57aad53b1735b8c46741d",
+      "unchanged_during_audit_cli_runs": true,
+      "current_sha256": "615f258742f87af5d02e4461f9e044bc4ab9d66247f5c23fd6fbdf113caa2313",
+      "unchanged_at_packaging_recheck": false,
+      "current_mtime": "2026-11-07T18:58:03.547792+08:00",
+      "note": "Concurrent external change after 18:31 audit completion (not modified by this audit task)"
+    }
+  ],
+  "all_five_unchanged_during_audit_cli_runs": true,
+  "concurrent_external_changes_detected_at_recheck": [
+    "C:\\Users\\KK\\.codex\\config.toml",
+    "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\config.yaml"
+  ],
+  "reports": [
+    {
+      "name": "Codex",
+      "report": "CODEX_REPORT.md",
+      "source_directory": "reviewers/codex",
+      "session_or_thread_id": "01a1b552-1ad6-7d21-8b7e-ee0438d405f4",
+      "exit_code": 0,
+      "report_bytes": 27641,
+      "report_sha256": "4cc7dd8be107d413cff349a3465c227202d94a9c32b17e250efdbbfb8761616a",
+      "started_at": "2026-11-07T17:23:38.638580+08:00",
+      "finished_at": "2026-11-07T17:26:32.385381+08:00",
+      "scope": "full fixed-source/diff material",
+      "personally_ran_tests": false,
+      "input_included_other_current_reviewer_report": false
+    },
+    {
+      "name": "OpenCode",
+      "report": "OPENCODE_REPORT.md",
+      "source_directory": "reviewers/opencode/attempt-04-compact",
+      "session_or_thread_id": "ses_e4a9126feffeAu0DB62kXxNVqf",
+      "exit_code": 0,
+      "report_bytes": 12803,
+      "report_sha256": "f955202ba4e2ae74c9cddd7215045a9c8389ee9205b808bdb5e8278dd87b98ee",
+      "started_at": "2026-11-07T17:55:01.576085+08:00",
+      "finished_at": "2026-11-07T17:58:39.135251+08:00",
+      "scope": "15 core files, complete compact stdin; not all 39 files",
+      "personally_ran_tests": false,
+      "input_included_other_current_reviewer_report": false
+    }
+  ],
+  "s1_official_sources_verified": [
+    "packages/cli/package.json",
+    "packages/client/package.json",
+    "public-docs/cli.md",
+    "public-docs/configuration.md",
+    "public-docs/codex.md",
+    "public-docs/supported-providers.md",
+    "public-docs/security.md",
+    "packages/cli/src/commands/daemon/start.ts",
+    "packages/cli/src/commands/daemon/config.ts",
+    "packages/server/src/server/persisted-config.ts"
+  ],
+  "pr_read_only_observation": {
+    "baseRefOid": "8fe13211271dabc4de7a7ba02b9853f3d6196979",
+    "headRefOid": "6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4",
+    "isDraft": true,
+    "mergedAt": null,
+    "number": 1,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-11-07T08:59:58Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/k176060444-lgtm/Paseo-workflow/actions/runs/42357793457/job/128359605777",
+        "name": "controller",
+        "startedAt": "2026-11-07T08:59:49Z",
+        "status": "COMPLETED",
+        "workflowName": "Offline contract tests (no model calls)"
+      }
+    ],
+    "url": "https://github.com/k176060444-lgtm/Paseo-workflow/pull/1"
+  },
+  "live_workflow_acceptance": "BLOCKED",
+  "verification_does_not_claim": [
+    "OS sandbox",
+    "physical identity",
+    "real SDK or remote OpenCode",
+    "actual process-tree cancellation"
+  ]
+}

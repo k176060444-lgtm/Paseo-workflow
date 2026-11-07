@@ -1,0 +1,163 @@
+Paseo-workflow S0 remediation: real local test evidence
+audited_commit=6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4
+baseline_commit=8fe13211271dabc4de7a7ba02b9853f3d6196979
+generated_at=2026-11-07T19:32:37.153599+08:00
+ENVIRONMENT: Windows 10 build 19044; Node v26.6.0; Git 2.54.0.windows.1; Python 3.14.7
+Audit root: C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8
+Original tests unchanged. Supplemental probes run outside fixed source snapshots.
+Python XML is explicitly derived from original unittest log, not native unittest JUnit.
+DEFECT probe PASS means the defect was reproduced; it is not product acceptance.
+Diagnostic repeat of the same Python test is not counted as another unique test.
+
+BATCH node-full
+cwd=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\offline-copy
+argv_json=["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--test", "--test-reporter=spec", "--test-reporter-destination=stdout", "--test-reporter=junit", "--test-reporter-destination=C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\logs\\node-full.junit.xml", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\tests\\controller.test.mjs", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\tests\\p0.test.mjs", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\tests\\p0_regression.test.mjs", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\tests\\security_regression.test.mjs"]
+command_windows=C:\Users\KK\AppData\Local\hermes\node\node.EXE --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\logs\node-full.junit.xml C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\offline-copy\tests\controller.test.mjs C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\offline-copy\tests\p0.test.mjs C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\offline-copy\tests\p0_regression.test.mjs C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\offline-copy\tests\security_regression.test.mjs
+started_at=2026-11-07T17:21:06.710758+08:00
+duration_seconds=1.624
+exit_code=0
+tests=25; passed=25; failures=0; errors=0; skipped=0
+junit=logs/node-full.junit.xml
+PASS node-full::test::happy path uses exactly one Gate A and Gate B round, skips remediation and arbitration
+PASS node-full::test::changed Gate B commit forces P0 again on precise final SHA
+PASS node-full::test::Gate A exactly ten rounds and no eleventh dispatch
+PASS node-full::test::Gate B exactly ten rounds, no reset on remediation failure
+PASS node-full::test::post-dispatch ambiguous result blocks without silent redispatch
+PASS node-full::test::config SHA/role permissions and SQL ledger resist casual drift
+PASS node-full::test::permission policy is code-fixed and TEST_ONLY agent is read-only; no dangerous access
+PASS node-full::test::human gate requires precise digest and explicit approval text
+PASS node-full::test::real config/ and souls/ sibling layout freezes without path escape
+PASS node-full::test::P0: two distinct signed nodes pass; third nonmandatory after extra window
+PASS node-full::test::P0: spoofed MAC cannot count toward quorum
+PASS node-full::test::P0: same physical identity fails before dispatch
+PASS node-full::test::F3: distinct key paths with identical key bytes never dispatch
+PASS node-full::test::F2: optional third probe failure does not prevent two valid seats
+PASS node-full::test::F2: lingering optional third is cancelled and separately receipted
+PASS node-full::test::F2: optional third lost submit ACK never silently passes
+PASS node-full::test::F3: signed physicalId mismatch cannot pass
+PASS node-full::test::P0 failover: 5bao unavailable, 9bao + rusty form two physical seats
+PASS node-full::test::F1: legacy verdict normalization and PASS with BLOCKER finding fail closed
+PASS node-full::test::F1: synthetic alternative runtime cannot pass a review pair with BLOCKER finding
+PASS node-full::test::F7: ledger detects an altered dispatch row and evidence file
+PASS node-full::test::F7: dispatch intent and ledger event write together (rollback on duplicate)
+PASS node-full::test::F10: read-only store refuses to create missing state directory or database
+PASS node-full::test::F4: exact SDK waitForFinish API receives numeric timeout
+PASS node-full::test::F9: Git/test child process env omits arbitrary gateway secrets
+
+BATCH python-full
+cwd=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\offline-copy
+argv_json=["C:\\Users\\KK\\AppData\\Local\\hermes\\installs\\3815d30e512c8ddd\\environments\\80df849840f14890bc06908d671bffa0\\venv\\Scripts\\python.exe", "-B", "-m", "unittest", "discover", "-s", "remote/tests", "-v"]
+command_windows=C:\Users\KK\AppData\Local\hermes\installs\3815d30e512c8ddd\environments\80df849840f14890bc06908d671bffa0\venv\Scripts\python.exe -B -m unittest discover -s remote/tests -v
+started_at=2026-11-07T17:21:08.336176+08:00
+duration_seconds=0.786
+exit_code=1
+tests=1; passed=0; failures=0; errors=1; skipped=0
+junit=logs/python-full.derived.junit.xml
+ERROR python-full::::test_native_harness_durable_job_and_hmac (test_runner.RemoteRunnerTests.test_native_harness_durable_job_and_hmac)
+
+BATCH supplemental-node
+cwd=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8
+argv_json=["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--test", "--test-reporter=spec", "--test-reporter-destination=stdout", "--test-reporter=junit", "--test-reporter-destination=C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\logs\\supplemental-node.junit.xml", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\probes\\additional.test.mjs"]
+command_windows=C:\Users\KK\AppData\Local\hermes\node\node.EXE --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\logs\supplemental-node.junit.xml C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\probes\additional.test.mjs
+started_at=2026-11-07T17:28:12.379753+08:00
+duration_seconds=1.19
+exit_code=0
+tests=24; passed=24; failures=0; errors=0; skipped=0
+junit=logs/supplemental-node.junit.xml
+PASS supplemental-node::test::R-F1: PASS plus BLOCKER returns A_WORKER rather than A_TEST in the real step()
+PASS supplemental-node::test::R-F1-parser: contradictory native result is rejected and legacy verdicts normalize
+PASS supplemental-node::test::R-F2-pair-seat-a: other two distinct fixture identities form quorum without dispatching absent seat
+PASS supplemental-node::test::R-F2-pair-seat-b: other two distinct fixture identities form quorum without dispatching absent seat
+PASS supplemental-node::test::R-F2-pair-seat-c: other two distinct fixture identities form quorum without dispatching absent seat
+PASS supplemental-node::test::R-F2-cancel-uncertain: ambiguous third-seat cancellation blocks and retains acknowledged dispatch
+PASS supplemental-node::test::R-F2-cancelled: known third cancellation is stored with separate receipt
+PASS supplemental-node::test::R-F2-lost-ACK: controller becomes NEEDS_RECONCILIATION and a second run does not redispatch
+PASS supplemental-node::test::R-F3: duplicated synthetic key bytes at different paths cause zero SSH adapter calls
+PASS supplemental-node::test::R-F4: actual runtime passes a numeric one-hour timeout to the SDK-shaped stub
+PASS supplemental-node::test::R-F5: Markdown followed by a final JSON remains incompatible with JSON.parse-only contract
+PASS supplemental-node::test::R-F7-atomic-init: event-write fault rolls back its associated SQLite row mutation
+PASS supplemental-node::test::R-F7-atomic-intent: event-write fault rolls back its associated SQLite row mutation
+PASS supplemental-node::test::R-F7-atomic-ack: event-write fault rolls back its associated SQLite row mutation
+PASS supplemental-node::test::R-F7-atomic-terminal: event-write fault rolls back its associated SQLite row mutation
+PASS supplemental-node::test::R-F7-ledger: event alteration and dispatch deletion are detected
+PASS supplemental-node::test::R-F7-evidence: altered file, deleted manifest entry and missing evidence are rejected
+PASS supplemental-node::test::DEFECT-R8-01: failing preflight reanchors a tampered task row, then recovery retains the lowered budget
+PASS supplemental-node::test::R-F8: a genuine budget violation persists BLOCKED, recovery does not reset the exhausted budget
+PASS supplemental-node::test::R-F8: recovery refuses an acknowledged unresolved operation
+PASS supplemental-node::test::R-F9: a real local child process cannot see an unrelated synthetic gateway token
+PASS supplemental-node::test::R-F10-status: nonexistent state is not created by CLI query
+PASS supplemental-node::test::R-F10-verify: nonexistent state is not created by CLI query
+PASS supplemental-node::test::R-F10-existing: observe actual WAL side files during read-only Store verification
+
+BATCH confirmed-defects-node
+cwd=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8
+argv_json=["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--test", "--test-reporter=spec", "--test-reporter-destination=stdout", "--test-reporter=junit", "--test-reporter-destination=C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\logs\\confirmed-defects-node.junit.xml", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\probes\\confirmed_defects.test.mjs"]
+command_windows=C:\Users\KK\AppData\Local\hermes\node\node.EXE --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\logs\confirmed-defects-node.junit.xml C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\probes\confirmed_defects.test.mjs
+started_at=2026-11-07T17:57:06.897862+08:00
+duration_seconds=0.279
+exit_code=0
+tests=3; passed=3; failures=0; errors=0; skipped=0
+junit=logs/confirmed-defects-node.junit.xml
+PASS confirmed-defects-node::test::DEFECT-R2-001: unmodified livePreflight detects tampering but run() saves and reanchors the lower budget
+PASS confirmed-defects-node::test::DEFECT-R2-002: artifact event fault leaves an unregistered file that verify() accepts and blocks same-name retry
+PASS confirmed-defects-node::test::DEFECT-R2-003: inspect() can combine an old state row with a newer verified ledger
+
+BATCH cross-validation-node
+cwd=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8
+argv_json=["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--test", "--test-reporter=spec", "--test-reporter-destination=stdout", "--test-reporter=junit", "--test-reporter-destination=C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\logs\\cross-validation-node.junit.xml", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\probes\\cross_validation.test.mjs"]
+command_windows=C:\Users\KK\AppData\Local\hermes\node\node.EXE --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\logs\cross-validation-node.junit.xml C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\probes\cross_validation.test.mjs
+started_at=2026-11-07T17:42:27.972055+08:00
+duration_seconds=0.399
+exit_code=0
+tests=4; passed=4; failures=0; errors=0; skipped=0
+junit=logs/cross-validation-node.junit.xml
+PASS cross-validation-node::test::X-F2: third-seat FINISHED-at-cancel with a signed FAIL is included and blocks
+PASS cross-validation-node::test::X-F8: terminal NEEDS_RECONCILIATION stage is not overwritten on missing preflight flags
+PASS cross-validation-node::test::X-F7: empty events table is rejected
+PASS cross-validation-node::test::DEFECT-X-F10: real status CLI against a closed existing WAL DB creates persistent companion files
+
+BATCH post-review-node
+cwd=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8
+argv_json=["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--test", "--test-reporter=spec", "--test-reporter-destination=stdout", "--test-reporter=junit", "--test-reporter-destination=C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\logs\\post-review-node.junit.xml", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\probes\\post_review.test.mjs"]
+command_windows=C:\Users\KK\AppData\Local\hermes\node\node.EXE --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\logs\post-review-node.junit.xml C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8\probes\post_review.test.mjs
+started_at=2026-11-07T18:11:38.040707+08:00
+duration_seconds=1.418
+exit_code=0
+tests=4; passed=4; failures=0; errors=0; skipped=0
+junit=logs/post-review-node.junit.xml
+PASS post-review-node::test::POST-R2-008: early BLOCKED with null currentSha cannot be recovered via the public CLI
+PASS post-review-node::test::POST-R2-009a: porcelain rename source path is truncated and a sensitive-name rename is committed
+PASS post-review-node::test::POST-R2-009b: trim() removes the first status space and tracked .env modification is committed
+PASS post-review-node::test::POST-R2-010: successful reviewer result is not preserved when its peer fails, using the real adapter with a fake SDK
+
+BATCH supplemental-python
+cwd=C:\Users\KK\AppData\Local\hermes\profiles\ling\cache\scratch\paseo-s0-recheck-6c57a3d8
+argv_json=["C:\\Users\\KK\\AppData\\Local\\hermes\\installs\\3815d30e512c8ddd\\environments\\80df849840f14890bc06908d671bffa0\\venv\\Scripts\\python.exe", "-B", "C:/Users/KK/AppData/Local/hermes/profiles/ling/cache/scratch/paseo-s0-recheck-6c57a3d8/python_supplemental.py"]
+command_windows=C:\Users\KK\AppData\Local\hermes\installs\3815d30e512c8ddd\environments\80df849840f14890bc06908d671bffa0\venv\Scripts\python.exe -B C:/Users/KK/AppData/Local/hermes/profiles/ling/cache/scratch/paseo-s0-recheck-6c57a3d8/python_supplemental.py
+started_at=2026-11-07T17:39:28.320757+08:00
+duration_seconds=0.274
+exit_code=0
+tests=6; passed=6; failures=0; errors=0; skipped=0
+junit=logs/supplemental-python.junit.xml
+PASS supplemental-python::Supplemental::test_cancel_on_windows_remains_uncertain_and_sends_no_signal
+PASS supplemental-python::Supplemental::test_cross_language_canonical_bytes_with_mutation_positive_control
+PASS supplemental-python::Supplemental::test_defect_remote_git_run_helper_still_inherits_unrelated_sentinel
+PASS supplemental-python::Supplemental::test_remote_harness_env_allowlist_filters_sentinel
+PASS supplemental-python::Supplemental::test_remote_parser_does_not_normalize_legacy_soul_verdict
+PASS supplemental-python::Supplemental::test_status_reaches_platform_specific_kill_zero_primitive_without_signalling_any_real_pid
+
+SYNTAX CHECKS (not counted as tests):
+{"tag": "syntax-agents", "exit_code": 0, "argv": ["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--check", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\src\\agents.mjs"]}
+{"tag": "syntax-cli", "exit_code": 0, "argv": ["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--check", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\src\\cli.mjs"]}
+{"tag": "syntax-controller", "exit_code": 0, "argv": ["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--check", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\src\\controller.mjs"]}
+{"tag": "syntax-git", "exit_code": 0, "argv": ["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--check", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\src\\git.mjs"]}
+{"tag": "syntax-p0", "exit_code": 0, "argv": ["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--check", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\src\\p0.mjs"]}
+{"tag": "syntax-policy", "exit_code": 0, "argv": ["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--check", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\src\\policy.mjs"]}
+{"tag": "syntax-store", "exit_code": 0, "argv": ["C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.EXE", "--check", "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\offline-copy\\src\\store.mjs"]}
+
+DIAGNOSTIC REPEAT: logs/python-diagnostic-replay.receipt.json; same original test ID; exit=1, errors=1.
+Adjustments: retain fixture directory to preserve primary stderr; trace original subprocess.run without altering command semantics.
+Captured status exit=1, WinError 87. Original log also reports cleanup WinError 32/5. Do not infer Linux failure.
+GITHUB CI REFERENCE ONLY: run 42357793457; logs/github-ci-reference.log shows 25 Node pass and 1 Python pass.
+No real remote/SDK was called; third-seat short fixture windows do not verify 600 seconds or process-group termination.
+RAW LOGS: ../logs/; PROBE SOURCE: ../probes/; immutable source: ../snapshot/; baseline: ../baseline/.

@@ -1,0 +1,112 @@
+{
+  "archive": "C:\\Users\\KK\\AppData\\Local\\hermes\\profiles\\ling\\cache\\scratch\\paseo-s0-recheck-6c57a3d8\\Paseo-S0-6c57a3d8-Review.zip",
+  "sha256": "66104dcc8e0e23b5a8ca14303a547fe81e2cbb07c765b02b4e01dda3987db5c9",
+  "bytes": 860143,
+  "zip_file_count": 217,
+  "all_manifest_payload_hashes_verified_in_zip": true,
+  "source_integrity": [
+    {
+      "folder": "snapshot",
+      "commit": "6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4",
+      "tree": "31084b689af34414dafd4c5c3f136f96e6f29d43",
+      "verified": 39,
+      "expected": 39,
+      "all_match": true
+    },
+    {
+      "folder": "baseline",
+      "commit": "8fe13211271dabc4de7a7ba02b9853f3d6196979",
+      "tree": "0e24ec541ee4b880396b22f35a79041f84096cbb",
+      "verified": 34,
+      "expected": 34,
+      "all_match": true
+    },
+    {
+      "folder": "offline-copy",
+      "commit": "6c57a3d8f0cbcd9459b6ce841c9130f3516bf1e4",
+      "tree": "31084b689af34414dafd4c5c3f136f96e6f29d43",
+      "verified": 39,
+      "expected": 39,
+      "all_match": true
+    }
+  ],
+  "existing_configuration_unchanged": true,
+  "original_dispositions": {
+    "FIXED": 3,
+    "MITIGATED_FAIL_CLOSED": 3,
+    "NOT_FIXED": 3,
+    "NOT_VERIFIED": 1
+  },
+  "new_severities": {
+    "BLOCKER": 1,
+    "MEDIUM": 5,
+    "LOW": 1,
+    "HIGH": 3
+  },
+  "local_test_batches": [
+    {
+      "tag": "node-full",
+      "tests": 25,
+      "passed": 25,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    {
+      "tag": "python-full",
+      "tests": 1,
+      "passed": 0,
+      "errors": 1,
+      "failures": 0,
+      "skipped": 0,
+      "exit_code": 1
+    },
+    {
+      "tag": "supplemental-node",
+      "tests": 24,
+      "passed": 24,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    {
+      "tag": "confirmed-defects-node",
+      "tests": 3,
+      "passed": 3,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    {
+      "tag": "cross-validation-node",
+      "tests": 4,
+      "passed": 4,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    {
+      "tag": "post-review-node",
+      "tests": 4,
+      "passed": 4,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    {
+      "tag": "supplemental-python",
+      "tests": 6,
+      "passed": 6,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "exit_code": 0
+    }
+  ],
+  "generated_at": "2026-11-07T19:32:41.483243+08:00"
+}
