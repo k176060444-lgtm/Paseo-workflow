@@ -89,9 +89,28 @@ export function providerOptions(role, harness) {
   throw new Error(`unsupported harness ${harness}`);
 }
 
+// Accept a strict final JSON object OR a Markdown report followed by a final
+// fenced/bare JSON envelope. Never interpret arbitrary prose as PASS (R2-006).
+export function finalJsonEnvelope(raw, role='agent') {
+  assert(typeof raw==='string','agent result must be text');
+  const text=raw.trim();
+  const candidates=[text];
+  const fenced=/```(?:json)?\s*\n(\{[\s\S]*?\})\s*```\s*$/i.exec(text);
+  if(fenced)candidates.push(fenced[1]);
+  const last=text.lastIndexOf('\n{');
+  if(last!==-1)candidates.push(text.slice(last+1));
+  for(const candidate of candidates){
+    try {
+      const obj=JSON.parse(candidate);
+      if(obj&&typeof obj==='object'&&!Array.isArray(obj)&&typeof obj.verdict==='string')
+        return obj;
+    }catch{}
+  }
+  throw new Error(`${role}: missing strict final JSON envelope; manual reconciliation required`);
+}
+
 export function parseAgentOutput(raw, role) {
-  let output;
-  try { output = JSON.parse(raw); } catch { throw new Error(`${role}: non-JSON agent result; cannot trust verdict`); }
+  const output=finalJsonEnvelope(raw,role);
   assert(output && typeof output === 'object' && !Array.isArray(output), `${role}: invalid output`);
   // Legacy Soul v1.1 uses APPROVE/REQUEST_CHANGES; normalize at the trust boundary.
   if (output.verdict === 'APPROVE') output.verdict = 'PASS';

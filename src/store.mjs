@@ -32,6 +32,7 @@ export class Store {
   }
   artifact(id,name,content) {
     assert(!this.readOnly,'store opened read-only');
+    this.verify(id); // Never re-anchor a corrupted ledger through artifact registration.
     assert(/^[a-zA-Z0-9._-]{1,100}$/.test(name),'unsafe artifact filename');
     assert(this.get(id),'cannot write artifact before task exists');
     const base=path.join(this.dir(id),'evidence');
@@ -61,7 +62,7 @@ export class Store {
   }
   save(t,type,payload={}) {
     this.transaction(()=>{
-      assert(this.get(t.id),'unknown task');
+      this.verify(t.id); // Verify persisted state BEFORE updating it (R2-001).
       this.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(canonical(t),t.id);
       this.event(t.id,type,{stage:t.stage,status:t.status,...payload});
     });
@@ -78,6 +79,7 @@ export class Store {
   }
   recordIntent(id,phase,dispatchId){
     this.transaction(()=>{
+      this.verify(id);
       this.db.prepare('INSERT INTO dispatches(id,task_id,phase,agent_id,state,created) VALUES(?,?,?,?,?,?)')
         .run(dispatchId,id,phase,null,'DISPATCH_INTENT',new Date().toISOString());
       this.event(id,'DISPATCH_INTENT',{phase,dispatchId});
@@ -86,6 +88,8 @@ export class Store {
   recordAck(dispatchId,agentId){
     this.transaction(()=>{
       const d=this.db.prepare('SELECT * FROM dispatches WHERE id=?').get(dispatchId);
+      assert(d,'unknown dispatch');
+      this.verify(d.task_id);
       assert(d&&d.state==='DISPATCH_INTENT','unknown or previously acknowledged dispatch');
       this.db.prepare('UPDATE dispatches SET agent_id=?,state=? WHERE id=?')
         .run(agentId,'ACKNOWLEDGED',dispatchId);
@@ -95,6 +99,8 @@ export class Store {
   recordTerminal(dispatchId){
     this.transaction(()=>{
       const d=this.db.prepare('SELECT * FROM dispatches WHERE id=?').get(dispatchId);
+      assert(d,'unknown dispatch');
+      this.verify(d.task_id);
       assert(d&&d.state==='ACKNOWLEDGED','terminal requires a known acknowledged dispatch');
       this.db.prepare('UPDATE dispatches SET state=? WHERE id=?').run('TERMINAL',dispatchId);
       this.event(d.task_id,'DISPATCH_TERMINAL',{dispatchId,phase:d.phase,agentId:d.agent_id});
@@ -114,12 +120,29 @@ export class Store {
     assert(last._state_sha256===sha256(this.get(id)),'persisted task state differs from ledger');
     assert(last._dispatch_sha256===this.dispatchHash(id),'dispatch ledger mismatch');
     assert(last._artifact_sha256===this.artifactHash(id),'artifact manifest mismatch');
-    for(const entry of this.db.prepare('SELECT name,digest FROM artifacts WHERE task_id=?').all(id)){
+    const registered=this.db.prepare('SELECT name,digest FROM artifacts WHERE task_id=?').all(id);
+    const expectedNames=new Set(registered.map(entry=>entry.name));
+    const evidenceDir=path.join(this.dir(id),'evidence');
+    if(fs.existsSync(evidenceDir)){
+      for(const name of fs.readdirSync(evidenceDir)){
+        // A crashed artifact registration may leave a real file without a manifest row.
+        // Preserve it for manual reconciliation; never silently accept or delete it.
+        assert(expectedNames.has(name),`unregistered evidence file requires reconciliation: ${name}`);
+        assert(fs.lstatSync(path.join(evidenceDir,name)).isFile(),`non-regular evidence artifact: ${name}`);
+      }
+    }
+    for(const entry of registered){
       const file=path.join(this.dir(id),'evidence',entry.name);
       assert(fs.existsSync(file),'missing registered evidence artifact');
       assert(sha256(fs.readFileSync(file,'utf8'))===entry.digest,`evidence artifact hash mismatch: ${entry.name}`);
     }
     return {events:count,head:previous,dispatchSha256:last._dispatch_sha256,artifactSha256:last._artifact_sha256};
+  }
+  readSnapshot(fn){
+    // All reads including chain verification observe one SQLite snapshot (R2-003).
+    this.db.exec('BEGIN');
+    try { const result=fn(); this.db.exec('COMMIT'); return result; }
+    catch(e){ this.db.exec('ROLLBACK'); throw e; }
   }
   withLock(id,cb){
     assert(!this.readOnly,'store opened read-only');

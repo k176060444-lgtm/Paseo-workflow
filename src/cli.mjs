@@ -24,7 +24,7 @@ Commands:
   verify --id TASK1234
   approve --id TASK1234 --gate 0.1|0.2|5.9 --digest SHA --actor NAME --receipt FILE
   run --id TASK1234                   # requires explicit safety environment and installed Paseo
-  recover --id TASK1234 --actor NAME --receipt FILE --sha EXACT_COMMIT
+  recover --id TASK1234 --actor NAME --receipt FILE --sha EXACT_COMMIT\n  recover --id TASK1234 --actor NAME --receipt FILE --basis FROZEN_SPEC_OR_CONFIG_SHA  # pre-commit only
 State root: --state /secure/state (default .p1-state)
 Environment required for run: P1_LIVE_ALLOWED=YES and P1_HOST_ISOLATION_ATTESTED=YES
 Never run live until local independent review and node-specific test have passed.`;
@@ -41,7 +41,7 @@ async function main(){
     if(cmd==='init')result=controller.create({id:need(a,'id'),configFile:need(a,'matrix'),intentFile:need(a,'intent')});
     else if(cmd==='status'||cmd==='verify')result=controller.inspect(need(a,'id'));
     else if(cmd==='approve')result=await store.withLock(need(a,'id'),()=>controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a)}));
-    else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:need(a,'sha')}));
+    else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null}));
     else if(cmd==='run'){
       const task=controller.required(need(a,'id'));
       if(process.env.P1_LIVE_ALLOWED==='YES'&&process.env.P1_HOST_ISOLATION_ATTESTED==='YES') {

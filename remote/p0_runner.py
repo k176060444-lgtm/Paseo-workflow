@@ -104,8 +104,61 @@ def atomic(path, data):
 def jload(path):
     return json.loads(path.read_text(encoding="utf8"))
 
-def run(cmd, **kwargs):
-    return subprocess.run(cmd, shell=False, capture_output=True, text=True, **kwargs)
+def run(cmd, config, **kwargs):
+    # All Git helpers obey the same minimal env policy as the Harness (R2-005).
+    return subprocess.run(cmd, shell=False, capture_output=True, text=True,
+                          env=child_env(config), **kwargs)
+
+def process_alive(pid):
+    if sys.platform.startswith('win'):
+        # For native Windows offline fixtures only. This checks liveness, NOT job
+        # ownership; production P0 cancellation remains Linux-only.
+        import ctypes
+        from ctypes import wintypes
+        kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+        kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD]
+        kernel.OpenProcess.restype=wintypes.HANDLE
+        kernel.GetExitCodeProcess.argtypes=[wintypes.HANDLE,ctypes.POINTER(wintypes.DWORD)]
+        kernel.GetExitCodeProcess.restype=wintypes.BOOL
+        kernel.CloseHandle.argtypes=[wintypes.HANDLE]
+        handle=kernel.OpenProcess(0x1000,False,pid)
+        if not handle:
+            return False
+        code=wintypes.DWORD()
+        try:
+            if not kernel.GetExitCodeProcess(handle,ctypes.byref(code)):
+                return False
+            return code.value==259
+        finally:
+            kernel.CloseHandle(handle)
+    try:
+        os.kill(pid,0)
+        return True
+    except ProcessLookupError:
+        return False
+
+def final_json(text):
+    data=text.strip()
+    choices=[data]
+    if data.endswith('```'):
+        before=data[:-3]
+        marker=before.rfind('```')
+        if marker>=0:
+            block=before[marker+3:].lstrip()
+            if block.startswith('json'):
+                block=block[4:].lstrip()
+            choices.append(block.strip())
+    idx=data.rfind('\n{')
+    if idx>=0:
+        choices.append(data[idx+1:].strip())
+    for candidate in choices:
+        try:
+            obj=json.loads(candidate)
+            if isinstance(obj,dict) and isinstance(obj.get('verdict'),str):
+                return obj
+        except (ValueError,TypeError):
+            pass
+    return None
 
 def response(obj):
     print(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), flush=True)
@@ -124,12 +177,16 @@ def parse_output(text):
             elif obj.get('type')=='text' and isinstance(obj.get('text'),str):
                 parts.append(obj['text'])
     for candidate in ["".join(parts), "\n".join(parts), text]:
-        try:
-            result=json.loads(candidate.strip())
-            if result.get('verdict') in ('PASS','FAIL','QUESTION','NEEDS_SPECIALIST') and isinstance(result.get('findings'),list) and isinstance(result.get('summary'),str):
+        result=final_json(candidate)
+        if result and isinstance(result.get('findings'),list) and isinstance(result.get('summary'),str):
+            verdict={'APPROVE':'PASS','REQUEST_CHANGES':'FAIL'}.get(result['verdict'],result['verdict'])
+            if verdict=='APPROVE_WITH_COMMENTS':
+                verdict='FAIL' if result['findings'] else 'PASS'
+            if verdict in ('PASS','FAIL','QUESTION','NEEDS_SPECIALIST'):
+                if verdict=='PASS' and result['findings']:
+                    verdict='FAIL'  # no PASS with unclassified findings
+                result['verdict']=verdict
                 return result
-        except (ValueError, AttributeError, TypeError):
-            pass
     return {'verdict':'QUESTION','summary':'Unverified OpenCode final JSON output','findings':['Cannot parse structured final report from raw event stream; human reconciliation required.']}
 
 def execute(config, spool, job_id):
@@ -149,13 +206,13 @@ def execute(config, spool, job_id):
         target_commit=spec['commit']
         if not re.fullmatch('[0-9a-f]{40}',target_commit):
             raise RuntimeError('invalid commit SHA')
-        check=run(['git','-C',str(repo),'cat-file','-e',target_commit+'^{commit}'])
+        check=run(['git','-C',str(repo),'cat-file','-e',target_commit+'^{commit}'], config)
         if check.returncode!=0:
             raise RuntimeError('exact commit unavailable on remote: provision repository first')
-        worktree=run(['git','-C',str(repo),'worktree','add','--detach',str(work),target_commit])
+        worktree=run(['git','-C',str(repo),'worktree','add','--detach',str(work),target_commit], config)
         if worktree.returncode!=0:
             raise RuntimeError('git worktree add failed: '+worktree.stderr[:300])
-        baseline=run(['git','-C',str(work),'rev-parse','HEAD'])
+        baseline=run(['git','-C',str(work),'rev-parse','HEAD'], config)
         if baseline.returncode!=0 or baseline.stdout.strip()!=target_commit:
             raise RuntimeError('worktree commit mismatch')
         prompt='\n'.join([spec['instructions'],'TASK_SPEC:\n'+spec['taskSpec'],
@@ -190,8 +247,8 @@ def execute(config, spool, job_id):
         except subprocess.TimeoutExpired as e:
             exit_code=124;raw=e.stdout or b'';stderr=e.stderr or b''
         final=parse_output(raw.decode('utf8',errors='replace'))
-        clean=(run(['git','-C',str(work),'status','--porcelain','--untracked-files=all']).stdout.strip()==''
-               and run(['git','-C',str(work),'rev-parse','HEAD']).stdout.strip()==target_commit)
+        clean=(run(['git','-C',str(work),'status','--porcelain','--untracked-files=all'], config).stdout.strip()==''
+               and run(['git','-C',str(work),'rev-parse','HEAD'], config).stdout.strip()==target_commit)
     except Exception as exc:
         final={'verdict':'QUESTION','summary':'P0 runner infrastructure failure', 'findings':[str(exc)[:500]]}
     atomic(jobdir/'stdout.log',raw)
@@ -263,11 +320,7 @@ def main():
         response({'jobId':job_id,'status':'CANCEL_REQUESTED'})
     elif (jobdir/'pid').exists():
         pid=int((jobdir/'pid').read_text())
-        try:
-            os.kill(pid,0)
-            response({'jobId':job_id,'status':'RUNNING'})
-        except ProcessLookupError:
-            response({'jobId':job_id,'status':'UNKNOWN'})
+        response({'jobId':job_id,'status':'RUNNING' if process_alive(pid) else 'UNKNOWN'})
     else:
         response({'jobId':job_id,'status':'QUEUED'})
 
