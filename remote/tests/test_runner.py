@@ -24,7 +24,7 @@ class RemoteRunnerTests(unittest.TestCase):
             secret=root/'node.key';secret.write_bytes(b'X'*40)
             script=root/'mock_native.py'
             script.write_text('import sys,json\nassert "TASK_SPEC" in sys.stdin.read()\nprint(json.dumps({"verdict":"PASS","summary":"Reviewed exact commit","findings":[]}))\n')
-            conf=root/'cfg.json';conf.write_text(json.dumps({'nodeId':'rusty','harness':'rusty','model':'rusty/local-review',
+            conf=root/'cfg.json';conf.write_text(json.dumps({'nodeId':'rusty','physicalId':'actual-rusty','harness':'rusty','model':'rusty/local-review',
               'repo':str(repo),'spool':str(root/'jobs'),'hmacKeyPath':str(secret),
               'command':[sys.executable,str(script)],'timeoutSec':30}))
             job='f'*40

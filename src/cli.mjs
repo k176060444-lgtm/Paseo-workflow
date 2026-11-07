@@ -32,21 +32,22 @@ Never run live until local independent review and node-specific test have passed
 async function main(){
   const a=argsOf(process.argv.slice(2));const cmd=a._[0];
   if(!cmd||cmd==='help'){console.log(usage);return;}
-  const root=path.resolve(a.state??'.p1-state');const store=new Store(root);
+  const root=path.resolve(a.state??'.p1-state');
+  const store=new Store(root,{readOnly:cmd==='status'||cmd==='verify'});
   let runtime=null;
   try{
     const controller=new WorkflowController({store,runtime:null,p0:null});
     let result;
     if(cmd==='init')result=controller.create({id:need(a,'id'),configFile:need(a,'matrix'),intentFile:need(a,'intent')});
     else if(cmd==='status'||cmd==='verify')result=controller.inspect(need(a,'id'));
-    else if(cmd==='approve')result=controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a)});
-    else if(cmd==='recover')result=controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:need(a,'sha')});
+    else if(cmd==='approve')result=await store.withLock(need(a,'id'),()=>controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a)}));
+    else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:need(a,'sha')}));
     else if(cmd==='run'){
       const task=controller.required(need(a,'id'));
-      if(process.env.P1_LIVE_ALLOWED!=='YES'||process.env.P1_HOST_ISOLATION_ATTESTED!=='YES')
-        throw new Error('run blocked: required live authorization/isolation attestation absent');
-      runtime=new PaseoAgentRuntime(task.frozen.runtime.paseoUrl);
-      await runtime.open();
+      if(process.env.P1_LIVE_ALLOWED==='YES'&&process.env.P1_HOST_ISOLATION_ATTESTED==='YES') {
+        runtime=new PaseoAgentRuntime(task.frozen.runtime.paseoUrl);
+        await runtime.open();
+      }
       controller.runtime=runtime;
       controller.p0=new SshP0Adapter(task.frozen.p0.nodes??[],task.frozen.p0.timing??{});
       result=await controller.run(task.id);

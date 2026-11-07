@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import * as git from './git.mjs';
-import {assert,checkedId,freezeConfig,MAX_A,MAX_B,sha256,PASS,PAUSE,TERMINAL,ROLE_PERMISSIONS} from './policy.mjs';
+import {assert,checkedId,freezeConfig,MAX_A,MAX_B,sha256,PASS,PAUSE,hasBlockingFinding,TERMINAL,ROLE_PERMISSIONS} from './policy.mjs';
 
 const ROLE_PROMPT = `Obey the frozen Soul, approved TASK_SPEC, stage constraints and exact SHA. Do NOT claim tests passed without evidence. End with one JSON object matching {"verdict":"PASS|FAIL|QUESTION|NEEDS_SPECIALIST|APPROVE_WITH_COMMENTS","summary":"...","findings":["..."]}. Planner must also include taskSpec string.`;
 
@@ -67,6 +67,9 @@ export class WorkflowController {
     let result;
     try{result=await this.runtime.execute({task:t,role,phase,cwd,prompt:`${ROLE_PROMPT}\n${prompt}`,store:this.store});}
     catch(e){t.status='NEEDS_RECONCILIATION';t.pendingHuman=String(e.message);this.store.save(t,'EXECUTION_UNCERTAIN',{role,phase,error:String(e.message)});throw e;}
+    assert(!PASS(result.verdict)||!hasBlockingFinding(result.findings??[])&&
+      (result.verdict!=='PASS'||!(result.findings??[]).length),
+      `${role}: contradictory PASS/findings; reconcile manually`);
     if(expectedSha) await this.git.assertUnchanged(cwd,expectedSha);
     const artifact=this.store.artifact(t.id,`${phase}-${role}-${randomUUID().slice(0,8)}.json`,result);
     t.history.push({role,phase,agentId:result.agentId,verdict:result.verdict,evidenceSha256:artifact.sha256,at:new Date().toISOString()});
@@ -92,7 +95,8 @@ export class WorkflowController {
     }
     await this.git.assertUnchanged(t.worktree,sha);
     t.inflight=null;t.status='READY';this.store.save(t,'REVIEW_PAIR_TERMINAL',{sha,spec:spec.verdict,quality:quality.verdict});
-    return {spec,quality,pass:PASS(spec.verdict)&&PASS(quality.verdict),
+    return {spec,quality,pass:PASS(spec.verdict)&&PASS(quality.verdict)&&!hasBlockingFinding(spec.findings)&&!hasBlockingFinding(quality.findings)&&
+      (spec.verdict!=='PASS'||spec.findings.length===0)&&(quality.verdict!=='PASS'||quality.findings.length===0),
       pause:PAUSE(spec.verdict)||PAUSE(quality.verdict),findings:[...spec.findings,...quality.findings]};
   }
   async test(t,role,phase,sha){
@@ -236,17 +240,30 @@ export class WorkflowController {
     }
   }
   async run(id,{maxSteps=100}={}){
-    const start=this.required(id);await this.livePreflight(start);
     return this.store.withLock(id,async()=>{
+      const start=this.required(id);
+      try { await this.livePreflight(start); }
+      catch (e) {
+        if (!TERMINAL.has(start.stage)) {
+          start.status='BLOCKED'; start.pendingHuman=`Preflight failed: ${e.message}`;
+          start.blockedStage=start.stage; start.stage='BLOCKED';
+          this.store.save(start,'PREFLIGHT_BLOCKED',{reason:e.message});
+        }
+        throw e;
+      }
       for(let i=0;i<maxSteps;i++){
         const t=this.required(id);
         if(TERMINAL.has(t.stage))return {id,stage:t.stage,status:t.status,aRound:t.aRound,bRound:t.bRound,currentSha:t.currentSha};
         assert(t.status==='READY',`task state ${t.status}: reconcile before dispatch`);
         try{await this.step(t);}catch(e){
           const latest=this.required(id);
-          if(latest.status==='INFLIGHT'||latest.stage===t.stage&&latest.status==='READY'){
-            latest.status='NEEDS_RECONCILIATION';latest.pendingHuman=`Stage ${t.stage} failed: ${e.message}`;
-            this.store.save(latest,'UNEXPECTED_STAGE_ERROR',{error:e.message});
+          if(latest.status==='INFLIGHT'||latest.status==='READY'){
+            const uncertain=Boolean(latest.inflight) || this.store.dispatches(id).some(d=>d.state!=='TERMINAL');
+            latest.blockedStage=t.stage;
+            latest.stage=uncertain?'NEEDS_RECONCILIATION':'BLOCKED';
+            latest.status=uncertain?'NEEDS_RECONCILIATION':'BLOCKED';
+            latest.pendingHuman=`Stage ${t.stage} failed: ${e.message}`;
+            this.store.save(latest,'UNEXPECTED_STAGE_ERROR',{error:e.message,uncertain});
           }
           throw e;
         }
@@ -260,15 +277,21 @@ export class WorkflowController {
   // Noncompliance recovery deliberately has no generic skip-a-gate operation.
   authorizeRecovery({id,actor,receipt,expectedSha}){
     const t=this.required(id);
-    assert(t.stage==='BLOCKED'&&t.status!=='INFLIGHT','recovery only for definitely blocked, non-inflight stage');
+    assert(t.stage==='BLOCKED'&&t.status==='BLOCKED','recovery only for definitely blocked, non-inflight stage');
+    assert(!t.inflight,'recovery requires zero in-flight operations');
+    assert(this.store.dispatches(id).every(d=>d.state==='TERMINAL'),
+      'outstanding dispatch must be reconciled with original provider/host receipts first');
     assert(t.currentSha===expectedSha,'Git SHA not the approved recovery basis');
     assert(typeof actor==='string'&&actor.trim().length>1&&typeof receipt==='string'&&receipt.length>15,'explicit recovery receipt required');
     const ev=this.store.artifact(id,`recovery-${randomUUID().slice(0,10)}.json`,{actor,receipt,expectedSha,origin:t.stage});
     // Recovery moves only to a revalidation stage, never unconditionally to PASS.
     t.pendingHuman=null;t.status='READY';
-    if(t.lastA&&!t.p0Initial)t.stage='P0_INITIAL';
-    else if(t.p0Initial)t.stage='B_ENTER';
-    else t.stage='A_WORKER';
+    // Never skip review or tests after a compliance violation. Re-enter an earlier
+    // technical stage; its budget remains consumed, subject to the fixed limit.
+    if(t.p0Initial)t.stage='B_ENTER';
+    else if(t.taskSpecSha&&t.baseSha)t.stage='A_WORKER';
+    else if(t.taskSpecSha)t.stage='PREPARE';
+    else t.stage='PLANNER';
     this.store.save(t,'HUMAN_CONTROLLED_RECOVERY',{actor,evidenceSha256:ev.sha256,target:t.stage});
     return {id,stage:t.stage};
   }
