@@ -1,10 +1,14 @@
 {
-  "nodeId":"rusty",
-  "harness":"rusty",
-  "model":"rusty/local-review",
-  "repo":"/srv/source-repo",
-  "spool":"/var/lib/p1/jobs",
-  "hmacKeyPath":"/etc/p1/node-secret.hmac",
-  "command":["/usr/local/bin/rusty-review", "--json"],
-  "timeoutSec":3600
+  "nodeId": "rusty",
+  "harness": "rusty",
+  "model": "rusty/local-review",
+  "repo": "/srv/source-repo",
+  "spool": "/var/lib/p1/jobs",
+  "hmacKeyPath": "/etc/p1/node-secret.hmac",
+  "command": [
+    "/usr/local/bin/rusty-review",
+    "--json"
+  ],
+  "timeoutSec": 3600,
+  "physicalId": "must-confirm-physical-node"
 }

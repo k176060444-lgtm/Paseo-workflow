@@ -3,19 +3,32 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {assert} from './policy.mjs';
 
+// Explicit minimum environment for Git, tests and SSH. Do not inherit the Hermes
+// gateway process (which may contain provider tokens and SSH/API credentials).
+export function childEnv(extra={}) {
+  const names=['PATH','Path','SystemRoot','WINDIR','COMSPEC','PATHEXT','USERPROFILE',
+    'HOME','TMP','TEMP','TMPDIR','LANG','LC_ALL','XDG_CONFIG_HOME','XDG_CACHE_HOME'];
+  const result={};
+  for(const name of names) if(typeof process.env[name]==='string')result[name]=process.env[name];
+  return {...result,...extra};
+}
 export function execArgv(bin,args,{cwd,timeoutMs=120000,stdin,env}={}) {
   return new Promise((resolve,reject)=>{
-    const proc=spawn(bin,args,{cwd,env:env??process.env,shell:false,windowsHide:true,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe']});
-    const out=[],err=[];let bytes=0;let timedOut=false;
+    const proc=spawn(bin,args,{cwd,env:childEnv(env),shell:false,windowsHide:true,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe']});
+    const out=[],err=[];let bytes=0;let timedOut=false;let truncated=false;let settled=false;
     const killTree=()=>{
       if(process.platform==='win32'){const killer=spawn('taskkill',['/PID',String(proc.pid),'/T','/F'],{shell:false,windowsHide:true,stdio:'ignore'});killer.on('error',()=>proc.kill());}
       else {try{process.kill(-proc.pid,'SIGKILL');}catch{proc.kill('SIGKILL');}}
     };
-    const timer=setTimeout(()=>{timedOut=true;killTree();},timeoutMs);
-    proc.stdout.on('data',x=>{bytes+=x.length;if(bytes>16*1024*1024)killTree();else out.push(x);});
-    proc.stderr.on('data',x=>{bytes+=x.length;if(bytes>16*1024*1024)killTree();else err.push(x);});
-    proc.on('error',e=>{clearTimeout(timer);reject(e);});
-    proc.on('close',(code,signal)=>{clearTimeout(timer);resolve({code,signal,stdout:Buffer.concat(out).toString('utf8'),stderr:Buffer.concat(err).toString('utf8'),timedOut,truncated:bytes>16*1024*1024});});
+    const timer=setTimeout(()=>{timedOut=true;killTree();
+      // OS process group termination requires separate Windows Job Object audit;
+      // never wait forever for a descendant holding stdout/stderr open.
+      setTimeout(()=>{if(!settled){settled=true;reject(new Error('process tree exit unverified after kill; reconcile manually'));}},10000).unref();
+    },timeoutMs);
+    proc.stdout.on('data',x=>{bytes+=x.length;if(bytes>16*1024*1024){truncated=true;killTree();}else out.push(x);});
+    proc.stderr.on('data',x=>{bytes+=x.length;if(bytes>16*1024*1024){truncated=true;killTree();}else err.push(x);});
+    proc.on('error',e=>{clearTimeout(timer);if(!settled){settled=true;reject(e);}});
+    proc.on('close',(code,signal)=>{clearTimeout(timer);if(!settled){settled=true;resolve({code,signal,stdout:Buffer.concat(out).toString('utf8'),stderr:Buffer.concat(err).toString('utf8'),timedOut,truncated});}});
     if(stdin!==undefined)proc.stdin.end(stdin);else proc.stdin.end();
   });
 }

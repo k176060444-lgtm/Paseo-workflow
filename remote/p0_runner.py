@@ -12,11 +12,80 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import time
 
 JOB_RE = re.compile(r"^[a-f0-9]{40}$")
+os.umask(0o077)
+
+# The remote harness receives only the minimum environment needed to locate its
+# local credentials and executables. Arbitrary gateway environment variables are
+# deliberately not inherited by a paid Agent or copied to logs.
+ENV_ALLOW = {'PATH','HOME','USER','LOGNAME','SHELL','LANG','LC_ALL',
+             'XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME','TMPDIR'}
+
+def child_env(config):
+    result={key:value for key,value in os.environ.items() if key in ENV_ALLOW}
+    for key in config.get('envAllowList', []):
+        if not isinstance(key,str) or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*',key):
+            raise RuntimeError('invalid envAllowList entry')
+        if key in os.environ:
+            result[key]=os.environ[key]
+    return result
+
+def pid_belongs_to_job(pid, job_id):
+    # Refuse to signal a reused PID or an unrelated process group.
+    try:
+        content=Path(f'/proc/{pid}/cmdline').read_bytes().replace(b'\0',b' ')
+        return (str(Path(__file__).resolve()).encode() in content and
+                job_id.encode() in content and b'execute' in content)
+    except OSError:
+        return False
+
+def cancel_job(cfg, spool, job_id):
+    jobdir=spool/job_id
+    if not jobdir.is_dir():
+        return {'jobId':job_id,'status':'UNKNOWN'}
+    marker=jobdir/'result.json'
+    if marker.exists():
+        return {'jobId':job_id,'status':'FINISHED','result':jload(marker)}
+    if (jobdir/'cancelled.json').exists():
+        return {'jobId':job_id,'nodeId':cfg['nodeId'],'status':'CANCELLED'}
+    if not (jobdir/'pid').exists() or not sys.platform.startswith('linux'):
+        return {'jobId':job_id,'status':'CANCEL_UNCERTAIN'}
+    pid=int((jobdir/'pid').read_text())
+    # No kill if identity cannot be verified; require manual reconciliation.
+    if not pid_belongs_to_job(pid,job_id):
+        return {'jobId':job_id,'status':'CANCEL_UNCERTAIN'}
+    try:
+        atomic(jobdir/'cancel-requested.json',encode({'requestedAt':int(time.time())}))
+    except FileExistsError:
+        pass
+    try:
+        os.killpg(pid,signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    for deadline, sig in [(time.monotonic()+3,signal.SIGKILL),
+                          (time.monotonic()+2,None)]:
+        while time.monotonic()<deadline:
+            try: os.killpg(pid,0)
+            except ProcessLookupError: break
+            time.sleep(.1)
+        else:
+            if sig is not None:
+                try: os.killpg(pid,sig)
+                except ProcessLookupError: pass
+    try:
+        os.killpg(pid,0)
+        return {'jobId':job_id,'status':'CANCEL_UNCERTAIN'}
+    except ProcessLookupError:
+        if marker.exists():
+            return {'jobId':job_id,'status':'FINISHED','result':jload(marker)}
+        atomic(jobdir/'cancelled.json',encode({'at':int(time.time())}))
+        return {'jobId':job_id,'nodeId':cfg['nodeId'],'status':'CANCELLED'}
+
 
 def encode(data):
     return json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -92,7 +161,7 @@ def execute(config, spool, job_id):
         prompt='\n'.join([spec['instructions'],'TASK_SPEC:\n'+spec['taskSpec'],
             'Exact commit SHA: '+target_commit, 'You must NOT edit any files.',
             'Return only the specified JSON object.'])
-        env=os.environ.copy()
+        env=child_env(config)
         # The default OpenCode profile is not trusted as a read-only role. Force a
         # dedicated, tool-denied agent via native OPENCODE_CONFIG_CONTENT.
         agent_name='p1-blind'
@@ -127,7 +196,7 @@ def execute(config, spool, job_id):
         final={'verdict':'QUESTION','summary':'P0 runner infrastructure failure', 'findings':[str(exc)[:500]]}
     atomic(jobdir/'stdout.log',raw)
     atomic(jobdir/'stderr.log',stderr)
-    body={'jobId':job_id,'nodeId':config['nodeId'],'commit':spec['commit'],
+    body={'jobId':job_id,'nodeId':config['nodeId'],'physicalId':config['physicalId'],'commit':spec['commit'],
           'harness':spec['harness'],'model':spec['model'], 'exitCode':exit_code,
           'stdoutSha256':sha(raw),'stderrSha256':sha(stderr),'clean':clean,
           'verdict':final['verdict'],'summary':final['summary'],'findings':final['findings'],
@@ -136,17 +205,24 @@ def execute(config, spool, job_id):
     if len(key)<32:
         raise RuntimeError('P0 HMAC key too short')
     envelope={'body':body,'mac':hmac.new(key,encode(body),'sha256').hexdigest()}
-    atomic(marker,encode(envelope))
+    if not (jobdir/'cancel-requested.json').exists():
+        atomic(marker,encode(envelope))
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('action', choices=['submit','status','execute'])
+    parser.add_argument('action', choices=['probe','submit','status','execute','cancel'])
     parser.add_argument('--config',required=True)
     parser.add_argument('--job')
     args=parser.parse_args()
     cfg=jload(Path(args.config))
     spool=Path(cfg['spool']).resolve()
-    spool.mkdir(mode=0o700,parents=True,exist_ok=True)
+    if args.action=='probe':
+        if not cfg.get('nodeId') or not cfg.get('physicalId'):
+            raise RuntimeError('missing verified node inventory identifiers')
+        response({'status':'READY','nodeId':cfg['nodeId'],'physicalId':cfg['physicalId']})
+        return
+    if args.action in ('submit','execute'):
+        spool.mkdir(mode=0o700,parents=True,exist_ok=True)
     if args.action=='execute':
         if not args.job or not JOB_RE.fullmatch(args.job):
             raise RuntimeError('invalid job ID')
@@ -157,6 +233,9 @@ def main():
     if not isinstance(job_id,str) or not JOB_RE.fullmatch(job_id):
         raise RuntimeError('invalid job ID')
     jobdir=spool / job_id
+    if args.action=='cancel':
+        response(cancel_job(cfg,spool,job_id))
+        return
     if args.action=='submit':
         if payload.get('nodeId')!=cfg['nodeId'] or payload.get('model')!=cfg['model'] or payload.get('harness')!=cfg.get('harness','opencode'):
             raise RuntimeError('node identity/provider mismatch')
@@ -178,6 +257,10 @@ def main():
         response({'jobId':job_id,'status':'UNKNOWN'})
     elif (jobdir/'result.json').exists():
         response({'jobId':job_id,'status':'FINISHED','result':jload(jobdir/'result.json')})
+    elif (jobdir/'cancelled.json').exists():
+        response({'jobId':job_id,'nodeId':cfg['nodeId'],'status':'CANCELLED'})
+    elif (jobdir/'cancel-requested.json').exists():
+        response({'jobId':job_id,'status':'CANCEL_REQUESTED'})
     elif (jobdir/'pid').exists():
         pid=int((jobdir/'pid').read_text())
         try:
