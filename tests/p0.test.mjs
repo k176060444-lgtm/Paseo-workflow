@@ -22,10 +22,12 @@ function mock(){
 function fakeSsh(adapter,{third='pending',wrongKey=false}={}){
  const seen=new Map();
  adapter.ssh=async(node,action,spec)=>{
+   if(action==='probe')return{status:'READY',nodeId:node.id,physicalId:node.physicalId};
    if(action==='submit'){seen.set(spec.jobId,spec);return{jobId:spec.jobId,status:'ACCEPTED'};}
+   if(action==='cancel')return{jobId:spec.jobId,nodeId:node.id,status:'CANCELLED'};
    const current=seen.get(spec.jobId);
    if(node.id==='rusty'&&third==='pending')return{jobId:spec.jobId,status:'RUNNING'};
-   const body={jobId:spec.jobId,nodeId:node.id,commit:current.commit,model:node.model,harness:node.harness,exitCode:0,
+   const body={jobId:spec.jobId,nodeId:node.id,physicalId:node.physicalId,commit:current.commit,model:node.model,harness:node.harness,exitCode:0,
      clean:true,stdoutSha256:'0'.repeat(64),findings:[],verdict:'PASS'};
    const key=fs.readFileSync(node.hmacKeyPath);
    const mac=createHmac('sha256',wrongKey?Buffer.alloc(40):key).update(canonical(body)).digest('hex');

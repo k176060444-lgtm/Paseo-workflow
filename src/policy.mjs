@@ -89,16 +89,48 @@ export function providerOptions(role, harness) {
   throw new Error(`unsupported harness ${harness}`);
 }
 
+// Accept a strict final JSON object OR a Markdown report followed by a final
+// fenced/bare JSON envelope. Never interpret arbitrary prose as PASS (R2-006).
+export function finalJsonEnvelope(raw, role='agent') {
+  assert(typeof raw==='string','agent result must be text');
+  const text=raw.trim();
+  const candidates=[text];
+  const fenced=/```(?:json)?\s*\n(\{[\s\S]*?\})\s*```\s*$/i.exec(text);
+  if(fenced)candidates.push(fenced[1]);
+  const last=text.lastIndexOf('\n{');
+  if(last!==-1)candidates.push(text.slice(last+1));
+  for(const candidate of candidates){
+    try {
+      const obj=JSON.parse(candidate);
+      if(obj&&typeof obj==='object'&&!Array.isArray(obj)&&typeof obj.verdict==='string')
+        return obj;
+    }catch{}
+  }
+  throw new Error(`${role}: missing strict final JSON envelope; manual reconciliation required`);
+}
+
 export function parseAgentOutput(raw, role) {
-  let output;
-  try { output = JSON.parse(raw); } catch { throw new Error(`${role}: non-JSON agent result; cannot trust verdict`); }
+  const output=finalJsonEnvelope(raw,role);
   assert(output && typeof output === 'object' && !Array.isArray(output), `${role}: invalid output`);
+  // Legacy Soul v1.1 uses APPROVE/REQUEST_CHANGES; normalize at the trust boundary.
+  if (output.verdict === 'APPROVE') output.verdict = 'PASS';
+  if (output.verdict === 'REQUEST_CHANGES') output.verdict = 'FAIL';
   assert(['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS'].includes(output.verdict), `${role}: invalid verdict`);
   assert(typeof output.summary === 'string' && output.summary.length > 0, `${role}: missing summary`);
   assert(Array.isArray(output.findings) && output.findings.every(f => typeof f === 'string'), `${role}: findings must be strings`);
+  if (PASS(output.verdict) && (
+    hasBlockingFinding(output.findings) ||
+    (output.verdict==='PASS' && output.findings.length>0) ||
+    (output.verdict==='APPROVE_WITH_COMMENTS' && output.findings.some(f =>
+      !/^\s*(?:[-*]\s*)?\[?(?:LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]/i.test(f)))
+  )) throw new Error(`${role}: inconsistent PASS/findings severity; manual reconciliation required`);
   if (role === 'planner') assert(typeof output.taskSpec === 'string' && output.taskSpec.length > 20, 'planner TASK_SPEC absent');
   return output;
 }
+// Interpret case-insensitive severity markers in prose, not arbitrary mentions within a
+// sentence. Reviewers must supply a machine-readable severity in the next Soul version.
+export const hasBlockingFinding = findings => findings.some(f =>
+  /^(?:\s*[-*]\s*)?(?:\[?(?:BLOCKER|CRITICAL|HIGH|P0|P1)\]?\s*[:：-]|severity\s*[:=]\s*(?:BLOCKER|CRITICAL|HIGH|P0|P1)\b)/i.test(f));
 export const PASS = verdict => verdict === 'PASS' || verdict === 'APPROVE_WITH_COMMENTS';
 export const PAUSE = verdict => verdict === 'QUESTION' || verdict === 'NEEDS_SPECIALIST';
-export const AGENT_SCHEMA = {type:'object',properties:{verdict:{type:'string',enum:['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS']},summary:{type:'string'},findings:{type:'array',items:{type:'string'}},taskSpec:{type:'string'}},required:['verdict','summary','findings'],additionalProperties:false};
+export const AGENT_SCHEMA = {type:'object',properties:{verdict:{type:'string',enum:['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS','APPROVE','REQUEST_CHANGES']},summary:{type:'string'},findings:{type:'array',items:{type:'string'}},taskSpec:{type:'string'}},required:['verdict','summary','findings'],additionalProperties:false};

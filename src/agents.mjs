@@ -25,7 +25,7 @@ export class PaseoAgentRuntime {
       background:true,
     });
     store.recordAck(dispatchId,agent.id);
-    const result=await agent.waitForFinish({timeoutMs:60*60*1000});
+    const result=await agent.waitForFinish(60*60*1000);
     assert(result.status==='idle',`Paseo role ${role} not terminal idle: ${result.status}; inspect Agent ${agent.id}`);
     const data=parseAgentOutput(result.lastMessage,role);
     store.recordTerminal(dispatchId);
