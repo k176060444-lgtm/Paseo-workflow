@@ -1,0 +1,34 @@
+R2-010-F8-AFTER-RUN status=NEEDS_RECONCILIATION stage=A_REVIEW pendingHuman=Concurrent reviewer execution uncertain or invalid
+✔ R2-010 one success + one failure preserves the successful seat raw evidence (77.0992ms)
+✔ R2-010 both seats succeed and are both recorded (131.9132ms)
+✔ R2-010 duplicate reviewer Agent IDs are recorded then fail closed (61.1255ms)
+✖ R2-010 F8 RESIDUAL: preflight failure overwrites NEEDS_RECONCILIATION status (77.4532ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 463.5031
+
+✖ failing tests:
+
+test at ..\probes\r2_010_pair.test.mjs:116:1
+✖ R2-010 F8 RESIDUAL: preflight failure overwrites NEEDS_RECONCILIATION status (77.4532ms)
+  AssertionError [ERR_ASSERTION]: observed residual: reconciliation status is overwritten by preflight failure
+  + actual - expected
+  
+  + 'NEEDS_RECONCILIATION'
+  - 'BLOCKED'
+  
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r3/probes/r2_010_pair.test.mjs:132:12)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'NEEDS_RECONCILIATION',
+    expected: 'BLOCKED',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

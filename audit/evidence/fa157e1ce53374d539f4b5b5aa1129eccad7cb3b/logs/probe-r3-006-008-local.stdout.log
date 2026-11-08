@@ -1,0 +1,17 @@
+R4-005 MULTI_FENCE=REJECTED_CONSERVATIVELY
+✔ R3-006: CLI help renders a real newline between recover commands (78.4292ms)
+✔ R3-008: indented bare and pretty JSON after Markdown are accepted (1.0302ms)
+✔ R3-008: terminal fenced JSON is accepted (0.2361ms)
+✔ R3-008: trailing prose, truncated JSON and non-terminal fences are rejected (0.9293ms)
+✔ R3-008: nested/example objects cannot override a real failing envelope (1.2184ms)
+✔ R3-007: local PASS with any finding is rejected (0.6263ms)
+✔ R3-007: local APPROVE_WITH_COMMENTS severity gate (0.6294ms)
+✔ R3-007: legacy aliases still normalize locally (0.1894ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 195.6339

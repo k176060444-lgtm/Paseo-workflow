@@ -1,0 +1,4 @@
+SAVE_ACCEPTED aRound= 0 bRound= 0
+VERIFY_AFTER_SAVE events= 2
+PARSER_NESTED_REJECTED spec_reviewer: missing strict final JSON envelope; manual reconciliation required
+PARSER_EXAMPLE_REJECTED spec_reviewer: missing strict final JSON envelope; manual reconciliation required

@@ -1,0 +1,15 @@
+test_child_env_omits_sentinel (__main__.RemoteR3Probe.test_child_env_omits_sentinel) ... ok
+test_parser_approve_with_comments_severity (__main__.RemoteR3Probe.test_parser_approve_with_comments_severity) ... ok
+test_parser_fenced_terminal_json (__main__.RemoteR3Probe.test_parser_fenced_terminal_json) ... ok
+test_parser_legacy_aliases (__main__.RemoteR3Probe.test_parser_legacy_aliases) ... ok
+test_parser_markdown_indented_and_pretty_json (__main__.RemoteR3Probe.test_parser_markdown_indented_and_pretty_json) ... ok
+test_parser_pass_with_any_finding_fails (__main__.RemoteR3Probe.test_parser_pass_with_any_finding_fails) ... ok
+test_parser_trailing_text_and_truncation_rejected (__main__.RemoteR3Probe.test_parser_trailing_text_and_truncation_rejected) ... ok
+test_popen_kwargs_env_filters_sentinel (__main__.RemoteR3Probe.test_popen_kwargs_env_filters_sentinel) ... ok
+test_real_submit_execute_harness_env_filters_sentinel (__main__.RemoteR3Probe.test_real_submit_execute_harness_env_filters_sentinel) ... ok
+test_run_helper_omits_sentinel (__main__.RemoteR3Probe.test_run_helper_omits_sentinel) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.828s
+
+OK

@@ -1,0 +1,55 @@
+Paseo-workflow S0-R3 第四轮独立审计 — 测试结果
+被审 Commit: fa157e1ce53374d539f4b5b5aa1129eccad7cb3b
+父 Commit: 53bdaf2219292169ba4a24ef2f558c45bc26ddcf
+
+环境: Windows 10 (21bao); Node v26.6.0; npm 11.18.0; Python 3.11.15; Git 2.54.0.windows.1; Codex 0.166.0; OpenCode 1.19.3
+注意: 探针 PASS 表示断言成立；缺陷复现探针的 PASS 不代表产品通过。
+
+批次                                用例  PASS  FAIL  ERR  SKIP  exit
+npm-check                          -     -     -    -     -     0
+npm-test                          44    44     0    0     0     0
+python-full                        7     7     0    0     0     0
+probe-r4-write-paths              12    12     0    0     0     0
+probe-r3-002-003                  12    12     0    0     0     0
+probe-r2-009                      50    50     0    0     0     0
+probe-r3-004-005-env               5     5     0    0     0     0
+probe-r3-007-p0                    6     6     0    0     0     0
+probe-r3-006-008-local             8     8     0    0     0     0
+probe-r3-005-007-008-python       10    10     0    0     0     0
+regress-r2-002-003-004            10    10     0    0     0     0
+regress-r2-006-soul               14    14     0    0     0     0
+regress-r2-010-pair                4     3     1    0     0     1
+regress-f1-f10                    12    12     0    0     0     0
+合计                               194   193     1    0     0
+
+说明：regress-r2-010-pair 的 1 个失败是上一轮缺陷复现探针，期望“对账状态被覆盖为 BLOCKED”；实际保持 NEEDS_RECONCILIATION，说明 R3-003 已修复。该失败不是产品失败。
+
+逐批命令、cwd、日志：
+- npm-check: npm run check | cwd=offline-copy | exit=0 | log=logs/npm-check.stdout.log | expected_failure=False
+- npm-test: npm test (node --test tests/*.test.mjs) | cwd=offline-copy | exit=0 | log=logs/npm-test.stdout.log | expected_failure=False
+- python-full: python -B -m unittest discover -s remote/tests -p 'test*.py' -v | cwd=offline-copy | exit=0 | log=logs/python-full.stderr.log | expected_failure=False
+- probe-r4-write-paths: node --test --test-reporter=spec probes/r4_write_paths.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r4-write-paths.stdout.log | expected_failure=False
+- probe-r3-002-003: node --test --test-reporter=spec probes/r3_002_003.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r3-002-003.stdout.log | expected_failure=False
+- probe-r2-009: node --test --test-reporter=spec probes/r2_009_paths.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r2-009.stdout.log | expected_failure=False
+- probe-r3-004-005-env: node --test --test-reporter=spec probes/r3_004_005_env.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r3-004-005-env.stdout.log | expected_failure=False
+- probe-r3-007-p0: node --test --test-reporter=spec probes/r3_007_p0.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r3-007-p0.stdout.log | expected_failure=False
+- probe-r3-006-008-local: node --test --test-reporter=spec probes/r3_006_008_local.test.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r3-006-008-local.stdout.log | expected_failure=False
+- probe-r3-005-007-008-python: python -B probes/r3_005_007_008_remote.py | cwd=offline-copy | exit=0 | log=logs/probe-r3-005-007-008-python.stderr.log | expected_failure=False
+- regress-r2-002-003-004: node --test --test-reporter=spec probes/r2_002_003_004.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_002_003_004.stdout.log | expected_failure=False
+- regress-r2-006-soul: node --test --test-reporter=spec probes/r2_006_parser_soul.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_006_parser_soul.stdout.log | expected_failure=False
+- regress-r2-010-pair: node --test --test-reporter=spec probes/r2_010_pair.test.mjs | cwd=offline-copy | exit=1 | log=logs/regress-r2_010_pair.stdout.log | expected_failure=True
+- regress-f1-f10: node --test --test-reporter=spec probes/f_regression.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-f_regression.stdout.log | expected_failure=False
+
+Python 原始套件 stderr（完整）：
+test_explicit_env_allowlist_only_passes_whitelisted_names (test_r2_runner.R2RemoteRunnerTests.test_explicit_env_allowlist_only_passes_whitelisted_names) ... ok
+test_legacy_verdict_and_markdown_final_envelope (test_r2_runner.R2RemoteRunnerTests.test_legacy_verdict_and_markdown_final_envelope) ... ok
+test_remote_git_helper_excludes_unrelated_secret_environment (test_r2_runner.R2RemoteRunnerTests.test_remote_git_helper_excludes_unrelated_secret_environment) ... ok
+test_indented_final_json_and_no_false_terminal_verdict (test_r3_runner.R3RemoteRunnerTests.test_indented_final_json_and_no_false_terminal_verdict) ... ok
+test_low_comments_match_local_advisory_verdict_contract (test_r3_runner.R3RemoteRunnerTests.test_low_comments_match_local_advisory_verdict_contract) ... ok
+test_submit_process_env_does_not_inherit_gateway_secret (test_r3_runner.R3RemoteRunnerTests.test_submit_process_env_does_not_inherit_gateway_secret) ... ok
+test_native_harness_durable_job_and_hmac (test_runner.RemoteRunnerTests.test_native_harness_durable_job_and_hmac) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.850s
+
+OK

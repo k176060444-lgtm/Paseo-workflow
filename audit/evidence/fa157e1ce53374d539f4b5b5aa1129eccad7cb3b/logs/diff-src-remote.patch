@@ -1,0 +1,401 @@
+diff --git a/remote/p0_runner.py b/remote/p0_runner.py
+index b129fa6..4cb2b14 100644
+--- a/remote/p0_runner.py
++++ b/remote/p0_runner.py
+@@ -140,20 +140,20 @@ def process_alive(pid):
+ def final_json(text):
+     data=text.strip()
+     choices=[data]
+-    if data.endswith('```'):
+-        before=data[:-3]
+-        marker=before.rfind('```')
+-        if marker>=0:
+-            block=before[marker+3:].lstrip()
+-            if block.startswith('json'):
+-                block=block[4:].lstrip()
+-            choices.append(block.strip())
+-    idx=data.rfind('\n{')
+-    if idx>=0:
+-        choices.append(data[idx+1:].strip())
++    fence=chr(96)*3
++    fenced_pattern=(r'(?:^|\r?\n)[ \t]*'+re.escape(fence)+
++                    r'(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*'+
++                    re.escape(fence)+r'[ \t]*$')
++    fenced=re.search(fenced_pattern,data,re.IGNORECASE)
++    if fenced:
++        choices.append(fenced.group(1))
++    # A bare JSON envelope must occupy the entire final suffix. Support
++    # indentation/pretty JSON, but never consume arbitrary trailing prose.
++    for match in re.finditer(r'(?:^|\r?\n)[ \t]*(?=\{)',data):
++        choices.append(data[match.start():])
+     for candidate in choices:
+         try:
+-            obj=json.loads(candidate)
++            obj=json.loads(candidate.strip())
+             if isinstance(obj,dict) and isinstance(obj.get('verdict'),str):
+                 return obj
+         except (ValueError,TypeError):
+@@ -178,11 +178,12 @@ def parse_output(text):
+                 parts.append(obj['text'])
+     for candidate in ["".join(parts), "\n".join(parts), text]:
+         result=final_json(candidate)
+-        if result and isinstance(result.get('findings'),list) and isinstance(result.get('summary'),str):
++        if result and isinstance(result.get('findings'),list) and all(isinstance(f,str) for f in result['findings']) and isinstance(result.get('summary'),str) and result['summary']:
+             verdict={'APPROVE':'PASS','REQUEST_CHANGES':'FAIL'}.get(result['verdict'],result['verdict'])
+             if verdict=='APPROVE_WITH_COMMENTS':
+-                verdict='FAIL' if result['findings'] else 'PASS'
+-            if verdict in ('PASS','FAIL','QUESTION','NEEDS_SPECIALIST'):
++                non_advisory=any(not re.match(r'^\s*(?:[-*]\s*)?\[?(?:LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]',f,re.IGNORECASE) for f in result['findings'])
++                if non_advisory: verdict='FAIL'
++            if verdict in ('PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS'):
+                 if verdict=='PASS' and result['findings']:
+                     verdict='FAIL'  # no PASS with unclassified findings
+                 result['verdict']=verdict
+@@ -302,7 +303,7 @@ def main():
+             jobdir.mkdir(mode=0o700)
+             atomic(jobdir/'spec.json',encode(payload))
+             p=subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'execute','--config',str(Path(args.config).resolve()),'--job',job_id],
+-                stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=(jobdir/'runner.log').open('ab'),start_new_session=True)
++                stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=(jobdir/'runner.log').open('ab'),start_new_session=True,env=child_env(cfg))
+             atomic(jobdir/'pid',str(p.pid).encode('ascii'))
+             response({'jobId':job_id,'status':'ACCEPTED'})
+         else:
+diff --git a/remote/tests/test_r3_runner.py b/remote/tests/test_r3_runner.py
+new file mode 100644
+index 0000000..2d72e28
+--- /dev/null
++++ b/remote/tests/test_r3_runner.py
+@@ -0,0 +1,57 @@
++import io
++import json
++import os
++from pathlib import Path
++import sys
++import tempfile
++import unittest
++from contextlib import redirect_stdout
++from unittest.mock import patch
++
++sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
++import p0_runner
++
++class R3RemoteRunnerTests(unittest.TestCase):
++    def test_indented_final_json_and_no_false_terminal_verdict(self):
++        obj={'verdict':'APPROVE','summary':'checked','findings':[]}
++        bare='## reviewed\n  '+json.dumps(obj,ensure_ascii=False)
++        self.assertEqual(p0_runner.parse_output(bare)['verdict'],'PASS')
++        pretty='## reviewed\n  '+json.dumps(obj,indent=2)
++        self.assertEqual(p0_runner.parse_output(pretty)['verdict'],'PASS')
++        fence=chr(96)*3
++        fenced='## reviewed\n  '+fence+'json\n'+json.dumps(obj)+'\n  '+fence
++        self.assertEqual(p0_runner.parse_output(fenced)['verdict'],'PASS')
++        self.assertEqual(p0_runner.parse_output(bare+'\nTrailing text')['verdict'],'QUESTION')
++
++    def test_low_comments_match_local_advisory_verdict_contract(self):
++        base={'verdict':'APPROVE_WITH_COMMENTS','summary':'checked','findings':['LOW: nit']}
++        self.assertEqual(p0_runner.parse_output(json.dumps(base))['verdict'],'APPROVE_WITH_COMMENTS')
++        base['findings']=['HIGH: code defect']
++        self.assertEqual(p0_runner.parse_output(json.dumps(base))['verdict'],'FAIL')
++        base['verdict']='PASS'
++        self.assertEqual(p0_runner.parse_output(json.dumps(base))['verdict'],'FAIL')
++
++    def test_submit_process_env_does_not_inherit_gateway_secret(self):
++        with tempfile.TemporaryDirectory() as directory:
++            root=Path(directory)
++            cfg=root/'node.json'
++            cfg.write_text(json.dumps({'nodeId':'5bao','physicalId':'host5',
++                'harness':'opencode','model':'opencode/approved',
++                'spool':str(root/'spool')}),encoding='utf8')
++            job='a'*40
++            spec={'jobId':job,'nodeId':'5bao','harness':'opencode',
++                'model':'opencode/approved','commit':'b'*40}
++            argv=['p0_runner.py','submit','--config',str(cfg)]
++            with patch.dict(os.environ,{'P1_GATEWAY_SECRET_SENTINEL':'NOT_FOR_CHILD'}):
++                with patch.object(sys,'argv',argv), patch.object(sys,'stdin',io.StringIO(json.dumps(spec))):
++                    with patch.object(p0_runner.subprocess,'Popen') as worker, redirect_stdout(io.StringIO()):
++                        worker.return_value.pid=12345
++                        p0_runner.main()
++                        self.assertTrue(worker.called)
++                        env=worker.call_args.kwargs['env']
++                        self.assertNotIn('P1_GATEWAY_SECRET_SENTINEL',env)
++                        self.assertIn('PATH',env)
++                        worker.call_args.kwargs['stderr'].close()
++
++if __name__=='__main__':
++    unittest.main()
+diff --git a/src/cli.mjs b/src/cli.mjs
+index 1ba892b..3bf8a3a 100644
+--- a/src/cli.mjs
++++ b/src/cli.mjs
+@@ -24,7 +24,8 @@ Commands:
+   verify --id TASK1234
+   approve --id TASK1234 --gate 0.1|0.2|5.9 --digest SHA --actor NAME --receipt FILE
+   run --id TASK1234                   # requires explicit safety environment and installed Paseo
+-  recover --id TASK1234 --actor NAME --receipt FILE --sha EXACT_COMMIT\n  recover --id TASK1234 --actor NAME --receipt FILE --basis FROZEN_SPEC_OR_CONFIG_SHA  # pre-commit only
++  recover --id TASK1234 --actor NAME --receipt FILE --sha EXACT_COMMIT
++  recover --id TASK1234 --actor NAME --receipt FILE --basis FROZEN_SPEC_OR_CONFIG_SHA  # pre-commit only
+ State root: --state /secure/state (default .p1-state)
+ Environment required for run: P1_LIVE_ALLOWED=YES and P1_HOST_ISOLATION_ATTESTED=YES
+ Never run live until local independent review and node-specific test have passed.`;
+diff --git a/src/controller.mjs b/src/controller.mjs
+index 1e163d1..87b7fc8 100644
+--- a/src/controller.mjs
++++ b/src/controller.mjs
+@@ -37,10 +37,17 @@ export class WorkflowController {
+     return {id,stage:t.stage,approvalSha256:approval.sha256};
+   }
+   required(id){const t=this.store.get(id);assert(t,`unknown task ${id}`);return t;}
++  assertFrozenIntegrity(t){
++    assert(t.frozen&&typeof t.frozen.digest==='string','frozen config missing');
++    const {digest,...snapshot}=t.frozen;
++    assert(digest===sha256(snapshot),'frozen config digest mismatch');
++    if(t.taskSpecSha&&t.taskSpec)
++      assert(t.taskSpecSha===sha256(t.taskSpec),'TASK_SPEC immutable digest mismatch');
++  }
+   async livePreflight(t){
+     assert(process.env.P1_LIVE_ALLOWED==='YES','live dispatch disabled; set P1_LIVE_ALLOWED=YES after audit');
+     assert(process.env.P1_HOST_ISOLATION_ATTESTED==='YES','host isolation has not been attested');
+-    assert(t.frozen.digest===sha256(Object.fromEntries(Object.entries(t.frozen).filter(([k])=>k!=='digest'))),'frozen config digest mismatch');
++    this.assertFrozenIntegrity(t);
+     this.compliance(t);
+   }
+   compliance(t){
+@@ -182,7 +189,7 @@ export class WorkflowController {
+         // A disagreement is a real issue. Do not collapse FAIL/QUESTION into a fabricated PASS.
+         t.bFindings=[...r.findings];
+         if(!r.passed && t.bFindings.length===0) t.bFindings=['P0 failed without a finding; block until reconciled'];
+-        t.p0Dispute=r.dispute || (r.reports.some(x=>x.verdict==='PASS')&&r.reports.some(x=>x.verdict==='FAIL'));
++        t.p0Dispute=r.dispute || (r.reports.some(x=>PASS(x.verdict))&&r.reports.some(x=>x.verdict==='FAIL'));
+         this.next(t,'B_ENTER','P0_INITIAL_COLLECTED',{pass:r.passed,dispute:t.p0Dispute});return;
+       }
+       case 'B_ENTER':{
+@@ -223,7 +230,7 @@ export class WorkflowController {
+         const r=await this.p0Review(t,`final-B${t.bRound}`);
+         t.p0Final=r;t.bFindings=[...r.findings];
+         if(!r.passed && t.bFindings.length===0) t.bFindings=['Final P0 verdict not PASS; report requires investigation'];
+-        t.p0Dispute=r.dispute||(r.reports.some(x=>x.verdict==='PASS')&&r.reports.some(x=>x.verdict==='FAIL'));
++        t.p0Dispute=r.dispute||(r.reports.some(x=>PASS(x.verdict))&&r.reports.some(x=>x.verdict==='FAIL'));
+         if(t.p0Dispute){this.next(t,'ARBITRATOR','P0_CONFLICT_NEEDS_ARBITRATION');return;}
+         if(!r.passed || t.bFindings.length){this.next(t,'B_ENTER','P0_FINAL_REQUIRES_REMEDIATION');return;}
+         this.next(t,'READY_FINAL','P0_FINAL_PASS',{sha:r.commit});return;
+@@ -253,12 +260,17 @@ export class WorkflowController {
+   async run(id,{maxSteps=100}={}){
+     return this.store.withLock(id,async()=>{
+       const start=this.required(id);
++      // An uncertain process must stay uncertain. Do not turn it into an
++      // ordinary preflight BLOCKED state or erase the original incident.
++      this.store.verify(id);
++      if(start.status==='NEEDS_RECONCILIATION'||start.inflight)
++        throw new Error('task state NEEDS_RECONCILIATION: reconcile before dispatch');
+       try { await this.livePreflight(start); }
+       catch (e) {
+         // Never re-seal corrupted state: a detected ledger failure must stay corrupt
+         // and require offline forensic recovery from a trusted anchor (R2-001).
+         this.store.verify(id);
+-        if (!TERMINAL.has(start.stage)) {
++        if (!TERMINAL.has(start.stage)&&start.status==='READY'&&!start.inflight) {
+           start.status='BLOCKED'; start.pendingHuman=`Preflight failed: ${e.message}`;
+           start.blockedStage=start.stage; start.stage='BLOCKED';
+           this.store.save(start,'PREFLIGHT_BLOCKED',{reason:e.message});
+@@ -295,6 +307,8 @@ export class WorkflowController {
+   authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null}){
+     this.store.verify(id);
+     const t=this.required(id);
++    this.assertFrozenIntegrity(t);
++    this.compliance(t);
+     assert(t.stage==='BLOCKED'&&t.status==='BLOCKED','recovery only for definitely blocked, non-inflight stage');
+     assert(!t.inflight,'recovery requires zero in-flight operations');
+     assert(this.store.dispatches(id).every(d=>d.state==='TERMINAL'),
+diff --git a/src/git.mjs b/src/git.mjs
+index d731a7f..1a6af81 100644
+--- a/src/git.mjs
++++ b/src/git.mjs
+@@ -17,7 +17,7 @@ export function execArgv(bin,args,{cwd,timeoutMs=120000,stdin,env}={}) {
+     const proc=spawn(bin,args,{cwd,env:childEnv(env),shell:false,windowsHide:true,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe']});
+     const out=[],err=[];let bytes=0;let timedOut=false;let truncated=false;let settled=false;
+     const killTree=()=>{
+-      if(process.platform==='win32'){const killer=spawn('taskkill',['/PID',String(proc.pid),'/T','/F'],{shell:false,windowsHide:true,stdio:'ignore'});killer.on('error',()=>proc.kill());}
++      if(process.platform==='win32'){const killer=spawn('taskkill',['/PID',String(proc.pid),'/T','/F'],{shell:false,windowsHide:true,stdio:'ignore',env:childEnv()});killer.on('error',()=>proc.kill());}
+       else {try{process.kill(-proc.pid,'SIGKILL');}catch{proc.kill('SIGKILL');}}
+     };
+     const timer=setTimeout(()=>{timedOut=true;killTree();
+@@ -71,7 +71,19 @@ export function porcelainPaths(raw){
+ }
+ function safeChange(dir,p){
+   assert(typeof p==='string'&&p.length>0&&!p.includes('\0'),'invalid git path');
+-  assert(!SENSITIVE_PATH.test(p),`refusing to commit sensitive-looking file: ${p}`);
++  // Never silently normalize Git paths: Windows may alias whitespace/dots
++  // and Unicode format characters, while Git tracks their literal bytes.
++  // Reject ambiguous components before checking their sensitive basename.
++  const parts=p.split(/[\\/]/);
++  for(const part of parts){
++    assert(part.length>0&&part!=='.'&&part!=='..','unsafe git path component');
++    assert(part===part.trim()&&!/[. ]$/.test(part),
++      `ambiguous whitespace or trailing-dot Git path: ${p}`);
++    assert(!/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/u.test(part),
++      `unsafe control/format character in Git path: ${p}`);
++  }
++  const comparable=parts.map(part=>part.normalize('NFKC')).join('/');
++  assert(!SENSITIVE_PATH.test(comparable),`refusing to commit sensitive-looking file: ${p}`);
+   const root=path.resolve(dir), file=path.resolve(root,p);
+   assert(file.startsWith(root+path.sep),'git change outside worktree');
+   if(fs.existsSync(file))assert(!fs.lstatSync(file).isSymbolicLink(),`symlink in change: ${p}`);
+diff --git a/src/p0.mjs b/src/p0.mjs
+index 240d360..354d3c4 100644
+--- a/src/p0.mjs
++++ b/src/p0.mjs
+@@ -1,7 +1,7 @@
+ import fs from 'node:fs';
+ import {createHmac,timingSafeEqual,createHash} from 'node:crypto';
+ import {execArgv} from './git.mjs';
+-import {assert,canonical,sha256,hasBlockingFinding} from './policy.mjs';
++import {assert,canonical,sha256,hasBlockingFinding,PASS} from './policy.mjs';
+ 
+ function shellToken(s) {
+   assert(typeof s==='string'&&!s.includes('\0'),'invalid SSH token');
+@@ -49,11 +49,14 @@ export class SshP0Adapter {
+     assert(b.jobId===jobId&&b.nodeId===node.id&&b.commit===commit,'P0 job/node/commit mismatch');
+     assert(b.physicalId===node.physicalId,'P0 signed physical inventory mismatch');
+     assert(b.harness===node.harness&&b.model===node.model,'P0 provider/model mismatch');
+-    assert(['PASS','FAIL','QUESTION','NEEDS_SPECIALIST'].includes(b.verdict),'P0 invalid verdict');
++    assert(['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS'].includes(b.verdict),'P0 invalid verdict');
+     assert(b.exitCode===0&&b.clean===true,'remote harness failed or changed read-only worktree');
+     assert(typeof b.stdoutSha256==='string'&&/^[a-f0-9]{64}$/.test(b.stdoutSha256),'missing remote original log hash');
+     assert(Array.isArray(b.findings)&&b.findings.every(x=>typeof x==='string'),'invalid P0 findings');
+-    assert(!(b.verdict==='PASS'&&hasBlockingFinding(b.findings)),'P0 contradictory PASS/blocking findings');
++    assert(!(b.verdict==='PASS'&&b.findings.length>0),'P0 contradictory PASS/findings');
++    if(b.verdict==='APPROVE_WITH_COMMENTS')
++      assert(!b.findings.some(f=>!/^(?:\s*[-*]\s*)?\[?(?:LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]/i.test(f)),
++        'P0 comments have blocking or unclassified severity');
+     // physicalId is only an identity claim bound to an authenticated key, not hardware attestation.
+     return {...b,physicalId:node.physicalId};
+   }
+@@ -135,8 +138,8 @@ export class SshP0Adapter {
+     assert(new Set(result.map(x=>x.physicalId)).size>=2,'P0 insufficient distinct physical nodes');
+     return {commit,cycle,reports:result,skipped,cancelled,
+       missing:[...skipped.map(x=>x.nodeId),...cancelled.map(x=>x.nodeId)],
+-      passed:result.every(x=>x.verdict==='PASS'&&x.findings.length===0),
+-      dispute:result.some(x=>['QUESTION','NEEDS_SPECIALIST'].includes(x.verdict))||result.some(x=>x.verdict==='PASS')&&result.some(x=>x.verdict==='FAIL'),
++      passed:result.every(x=>PASS(x.verdict)&&x.findings.length===0),
++      dispute:result.some(x=>['QUESTION','NEEDS_SPECIALIST'].includes(x.verdict))||result.some(x=>PASS(x.verdict))&&result.some(x=>x.verdict==='FAIL'),
+       findings:result.flatMap(x=>x.findings)};
+   }
+ }
+diff --git a/src/policy.mjs b/src/policy.mjs
+index 044e453..dfcd975 100644
+--- a/src/policy.mjs
++++ b/src/policy.mjs
+@@ -95,20 +95,22 @@ export function finalJsonEnvelope(raw, role='agent') {
+   assert(typeof raw==='string','agent result must be text');
+   const text=raw.trim();
+   const candidates=[text];
+-  const fenced=/```(?:json)?\s*\n(\{[\s\S]*?\})\s*```\s*$/i.exec(text);
++  // Only a *terminal* fenced JSON block may be interpreted as the verdict.
++  const fenced=/(?:^|\r?\n)[ \t]*```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*$/i.exec(text);
+   if(fenced)candidates.push(fenced[1]);
+-  const last=text.lastIndexOf('\n{');
+-  if(last!==-1)candidates.push(text.slice(last+1));
++  // Accept indented or pretty-printed bare JSON AFTER Markdown, provided
++  // the entire remaining suffix is one valid object (no trailing prose).
++  for(const m of text.matchAll(/(?:^|\r?\n)[ \t]*(?=\{)/g))
++    candidates.push(text.slice(m.index));
+   for(const candidate of candidates){
+     try {
+-      const obj=JSON.parse(candidate);
++      const obj=JSON.parse(candidate.trim());
+       if(obj&&typeof obj==='object'&&!Array.isArray(obj)&&typeof obj.verdict==='string')
+         return obj;
+     }catch{}
+   }
+   throw new Error(`${role}: missing strict final JSON envelope; manual reconciliation required`);
+ }
+-
+ export function parseAgentOutput(raw, role) {
+   const output=finalJsonEnvelope(raw,role);
+   assert(output && typeof output === 'object' && !Array.isArray(output), `${role}: invalid output`);
+diff --git a/src/store.mjs b/src/store.mjs
+index 43a8407..7e1e1f2 100644
+--- a/src/store.mjs
++++ b/src/store.mjs
+@@ -4,6 +4,15 @@ import { DatabaseSync } from 'node:sqlite';
+ import { canonical, sha256, assert, checkedId } from './policy.mjs';
+ 
+ export class Store {
++  // Only the Store's own verified, synchronous mutation methods may append
++  // against an already-mutated row. No public caller can set this private flag.
++  #trustedEventWrite=false;
++  #appendVerifiedMutation(id,type,payload) {
++    assert(!this.#trustedEventWrite,'nested trusted event append forbidden');
++    this.#trustedEventWrite=true;
++    try { return this.event(id,type,payload); }
++    finally { this.#trustedEventWrite=false; }
++  }
+   constructor(root,{readOnly=false}={}) {
+     this.root=path.resolve(root);
+     this.readOnly=readOnly;
+@@ -44,7 +53,7 @@ export class Store {
+     const digest=sha256(data);
+     this.transaction(()=>{
+       this.db.prepare('INSERT INTO artifacts(task_id,name,digest) VALUES(?,?,?)').run(id,name,digest);
+-      this.event(id,'ARTIFACT_REGISTERED',{name,digest});
++      this.#appendVerifiedMutation(id,'ARTIFACT_REGISTERED',{name,digest});
+     });
+     return {path:file,sha256:digest};
+   }
+@@ -53,7 +62,7 @@ export class Store {
+     fs.mkdirSync(this.dir(task.id),{recursive:true,mode:0o700});
+     this.transaction(()=>{
+       this.db.prepare('INSERT INTO tasks(id,data) VALUES(?,?)').run(task.id,canonical(task));
+-      this.event(task.id,'CREATED',{digest:task.frozen.digest});
++      this.#appendVerifiedMutation(task.id,'CREATED',{digest:task.frozen.digest});
+     });
+   }
+   get(id) {
+@@ -64,11 +73,19 @@ export class Store {
+     this.transaction(()=>{
+       this.verify(t.id); // Verify persisted state BEFORE updating it (R2-001).
+       this.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(canonical(t),t.id);
+-      this.event(t.id,type,{stage:t.stage,status:t.status,...payload});
++      this.#appendVerifiedMutation(t.id,type,{stage:t.stage,status:t.status,...payload});
+     });
+   }
+   event(id,type,payload){
+     assert(!this.readOnly,'store opened read-only');
++    // Standalone events (including P0 probe-skip) MUST verify their anchor
++    // before they can add a new chain head. Atomic BEGIN IMMEDIATE prevents a
++    // concurrent writer from changing the anchor between verify and append.
++    if(!this.#trustedEventWrite)
++      return this.transaction(()=>{this.verify(id);return this.#appendEventRaw(id,type,payload);});
++    return this.#appendEventRaw(id,type,payload);
++  }
++  #appendEventRaw(id,type,payload) {
+     const prev=this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest??'0'.repeat(64);
+     const at=new Date().toISOString();
+     const body=canonical({...payload,_state_sha256:sha256(this.get(id)),
+@@ -82,7 +99,7 @@ export class Store {
+       this.verify(id);
+       this.db.prepare('INSERT INTO dispatches(id,task_id,phase,agent_id,state,created) VALUES(?,?,?,?,?,?)')
+         .run(dispatchId,id,phase,null,'DISPATCH_INTENT',new Date().toISOString());
+-      this.event(id,'DISPATCH_INTENT',{phase,dispatchId});
++      this.#appendVerifiedMutation(id,'DISPATCH_INTENT',{phase,dispatchId});
+     });
+   }
+   recordAck(dispatchId,agentId){
+@@ -93,7 +110,7 @@ export class Store {
+       assert(d&&d.state==='DISPATCH_INTENT','unknown or previously acknowledged dispatch');
+       this.db.prepare('UPDATE dispatches SET agent_id=?,state=? WHERE id=?')
+         .run(agentId,'ACKNOWLEDGED',dispatchId);
+-      this.event(d.task_id,'DISPATCH_ACK',{dispatchId,agentId,phase:d.phase});
++      this.#appendVerifiedMutation(d.task_id,'DISPATCH_ACK',{dispatchId,agentId,phase:d.phase});
+     });
+   }
+   recordTerminal(dispatchId){
+@@ -103,7 +120,7 @@ export class Store {
+       this.verify(d.task_id);
+       assert(d&&d.state==='ACKNOWLEDGED','terminal requires a known acknowledged dispatch');
+       this.db.prepare('UPDATE dispatches SET state=? WHERE id=?').run('TERMINAL',dispatchId);
+-      this.event(d.task_id,'DISPATCH_TERMINAL',{dispatchId,phase:d.phase,agentId:d.agent_id});
++      this.#appendVerifiedMutation(d.task_id,'DISPATCH_TERMINAL',{dispatchId,phase:d.phase,agentId:d.agent_id});
+     });
+   }
+   dispatches(id){return this.db.prepare('SELECT * FROM dispatches WHERE task_id=? ORDER BY created,id').all(id);}

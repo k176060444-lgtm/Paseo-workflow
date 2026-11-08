@@ -1,0 +1,6 @@
+v26.6.0
+11.18.0
+git version 2.54.0.windows.1
+Python 3.11.15
+codex-cli 0.166.0
+1.19.3

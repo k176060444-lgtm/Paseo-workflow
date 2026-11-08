@@ -1,0 +1,27 @@
+R4-001 CONFIRMED: save() re-anchored aRound=0 bRound=0 and verify() accepts it
+R4-001 CONFIRMED: save() accepts arbitrary status/stage/history
+R4-001 CONFIRMED: forged frozen with matching digest was accepted as recovery basis
+R4-001 CONFIRMED: forged TASK_SPEC with matching sha was accepted
+R4-002 CONFIRMED: taskSpec without taskSpecSha was accepted; recovery moved to PLANNER
+R4-002 CONFIRMED: missing taskSpec with taskSpecSha was accepted; recovery moved to PREPARE
+R4-003 CONFIRMED: artifact fsync window re-anchored aRound=0 bRound=0
+✔ R4-001 BLOCKER: Store.save accepts a tampered task and resets aRound/bRound (34.9044ms)
+✔ R4-001: save accepts arbitrary status/stage/history replacement (30.3159ms)
+✔ R4-001: save accepts a forged frozen config with a recomputed digest (38.3363ms)
+✔ R4-001: save accepts a forged TASK_SPEC with a recomputed sha (39.5546ms)
+✔ R4-002: incomplete TASK_SPEC pair is not rejected by assertFrozenIntegrity (37.4293ms)
+✔ R4-002: missing taskSpec with a taskSpecSha is not rejected (30.4037ms)
+✔ R3-001: standalone Store.event still rejects tampered state and does not append (24.8515ms)
+✔ R3-001: artifact rejects tampered state at entry and writes no file (25.0377ms)
+✔ R4-003 BLOCKER: artifact() verify-before-transaction window re-anchors a concurrent tamper (37.0322ms)
+✔ R3-001: recordIntent/recordAck/recordTerminal reject tampered state (48.1466ms)
+✔ R3-001: init cannot re-anchor an existing task (25.5672ms)
+✔ R3-001: healthy save and standalone event still work (35.8988ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 512.2108

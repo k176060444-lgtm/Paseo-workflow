@@ -1,0 +1,20 @@
+✔ R3-002: frozen content with the OLD digest is rejected by authorizeRecovery (29.2008ms)
+✔ R3-002: TASK_SPEC content with the OLD sha is rejected by authorizeRecovery (29.8058ms)
+✔ R3-002: unresolved dispatch blocks recovery (30.31ms)
+✔ R3-002: over-budget and modified policy are rejected by compliance (50.1617ms)
+✔ R3-002: non-BLOCKED and wrong basis still rejected (56.4332ms)
+✔ R3-003: NEEDS_RECONCILIATION is untouched when P1_LIVE_ALLOWED is unset (29.0928ms)
+✔ R3-003: inflight with READY is untouched and not dispatched (27.7206ms)
+✔ R3-003: BLOCKED is not re-saved by a failed preflight (28.4293ms)
+✔ R3-003: READY task still becomes BLOCKED on a failed preflight (33.9705ms)
+✔ R3-003: corrupt ledger is rejected before any preflight sealing (30.1208ms)
+✔ R3-003: real reviewer pair one success + one failure stays reconcilable and is not redispatch (59.6663ms)
+✔ R3-003: execute failure after intent leaves NEEDS_RECONCILIATION and no retry (33.363ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 559.2971

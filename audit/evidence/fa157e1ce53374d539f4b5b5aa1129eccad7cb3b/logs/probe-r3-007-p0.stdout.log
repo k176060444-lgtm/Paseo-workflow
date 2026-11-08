@@ -1,0 +1,14 @@
+✔ R3-007: one LOW-comment seat plus one PASS does not pass P0 (89.6095ms)
+✔ R3-007: APPROVE_WITH_COMMENTS without findings plus PASS passes (198.631ms)
+✔ R3-007: LOW-comment seat plus FAIL creates a dispute and does not pass (89.6274ms)
+✔ R3-007: a single seat can never pass P0 (two distinct nodes required) (26.7123ms)
+✔ R3-007: duplicate physical identity is rejected before dispatch (23.4208ms)
+✔ R3-007: signed P0 APPROVE_WITH_COMMENTS HIGH/LOW and PASS+LOW gates (23.793ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 556.6257

@@ -1,0 +1,8 @@
+U+00AD "­.env" NFKC= "­.env" RESULT= ACCEPTED
+U+034F "͏.env" NFKC= "͏.env" RESULT= ACCEPTED
+U+180E "᠎.env" NFKC= "᠎.env" RESULT= ACCEPTED
+U+3164 "ㅤ.env" NFKC= "ᅠ.env" RESULT= ACCEPTED
+U+2800 "⠀.env" NFKC= "⠀.env" RESULT= ACCEPTED
+U+200B "​.env" NFKC= "​.env" RESULT= REJECTED: unsafe control/format character in Git path: ​.env
+TERMINAL_PASS_AFTER_FAIL= PASS example after verdict
+INLINE_PASS_AFTER_FAIL_REJECTED spec_reviewer: missing strict final JSON envelope; manual reconciliation required

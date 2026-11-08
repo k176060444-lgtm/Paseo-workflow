@@ -1,0 +1,5 @@
+status= "M normal.txt\u0000AD submodule\u0000"
+ls-files-stage= "100644 8681f8b8f32615a16703053bc1eaffb3e5e720a5 0\tnormal.txt\u0000160000 1111111111111111111111111111111111111111 0\tsubmodule\u0000"
+diff-cached= "submodule\u0000"
+ACCEPTED 2708c4b3e1b9f43ef98e1eac235081c13d7b966e
+show= ":100644 100644 8681f8b 21fb1ec M\tnormal.txt"

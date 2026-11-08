@@ -1,0 +1,684 @@
+{
+  "schema": "paseo-s0-r3-fourth-round-audit/v1",
+  "audited_commit": "fa157e1ce53374d539f4b5b5aa1129eccad7cb3b",
+  "parent_commit": "53bdaf2219292169ba4a24ef2f558c45bc26ddcf",
+  "tree": "63603935af671cd68d0013641fe15f07ab4013da",
+  "remediation_doc": "docs/R3_REMEDIATION_20261108.md",
+  "previous_evidence_commit": "f38604e7cc25f97802ff3b511cc26c48a3c666e3",
+  "audit_status": "COMPLETE",
+  "code_verdict": "FAIL",
+  "live_integration_status": "BLOCKED",
+  "counting_note": "R3-001..R3-008 are the remediation items under review. R4-001..R4-004 are new/residual defects found in this round. F1-F10 and R2-001..R2-010 are regression-checked. FIXED is limited to the stated subparts and never implies live acceptance.",
+  "r3_findings": [
+    {
+      "id": "R3-001",
+      "severity": "BLOCKER",
+      "disposition": "NOT_FIXED",
+      "title": "Private event boundary added, but Store.save() and artifact() still re-anchor arbitrary task state and reset the 10+10 budget",
+      "sources": [
+        "src/store.mjs:5-15",
+        "src/store.mjs:42-59",
+        "src/store.mjs:72-78",
+        "src/store.mjs:79-87"
+      ],
+      "evidence": [
+        "logs/probe-r4-write-paths.stdout.log",
+        "logs/quick-r3.log"
+      ],
+      "observed": "Standalone Store.event() now verifies the anchor in a BEGIN IMMEDIATE transaction and rejects tampered state; artifact() entry, recordIntent/recordAck/recordTerminal and init are also fail-closed. However Store.save() verifies the OLD persisted row and then unconditionally writes the caller-supplied task object. A caller can pass a task with aRound=10/bRound=9 changed to 0/0; save() writes it and the trusted append makes verify() accept the new chain head. The 10+10 budget is reset. artifact() verifies before the file write/fsync and starts its transaction afterwards; a concurrent tamper during the write window is re-anchored by the same trusted append.",
+      "residual": "The private #trustedEventWrite flag protects event() but not the state mutation boundary. Any in-process caller with Store access (or a future Controller bug) can reset budget/status/history/frozen/taskSpec. The artifact fsync window is a narrower concurrency variant.",
+      "minimal_fix": "Make save() validate immutable/monotonic fields before UPDATE (frozen.digest unchanged, baseSha unchanged, aRound/bRound non-decreasing, currentSha only advancing through validated transitions), or make the mutation API accept a transition function rather than an arbitrary object. For artifact(), begin the transaction before verify and keep it open through file write, or re-verify the state hash inside the transaction before the trusted append."
+    },
+    {
+      "id": "R3-002",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "Frozen/TASK_SPEC integrity rejects the old-digest case, but a recomputed digest/sha and incomplete pairs still pass",
+      "sources": [
+        "src/controller.mjs:40-46",
+        "src/controller.mjs:307-325",
+        "src/store.mjs:72-78"
+      ],
+      "evidence": [
+        "logs/probe-r3-002-003.stdout.log",
+        "logs/probe-r4-write-paths.stdout.log"
+      ],
+      "observed": "authorizeRecovery now calls assertFrozenIntegrity and compliance before writing an artifact. Tampering frozen content while keeping the old digest is rejected; tampering TASK_SPEC while keeping the old sha is rejected; over-budget, modified policy, unresolved dispatch, non-BLOCKED and wrong basis are rejected. However save() can change frozen content AND recompute frozen.digest, or change taskSpec AND recompute taskSpecSha; assertFrozenIntegrity then passes and authorizeRecovery accepts the forged basis. assertFrozenIntegrity skips the TASK_SPEC check when only one of taskSpec/taskSpecSha is present; both incomplete variants were accepted (PLANNER / PREPARE).",
+      "residual": "The check is self-consistency, not authenticity. The unkeyed local hash chain cannot resist a caller that recomputes the digest; the remaining gap is the public save() transition boundary and the incomplete-pair condition.",
+      "minimal_fix": "Require both taskSpec and taskSpecSha to be present or both absent; reject a lone value. Validate frozen/taskSpec immutability in save(). Document that external anchoring is still required against a privileged re-hasher."
+    },
+    {
+      "id": "R3-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "run() preserves NEEDS_RECONCILIATION, inflight, reason and receipt, and does not redispatch",
+      "sources": [
+        "src/controller.mjs:260-299"
+      ],
+      "evidence": [
+        "logs/probe-r3-002-003.stdout.log",
+        "logs/regress-r2_010_pair.stdout.log"
+      ],
+      "observed": "run() verifies the ledger first and throws 'task state NEEDS_RECONCILIATION: reconcile before dispatch' if status is NEEDS_RECONCILIATION or inflight is set, before any live preflight. With P1_LIVE_ALLOWED unset, stage/status/pendingHuman/inflight and the event count are unchanged. A failed preflight only seals BLOCKED when status is READY and no inflight exists. A real reviewer pair one-success/one-failure and an execute failure after intent both leave NEEDS_RECONCILIATION and do not redispatch. The prior-round defect-reproduction probe now fails as expected because the old overwrite no longer occurs.",
+      "residual": "There is still no automated reconcile command; a NEEDS_RECONCILIATION task requires external/manual reconciliation. This is fail-closed but operationally incomplete."
+    },
+    {
+      "id": "R3-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Windows taskkill uses childEnv",
+      "sources": [
+        "src/git.mjs:19-21"
+      ],
+      "evidence": [
+        "logs/probe-r3-004-005-env.stdout.log"
+      ],
+      "observed": "spawn('taskkill',...{env:childEnv()}) is present; childEnv excludes a synthetic sentinel; a real child process cannot see it; the timeout kill path still terminates a long child."
+    },
+    {
+      "id": "R3-005",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Remote Popen execute worker uses child_env",
+      "sources": [
+        "remote/p0_runner.py:297-307"
+      ],
+      "evidence": [
+        "logs/probe-r3-004-005-env.stdout.log",
+        "logs/probe-r3-005-007-008-python.stderr.log"
+      ],
+      "observed": "Popen passes env=child_env(cfg). A real submit/execute/harness run with a synthetic gateway sentinel produced SENTINEL=ABSENT in the harness stdout log; the mocked Popen kwargs also omit the sentinel and include PATH."
+    },
+    {
+      "id": "R3-006",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "CLI usage renders a real newline between recover commands",
+      "sources": [
+        "src/cli.mjs:24-29"
+      ],
+      "evidence": [
+        "logs/probe-r3-006-008-local.stdout.log"
+      ],
+      "observed": "node src/cli.mjs help contains 'EXACT_COMMIT\\n  recover --id' as a real newline and not the literal backslash-n."
+    },
+    {
+      "id": "R3-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "APPROVE_WITH_COMMENTS severity is consistent; LOW/MEDIUM comments do not bypass P0 quorum or unresolved findings",
+      "sources": [
+        "src/policy.mjs:123-128",
+        "src/p0.mjs:49-62",
+        "src/p0.mjs:138-141",
+        "remote/p0_runner.py:180-190"
+      ],
+      "evidence": [
+        "logs/probe-r3-006-008-local.stdout.log",
+        "logs/probe-r3-005-007-008-python.stderr.log",
+        "logs/probe-r3-007-p0.stdout.log"
+      ],
+      "observed": "Local and remote parsers keep APPROVE_WITH_COMMENTS for LOW/MEDIUM/INFO/ADVISORY findings and downgrade HIGH/unclassified to FAIL; PASS with any finding is rejected. SshP0Adapter accepts signed APPROVE_WITH_COMMENTS with LOW/MEDIUM, rejects HIGH and PASS+LOW. P0 passed remains false when any seat has an unresolved finding; one LOW-comment seat + one PASS does not pass; LOW + FAIL is a dispute; a single seat and duplicate physical IDs cannot form quorum."
+    },
+    {
+      "id": "R3-008",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "Terminal indented/pretty/fenced JSON is accepted; multiple verdict objects can let a terminal PASS override an earlier FAIL",
+      "sources": [
+        "src/policy.mjs:94-113",
+        "remote/p0_runner.py:140-161"
+      ],
+      "evidence": [
+        "logs/probe-r3-006-008-local.stdout.log",
+        "logs/probe-r3-005-007-008-python.stderr.log"
+      ],
+      "observed": "Indented bare JSON, pretty JSON, CRLF and a single terminal fenced block are accepted; trailing prose, truncated JSON and non-terminal fences are rejected; nested/example objects do not override a real failing envelope; the last standalone object is authoritative. An earlier example fence followed by a terminal verdict fence is rejected as a whole (conservative fail-closed, not a PASS bypass). A report containing a real standalone FAIL object followed by a standalone PASS object is parsed as PASS (terminal-object-wins); an inline example is rejected.",
+      "residual": "R4-005 HIGH: two standalone verdict objects are accepted and the last one wins; a terminal PASS can override an earlier FAIL. R4-004 LOW: multi-fence example+terminal verdict rejected conservatively.",
+      "minimal_fix": "Reject reports with more than one line-start object carrying verdict, or require the terminal object to be the only verdict object; then keep the single-terminal-fence rule or iterate fences from the end."
+    }
+  ],
+  "residual_findings": [
+    {
+      "id": "R4-001",
+      "severity": "BLOCKER",
+      "kind": "code_defect",
+      "title": "Store.save() accepts an arbitrary task object and re-anchors aRound/bRound/status/stage/history/frozen/taskSpec",
+      "sources": [
+        "src/store.mjs:72-78",
+        "src/store.mjs:5-15",
+        "src/store.mjs:127-147"
+      ],
+      "evidence": [
+        "logs/probe-r4-write-paths.stdout.log",
+        "logs/quick-r3.log"
+      ],
+      "repro": "Init a BLOCKED task with aRound=10,bRound=9; t=store.get(id); t.aRound=0;t.bRound=0; store.save(t,'BUDGET_RESET'); store.verify(id) passes; get(id) shows 0/0. Tamper status/stage/history likewise. Change frozen.intent and recompute frozen.digest, save, then authorizeRecovery(expectedBasis=frozen.digest) succeeds. Change taskSpec and recompute taskSpecSha, save, then authorizeRecovery(expectedBasis=taskSpecSha) succeeds.",
+      "impact": "The 10+10 budget can be reset through a public Store write path; the ledger is re-anchored and verify() accepts it. This defeats the R3-001 invariant and undermines R3-002.",
+      "minimal_fix": "Add immutable/monotonic validation in save() before UPDATE (frozen.digest, baseSha, taskSpecSha, aRound/bRound non-decreasing, currentSha validated transition) or make save() accept a transition function. Add regression tests that a tampered task object is rejected."
+    },
+    {
+      "id": "R4-002",
+      "severity": "HIGH",
+      "kind": "code_defect",
+      "title": "assertFrozenIntegrity is self-consistency only; forged matching digest/sha and incomplete TASK_SPEC pairs pass recovery",
+      "sources": [
+        "src/controller.mjs:40-46",
+        "src/controller.mjs:307-325",
+        "src/store.mjs:72-78"
+      ],
+      "evidence": [
+        "logs/probe-r4-write-paths.stdout.log",
+        "logs/probe-r3-002-003.stdout.log"
+      ],
+      "repro": "Change frozen content and recompute frozen.digest via save(); authorizeRecovery with the new digest moves to PLANNER. Change taskSpec and recompute taskSpecSha via save(); authorizeRecovery moves to A_WORKER. Set taskSpec but taskSpecSha=null (or vice versa), save(); authorizeRecovery accepts and moves to PLANNER/PREPARE.",
+      "impact": "A forged frozen config/TASK_SPEC can be accepted as the recovery basis if the caller can recompute the unkeyed digest; incomplete TASK_SPEC pairs are not rejected.",
+      "minimal_fix": "Require both taskSpec and taskSpecSha to be present or both absent. Add immutable-field checks in save(). Document that the unkeyed ledger requires an external anchor against a privileged re-hasher."
+    },
+    {
+      "id": "R4-003",
+      "severity": "BLOCKER",
+      "kind": "code_defect",
+      "title": "artifact() verifies before the file write/transaction; a concurrent tamper during fsync is re-anchored by the trusted append",
+      "sources": [
+        "src/store.mjs:42-59"
+      ],
+      "evidence": [
+        "logs/probe-r4-write-paths.stdout.log"
+      ],
+      "repro": "Patch fs.writeFileSync to change aRound/bRound to 0/0 during the artifact file write; store.artifact(id,'concurrent-probe.json',...) then appends the trusted ARTIFACT_REGISTERED event; verify() passes and get(id) shows 0/0.",
+      "impact": "A concurrent writer can reset the budget or alter state during the artifact write window; the trusted append re-anchors it. This is a narrower but real variant of R4-001.",
+      "minimal_fix": "Begin the transaction before verify and keep it open through the file write, or capture the expected state hash before the file write and assert it inside the transaction before #appendVerifiedMutation."
+    },
+    {
+      "id": "R4-004",
+      "severity": "LOW",
+      "kind": "parser_edge",
+      "title": "A multi-fence report (example fence + terminal verdict fence) is rejected as a whole",
+      "sources": [
+        "src/policy.mjs:98-113",
+        "remote/p0_runner.py:140-161"
+      ],
+      "evidence": [
+        "logs/probe-r3-006-008-local.stdout.log"
+      ],
+      "repro": "Report contains an example ```json PASS block followed by a terminal ```json FAIL block. parseAgentOutput throws 'missing strict final JSON envelope' instead of taking the terminal FAIL block.",
+      "impact": "Conservative fail-closed; no PASS bypass. Requires manual reconciliation for a legitimate multi-fence output.",
+      "minimal_fix": "Iterate fenced blocks from the end and use the last complete block, or document the single-terminal-fence contract."
+    },
+    {
+      "id": "R4-005",
+      "severity": "HIGH",
+      "kind": "parser_trust",
+      "title": "Two standalone verdict objects are accepted; a terminal PASS can override an earlier FAIL",
+      "sources": [
+        "src/policy.mjs:94-113",
+        "remote/p0_runner.py:140-161"
+      ],
+      "evidence": [
+        "logs/open-code-claims.log",
+        "logs/probe-r3-006-008-local.stdout.log"
+      ],
+      "repro": "parseAgentOutput('## report\n'+JSON.stringify({verdict:'FAIL',summary:'real failure',findings:['BLOCKER: x']})+'\n'+JSON.stringify({verdict:'PASS',summary:'example after verdict',findings:[]})) returns PASS ('example after verdict'). An inline 'Example: {...}' form is rejected.",
+      "impact": "A reviewer/agent report containing a real FAIL and a terminal PASS object is parsed as PASS, so a review FAIL can be lost without manual reconciliation. This is a parser trust bypass, not a test result.",
+      "minimal_fix": "Reject reports that contain more than one line-start object with a verdict, or require the terminal object to be the only verdict object. Add a regression test for FAIL followed by PASS."
+    },
+    {
+      "id": "R4-006",
+      "severity": "MEDIUM",
+      "kind": "hardening",
+      "title": "Invisible Unicode prefixes beyond the blacklist are accepted as path components",
+      "sources": [
+        "src/git.mjs:78-86"
+      ],
+      "evidence": [
+        "logs/open-code-claims.log"
+      ],
+      "repro": "Create a file named U+00AD.env, U+034F.env, U+180E.env, U+3164.env or U+2800.env and call commitWorktree; each is accepted. U+200B.env is rejected.",
+      "impact": "These names are not exact .env aliases on NTFS, but the invisible prefix makes them visually resemble .env and defeats the stated ambiguous-path/Unicode-format rejection intent. Defense-in-depth gap.",
+      "minimal_fix": "Reject all Unicode Cf/Cc and leading/trailing whitespace in every path component (e.g. /[\\p{Cf}\\p{Cc}]/u) or use a positive allowlist; add tests for the listed code points."
+    },
+    {
+      "id": "R4-007",
+      "severity": "LOW",
+      "kind": "hardening",
+      "title": "validateStaged revalidates only symlink/gitlink entries present in diff --cached, not pre-existing index entries",
+      "sources": [
+        "src/git.mjs:91-100"
+      ],
+      "evidence": [
+        "logs/open-code-claims.log"
+      ],
+      "observed": "Static: validateStaged asserts mode 120000/160000 only when the path is in diff --cached. A symlink/gitlink already tracked in the base ref and unchanged is not revalidated.",
+      "impact": "A base repository that already contains a sensitive symlink/gitlink remains in the commit tree; the Controller does not audit the base. This is not a confirmed new-path bypass and no such base was exercised.",
+      "minimal_fix": "Optionally scan the full index for sensitive symlink/gitlink targets at prepare time, or document that the approved base ref is out of scope."
+    }
+  ],
+  "original_findings": [
+    {
+      "id": "F1",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "PASS with blocking findings cannot advance Gate A",
+      "sources": [
+        "src/policy.mjs:123-128",
+        "src/controller.mjs:70-72"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log",
+        "logs/probe-r3-006-008-local.stdout.log",
+        "logs/probe-r3-007-p0.stdout.log"
+      ],
+      "residual": "Free-text severity remains prefix-based; real Reviewer output not exercised."
+    },
+    {
+      "id": "F2",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Two-seat quorum, third-seat window, cancel and lost ACK",
+      "sources": [
+        "src/p0.mjs:60-141"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log",
+        "logs/regress-f1-f10.stdout.log",
+        "logs/probe-r3-007-p0.stdout.log"
+      ],
+      "subparts": {
+        "two_distinct_seats": "FIXED_OFFLINE",
+        "third_seat_late_result": "FIXED_OFFLINE",
+        "lost_ack": "FIXED_OFFLINE",
+        "real_two_hosts_and_600s": "NOT_VERIFIED",
+        "linux_process_group": "NOT_VERIFIED"
+      },
+      "residual": "No real SSH/P0 was contacted."
+    },
+    {
+      "id": "F3",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Duplicate HMAC bytes and physical identity",
+      "sources": [
+        "src/p0.mjs:27-59"
+      ],
+      "evidence": [
+        "logs/regress-f1-f10.stdout.log",
+        "logs/probe-r3-007-p0.stdout.log"
+      ],
+      "subparts": {
+        "duplicate_key_bytes": "FIXED",
+        "signed_physical_id_mismatch": "FIXED",
+        "real_distinct_hosts": "NOT_VERIFIED"
+      },
+      "residual": "physicalId is a management-side claim, not hardware attestation."
+    },
+    {
+      "id": "F4",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "waitForFinish numeric timeout",
+      "sources": [
+        "src/agents.mjs:28"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real SDK/daemon timeout/disconnection NOT_VERIFIED."
+    },
+    {
+      "id": "F5",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Soul V2.1 migration and legal deliverable mapping",
+      "sources": [
+        "docs/SOUL_V21_MIGRATION_PENDING.md",
+        "docs/SOUL_PROVENANCE.md",
+        "src/policy.mjs:114-130"
+      ],
+      "evidence": [
+        "logs/regress-r2_006-soul.stdout.log"
+      ],
+      "residual": "11 Soul blobs still match provenance, but 6 Souls contain legacy APPROVE/REQUEST_CHANGES/Pro-Audit text; no legal Markdown/JSON deliverable mapping."
+    },
+    {
+      "id": "F6",
+      "severity": "BLOCKER",
+      "disposition": "NOT_VERIFIED",
+      "title": "Windows OS boundary and TEST_ONLY add/review/merge",
+      "sources": [
+        "src/policy.mjs:75-90",
+        "docs/SECURITY.md"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Only provider-permission declarations and offline fixtures; no Windows SID/ACL/network/Job Object, TEST_ONLY incorporation or real SDK/Harness acceptance."
+    },
+    {
+      "id": "F7",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "SQLite transactions, dispatch/artifact digests and evidence hash chain",
+      "sources": [
+        "src/store.mjs:30-147"
+      ],
+      "evidence": [
+        "logs/regress-r2_002_003_004.stdout.log",
+        "logs/probe-r4-write-paths.stdout.log"
+      ],
+      "subparts": {
+        "transactional_writes": "FIXED",
+        "dispatch_artifact_digest": "FIXED",
+        "evidence_hash": "FIXED",
+        "public_save_reanchor": "OPEN",
+        "artifact_concurrency_window": "OPEN"
+      },
+      "residual": "R4-001/R4-003."
+    },
+    {
+      "id": "F8",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Compliance stop and human recovery",
+      "sources": [
+        "src/controller.mjs:260-325"
+      ],
+      "evidence": [
+        "logs/probe-r3-002-003.stdout.log",
+        "logs/probe-r4-write-paths.stdout.log"
+      ],
+      "subparts": {
+        "compliance_stop": "FIXED",
+        "pre_commit_basis": "FIXED",
+        "reconciliation_preserved": "FIXED",
+        "save_reanchor": "OPEN",
+        "forged_integrity": "OPEN"
+      },
+      "residual": "R4-001/R4-002."
+    },
+    {
+      "id": "F9",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Child-process environment and raw-log Secret boundary",
+      "sources": [
+        "src/git.mjs:15-21",
+        "remote/p0_runner.py:26-36",
+        "remote/p0_runner.py:107-110",
+        "remote/p0_runner.py:305-306"
+      ],
+      "evidence": [
+        "logs/probe-r3-004-005-env.stdout.log",
+        "logs/probe-r3-005-007-008-python.stderr.log"
+      ],
+      "subparts": {
+        "node_child_env": "FIXED",
+        "taskkill_env": "FIXED",
+        "remote_git_helpers": "FIXED",
+        "popen_execute_env": "FIXED",
+        "harness_env": "FIXED",
+        "raw_log_redaction_and_acl": "NOT_VERIFIED"
+      },
+      "residual": "Raw model output is still persisted without redaction; Windows ACL unverified."
+    },
+    {
+      "id": "F10",
+      "severity": "MEDIUM",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Query, worktree and process lifecycle side effects",
+      "sources": [
+        "src/store.mjs:16-28",
+        "src/store.mjs:148-156",
+        "remote/p0_runner.py:112-138"
+      ],
+      "evidence": [
+        "logs/regress-r2_002_003_004.stdout.log",
+        "logs/probe-r3-005-007-008-python.stderr.log"
+      ],
+      "subparts": {
+        "missing_state_query": "FIXED",
+        "consistent_snapshot": "FIXED",
+        "windows_liveness": "FIXED",
+        "wal_side_files": "FIXED_DOCUMENTED",
+        "real_process_tree": "NOT_VERIFIED"
+      },
+      "residual": "Read-only WAL still creates -wal/-shm; Windows Job Object/process-tree termination unverified."
+    }
+  ],
+  "r2_findings": [
+    {
+      "id": "R2-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Preflight re-anchor fixed at listed entries; save/artifact re-anchor remains",
+      "sources": [
+        "src/controller.mjs:260-279",
+        "src/store.mjs:42-59",
+        "src/store.mjs:72-78"
+      ],
+      "evidence": [
+        "logs/probe-r4-write-paths.stdout.log",
+        "logs/regress-r2_010_pair.stdout.log"
+      ],
+      "residual": "R4-001/R4-003."
+    },
+    {
+      "id": "R2-002",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Artifact orphan/registration failure/directory anomaly fail closed",
+      "sources": [
+        "src/store.mjs:42-59",
+        "src/store.mjs:127-160"
+      ],
+      "evidence": [
+        "logs/regress-r2_002_003_004.stdout.log"
+      ],
+      "residual": "Detection-only; manual reconciliation required."
+    },
+    {
+      "id": "R2-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "inspect() one SQLite snapshot",
+      "sources": [
+        "src/controller.mjs:300-305",
+        "src/store.mjs:148-156"
+      ],
+      "evidence": [
+        "logs/regress-r2_002_003_004.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Read-only WAL side files documented",
+      "sources": [
+        "src/store.mjs:16-28"
+      ],
+      "evidence": [
+        "logs/regress-r2_002_003_004.stdout.log"
+      ],
+      "residual": "Filesystem side effect remains by design."
+    },
+    {
+      "id": "R2-005",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "All listed subprocesses use minimal env",
+      "sources": [
+        "src/git.mjs:15-21",
+        "remote/p0_runner.py:26-36",
+        "remote/p0_runner.py:107-110",
+        "remote/p0_runner.py:305-306"
+      ],
+      "evidence": [
+        "logs/probe-r3-004-005-env.stdout.log",
+        "logs/probe-r3-005-007-008-python.stderr.log"
+      ],
+      "residual": "Raw log redaction and Windows ACL NOT_VERIFIED."
+    },
+    {
+      "id": "R2-006",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Parser compatibility fixed; Soul migration/deliverable mapping still absent",
+      "sources": [
+        "src/policy.mjs:94-130",
+        "remote/p0_runner.py:140-190",
+        "docs/SOUL_V21_MIGRATION_PENDING.md"
+      ],
+      "evidence": [
+        "logs/probe-r3-006-008-local.stdout.log",
+        "logs/probe-r3-005-007-008-python.stderr.log",
+        "logs/regress-r2_006-soul.stdout.log"
+      ],
+      "residual": "Soul V2.1 not approved; legal deliverable mapping absent."
+    },
+    {
+      "id": "R2-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Windows Python suite green; liveness/status correct",
+      "sources": [
+        "remote/p0_runner.py:112-138",
+        "remote/tests/test_runner.py",
+        "remote/tests/test_r3_runner.py"
+      ],
+      "evidence": [
+        "logs/python-full.stderr.log",
+        "logs/probe-r3-005-007-008-python.stderr.log"
+      ],
+      "residual": "Real Linux/600s/process-group NOT_VERIFIED."
+    },
+    {
+      "id": "R2-008",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "--basis recovery fixed; forged matching digest and incomplete spec pair remain",
+      "sources": [
+        "src/controller.mjs:307-325",
+        "src/cli.mjs:24-29"
+      ],
+      "evidence": [
+        "logs/probe-r3-002-003.stdout.log",
+        "logs/probe-r4-write-paths.stdout.log"
+      ],
+      "residual": "R4-001/R4-002."
+    },
+    {
+      "id": "R2-009",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Leading-space/NFKC/rename/copy/index/gitlink fixed; invisible-format blacklist incomplete and Windows symlink not executable",
+      "sources": [
+        "src/git.mjs:72-100"
+      ],
+      "evidence": [
+        "logs/probe-r2-009.stdout.log"
+      ],
+      "subparts": {
+        "leading_trailing_whitespace": "FIXED",
+        "invisible_format_blacklist": "PARTIAL",
+        "NFKC": "FIXED",
+        "rename_copy": "FIXED",
+        "staged_index": "FIXED",
+        "gitlink_real_submodule": "FIXED",
+        "symlink_execution": "NOT_VERIFIED_WINDOWS_EPERM",
+        "pre_existing_symlink_revalidation": "NOT_VERIFIED"
+      },
+      "residual": "U+00AD, U+034F, U+180E, U+3164 and U+2800 prefixes are accepted as normal filenames (not exact .env aliases on NTFS, but visually deceptive); Windows symlink creation is EPERM. See R4-006/R4-007."
+    },
+    {
+      "id": "R2-010",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Successful reviewer evidence preserved; reconciliation no longer overwritten",
+      "sources": [
+        "src/controller.mjs:80-113",
+        "src/controller.mjs:260-299"
+      ],
+      "evidence": [
+        "logs/regress-r2_010_pair.stdout.log",
+        "logs/probe-r3-002-003.stdout.log"
+      ],
+      "residual": "No automated reconcile command; manual external reconciliation still required."
+    }
+  ],
+  "mandatory_unverified": [
+    "Windows distinct process identity/SID, file ACL and network boundary",
+    "TEST_ONLY newly added tests, independent review and merge into final commit",
+    "Real Paseo SDK/daemon authentication, timeout, disconnection and Agent lifecycle",
+    "Real remote OpenCode JSONL, permissions and job lifecycle",
+    "Two different physical P0 hosts and trusted host/key mapping",
+    "Real 600-second third-seat grace and Linux/Windows process-group/Job Object cancellation",
+    "OS crash/power-loss and sustained multi-process SQLite stress",
+    "External immutable evidence anchor and approval-principal authentication",
+    "Windows symlink (120000) commit rejection could not be executed due to host EPERM",
+    "Real Soul V2.1 migration approval and legal Markdown/JSON deliverable mapping"
+  ],
+  "independent_reports": [
+    {
+      "name": "Codex",
+      "status": "NOT_AVAILABLE",
+      "reason": "Codex CLI usage limit before producing a report",
+      "exit_code": 1,
+      "stderr_log": "cli_reports/codex.stderr.log",
+      "started": "2026-11-08T09:15:04+08:00",
+      "finished": "2026-11-08T09:15:10+08:00"
+    },
+    {
+      "name": "OpenCode",
+      "status": "VALID",
+      "model": "magpie/group/deepseek-v4-pro",
+      "agent": "p1-audit (read-only)",
+      "report": "OPENCODE_REPORT.md",
+      "stderr_log": "cli_reports/opencode.stderr.log",
+      "exit_code": 0,
+      "report_bytes": 3044,
+      "started": "2026-11-08T09:15:22+08:00",
+      "finished": "2026-11-08T09:18:37+08:00",
+      "key_findings": [
+        "save() re-anchor CONFIRMED",
+        "artifact() fsync window CONFIRMED",
+        "R3-002 self-consistency/incomplete pair CONFIRMED",
+        "R3-003 state protection CONFIRMED",
+        "invisible-format blacklist gap CONFIRMED",
+        "terminal PASS after FAIL CONFIRMED",
+        "CODE_VERDICT FAIL"
+      ]
+    }
+  ],
+  "summary": {
+    "r3_total": 8,
+    "r3_dispositions": {
+      "FIXED": 5,
+      "PARTIAL": 2,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 0
+    },
+    "original_total": 10,
+    "original_dispositions": {
+      "FIXED": 2,
+      "PARTIAL": 3,
+      "MITIGATED_FAIL_CLOSED": 3,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 1
+    },
+    "r2_total": 10,
+    "r2_dispositions": {
+      "FIXED": 6,
+      "PARTIAL": 4,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    },
+    "residual_total": 7,
+    "residual_severities": {
+      "BLOCKER": 2,
+      "HIGH": 2,
+      "MEDIUM": 1,
+      "LOW": 2
+    }
+  }
+}

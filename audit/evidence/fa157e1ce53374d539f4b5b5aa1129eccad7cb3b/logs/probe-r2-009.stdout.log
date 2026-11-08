@@ -1,0 +1,97 @@
+R2-009 REJECTED ".env" :: refusing to commit sensitive-looking file: .env
+✔ R2-009 rejects ".env" (187.0667ms)
+R2-009 REJECTED ".ENV" :: refusing to commit sensitive-looking file: .ENV
+✔ R2-009 rejects ".ENV" (179.8981ms)
+R2-009 REJECTED ".env.production" :: refusing to commit sensitive-looking file: .env.production
+✔ R2-009 rejects ".env.production" (179.7365ms)
+R2-009 REJECTED ".env.local" :: refusing to commit sensitive-looking file: .env.local
+✔ R2-009 rejects ".env.local" (180.0093ms)
+R2-009 REJECTED ".env.example" :: refusing to commit sensitive-looking file: .env.example
+✔ R2-009 rejects ".env.example" (181.9111ms)
+R2-009 REJECTED "sub/.env" :: refusing to commit sensitive-looking file: sub/.env
+✔ R2-009 rejects "sub/.env" (182.3562ms)
+R2-009 REJECTED "sub\\.env" :: refusing to commit sensitive-looking file: sub/.env
+✔ R2-009 rejects "sub\\.env" (179.1551ms)
+R2-009 REJECTED ".ssh/id_rsa" :: refusing to commit sensitive-looking file: .ssh/id_rsa
+✔ R2-009 rejects ".ssh/id_rsa" (179.4923ms)
+R2-009 REJECTED ".aws/credentials" :: refusing to commit sensitive-looking file: .aws/credentials
+✔ R2-009 rejects ".aws/credentials" (199.0227ms)
+R2-009 REJECTED "server.pem" :: refusing to commit sensitive-looking file: server.pem
+✔ R2-009 rejects "server.pem" (178.0644ms)
+R2-009 REJECTED "server.key" :: refusing to commit sensitive-looking file: server.key
+✔ R2-009 rejects "server.key" (177.6296ms)
+R2-009 REJECTED "server.p12" :: refusing to commit sensitive-looking file: server.p12
+✔ R2-009 rejects "server.p12" (177.1318ms)
+R2-009 REJECTED "server.pfx" :: refusing to commit sensitive-looking file: server.pfx
+✔ R2-009 rejects "server.pfx" (177.8611ms)
+R2-009 REJECTED "id_rsa" :: refusing to commit sensitive-looking file: id_rsa
+✔ R2-009 rejects "id_rsa" (177.823ms)
+R2-009 REJECTED "id_ed25519" :: refusing to commit sensitive-looking file: id_ed25519
+✔ R2-009 rejects "id_ed25519" (182.8363ms)
+R2-009 REJECTED " .env" :: ambiguous whitespace or trailing-dot Git path:  .env
+✔ R2-009 rejects " .env" (178.4343ms)
+R2-009 REJECTED "  .env" :: ambiguous whitespace or trailing-dot Git path:   .env
+✔ R2-009 rejects "  .env" (186.5657ms)
+R2-009 REJECTED "sub/ .env" :: ambiguous whitespace or trailing-dot Git path: sub/ .env
+R2-009 CREATE_FAILED "\t.env" ENOENT
+✔ R2-009 rejects "sub/ .env" (183.8539ms)
+✔ R2-009 rejects "\t.env" (140.3433ms)
+R2-009 REJECTED ".env " :: ambiguous whitespace or trailing-dot Git path: .env 
+✔ R2-009 rejects ".env " (182.3383ms)
+R2-009 REJECTED ".env." :: ambiguous whitespace or trailing-dot Git path: .env.
+✔ R2-009 rejects ".env." (185.0298ms)
+R2-009 REJECTED ".env.." :: ambiguous whitespace or trailing-dot Git path: .env..
+✔ R2-009 rejects ".env.." (178.6915ms)
+R2-009 REJECTED " .env" :: ambiguous whitespace or trailing-dot Git path:  .env
+✔ R2-009 rejects " .env" (184.4961ms)
+R2-009 REJECTED " .env" :: ambiguous whitespace or trailing-dot Git path:  .env
+✔ R2-009 rejects " .env" (184.5247ms)
+R2-009 REJECTED "​.env" :: unsafe control/format character in Git path: ​.env
+✔ R2-009 rejects "​.env" (178.8341ms)
+R2-009 REJECTED "﻿.env" :: ambiguous whitespace or trailing-dot Git path: ﻿.env
+✔ R2-009 rejects "﻿.env" (182.212ms)
+R2-009 REJECTED "‪.env" :: unsafe control/format character in Git path: ‪.env
+✔ R2-009 rejects "‪.env" (195.6384ms)
+R2-009 REJECTED "⁠.env" :: unsafe control/format character in Git path: ⁠.env
+R2-009 CREATE_FAILED "\u0001.env" ENOENT
+✔ R2-009 rejects "⁠.env" (188.2011ms)
+✔ R2-009 rejects "\u0001.env" (145.4877ms)
+R2-009 REJECTED ".env" :: unsafe control/format character in Git path: .env
+✔ R2-009 rejects ".env" (186.544ms)
+R2-009 REJECTED ".env" :: unsafe control/format character in Git path: .env
+✔ R2-009 rejects ".env" (187.4819ms)
+R2-009 REJECTED "．ｅｎｖ" :: refusing to commit sensitive-looking file: ．ｅｎｖ
+✔ R2-009 rejects "．ｅｎｖ" (200.6073ms)
+R2-009 REJECTED "．env" :: refusing to commit sensitive-looking file: ．env
+✔ R2-009 rejects "．env" (203.2661ms)
+R2-009 REJECTED "․env" :: refusing to commit sensitive-looking file: ․env
+✔ R2-009 rejects "․env" (189.4534ms)
+R2-009 REJECTED "﹒env" :: refusing to commit sensitive-looking file: ﹒env
+✔ R2-009 rejects "﹒env" (192.8196ms)
+✔ R2-009 accepts normal "foo.env" (560.4857ms)
+✔ R2-009 accepts normal "env" (559.634ms)
+✔ R2-009 accepts normal "normal.txt" (580.1334ms)
+✔ R2-009 accepts normal ".gitignore" (553.775ms)
+✔ R2-009 accepts normal "sub/normal.txt" (161.4074ms)
+✔ R2-009 accepts normal "sub\\normal.txt" (149.036ms)
+✔ R2-009 accepts normal "my.env.txt" (531.0483ms)
+✔ R2-009 rename destination with a leading-space sensitive name is rejected (223.782ms)
+✔ R2-009 rename source with a leading-space sensitive name is rejected (303.3566ms)
+R2-009 TRAVERSAL_INDEX_REFUSED_BY_GIT
+R2-009 SYMLINK_NOT_VERIFIED_WINDOWS EPERM
+✔ R2-009 staged sensitive path with clean worktree is rejected (217.6048ms)
+✔ R2-009 porcelain parser preserves all unusual path bytes (1.2994ms)
+✔ R2-009 path traversal index entry is rejected if Git accepts it (202.1787ms)
+✔ R2-009 real symlink is rejected if Windows permits creating one (145.452ms)
+R2-009 GITLINK_REAL=symlink/gitlink staged: submodule
+✔ R2-009 real local submodule gitlink is rejected (1788.4584ms)
+R2-009 U2215_RESULT=ACCEPTED_AS_NORMAL_FILENAME
+✔ R2-009 U+2215 division slash is a normal filename, not a path separator (516.6461ms)
+ℹ tests 50
+ℹ suites 0
+ℹ pass 50
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12977.5109
