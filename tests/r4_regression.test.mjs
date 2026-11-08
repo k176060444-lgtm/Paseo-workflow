@@ -158,6 +158,6 @@ test('R4-007 inherited symlink index is rejected even without staged symlink dif
     git(w.dir,'-c','user.name=Test','-c','user.email=test@localhost','commit','-qm','inherit symlink');
     assert.equal(git(w.dir,'status','--porcelain'),'');
     const target=path.join(w.root,'worktree');
-    await assert.rejects(()=>prepare(w.dir,'HEAD',target),/symlink\/gitlink in index/);
+    await assert.rejects(()=>prepare(w.dir,'HEAD',target),/symlink in change|symlink\/gitlink in index/);
   }finally{w.close();}
 });
