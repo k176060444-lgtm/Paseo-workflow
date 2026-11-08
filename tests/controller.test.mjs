@@ -35,6 +35,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     commitWorktree:async()=>String(++commitCount).padStart(40,'b'),
     assertUnchanged:async()=>{},
     makeTestCheckout:async(repo,sha,dir)=>dir,
+    verifyCommitEvidenceSync:(repo,base,sha,worktree)=>{ assert.match(base,/^[0-9a-f]{40}$/);assert.match(sha,/^[0-9a-f]{40}$/);assert.equal(typeof worktree,'string');return {baseSha:base,commitSha:sha}; },
     testRun:async()=>({pass:true,receipts:[{code:0,ok:true,argv:['node','--test'],logSha256:'0'.repeat(64)}]})
   };
   const p0={review:async({commit,cycle})=>{

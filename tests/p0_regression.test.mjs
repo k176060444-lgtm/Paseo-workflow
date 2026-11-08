@@ -1,3 +1,4 @@
+import {seedSyntheticTask,resealSyntheticState} from './fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,7 +16,7 @@ function fixture(){
     return {id,physicalId:`physical-${id}`,hmacKeyPath,sshAlias:id,role:['blind_a','blind_b','blind_c'][i],harness:'opencode',model:'opencode/model',enabled:true,runner:'/runner',config:'/config'};
   });
   const store=new Store(path.join(root,'state'));
-  store.init({id:'TASK1234',frozen:{digest:'x'.repeat(64)},stage:'P0'});
+  seedSyntheticTask(store,{id:'TASK1234',frozen:{digest:'x'.repeat(64)},stage:'P0'});
   const task={id:'TASK1234',frozen:{souls:{blind_a:{text:'Soul A'},blind_b:{text:'Soul B'},blind_c:{text:'Soul C'}}}};
   return{root,store,nodes,task,close(){store.close();fs.rmSync(root,{recursive:true,force:true});}};
 }

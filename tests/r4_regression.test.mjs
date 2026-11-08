@@ -1,3 +1,4 @@
+import {seedSyntheticTask,resealSyntheticState} from './fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,7 +16,7 @@ function fixture() {
   const frozen={schema:1,intent:'Synthetic task for security regression tests',
     policy:{maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
   frozen.digest=sha256(frozen);
-  store.init({id,frozen,stage:'BLOCKED',status:'BLOCKED',aRound:10,bRound:9,
+  seedSyntheticTask(store,{id,frozen,stage:'BLOCKED',status:'BLOCKED',aRound:10,bRound:9,
     taskSpec:null,taskSpecSha:null,baseSha:null,currentSha:null,history:[],pendingHuman:'Prior incident'});
   return {dir,store,id,close(){store.close();fs.rmSync(dir,{recursive:true,force:true});}};
 }
@@ -50,8 +51,9 @@ test('R4-001 public save refuses budget jumps beyond one or limit',()=>{
     assert.throws(()=>w.store.save(t,'GATE_B_ROUND_START'),/budget cannot reset/);
     assert.equal(w.store.get(w.id).bRound,9);
     t.bRound=10;
-    assert.doesNotThrow(()=>w.store.save(t,'GATE_B_ROUND_START'));
-    assert.equal(w.store.get(w.id).bRound,10);
+    // A real budget-consuming transition may happen only at B_ENTER.
+    assert.throws(()=>w.store.save(t,'GATE_B_ROUND_START'),/not allowed at stage/);
+    assert.equal(w.store.get(w.id).bRound,9);
     w.store.verify(w.id);
   }finally{w.close();}
 });
@@ -80,12 +82,12 @@ test('R4-002 requires complete TASK_SPEC pair and forbids any replacement after 
     assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/TASK_SPEC digest mismatch/);
     t.taskSpecSha=sha256(t.taskSpec);
     assert.throws(()=>w.store.save(t,'UNAUTHORIZED_EDIT'),/Planner candidate/);
-    w.store.save(t,'TASK_SPEC_CANDIDATE');
+    assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/illegal workflow stage transition/);
     const frozen=w.store.get(w.id);
     const changed=w.store.get(w.id);
     changed.taskSpec='Altered after approval, no legal permission to do so.';
     changed.taskSpecSha=sha256(changed.taskSpec);
-    assert.throws(()=>w.store.save(changed,'TASK_SPEC_CANDIDATE'),/TASK_SPEC is immutable/);
+    assert.throws(()=>w.store.save(changed,'TASK_SPEC_CANDIDATE'),/illegal workflow stage transition/);
     assert.equal(w.store.get(w.id).taskSpec,frozen.taskSpec);
     w.store.verify(w.id);
   }finally{w.close();}
@@ -95,13 +97,14 @@ test('R4-001 history is append-only and base/current SHA changes need freezing t
   try{
     let t=w.store.get(w.id);
     t.history.push({role:'spec_reviewer',verdict:'FAIL'});
-    w.store.save(t,'REVIEW_SEAT_RECORDED');
+    assert.throws(()=>w.store.save(t,'REVIEW_SEAT_RECORDED'),/not allowed at stage/);
+    resealSyntheticState(w.store,{...w.store.get(w.id),history:[{role:'spec_reviewer',verdict:'FAIL'}]});
     t=w.store.get(w.id);
     t.history=[];
-    assert.throws(()=>w.store.save(t,'HISTORY_WIPE'),/history cannot be truncated/);
+    assert.throws(()=>w.store.save(t,'HISTORY_WIPE'),/unrecognized workflow state transition/);
     t=w.store.get(w.id);
     t.currentSha='a'.repeat(40);
-    assert.throws(()=>w.store.save(t,'FORGED_COMMIT'),/currentSha may only change/);
+    assert.throws(()=>w.store.save(t,'FORGED_COMMIT'),/unrecognized workflow state transition/);
     w.store.verify(w.id);
   }finally{w.close();}
 });

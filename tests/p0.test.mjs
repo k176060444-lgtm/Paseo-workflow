@@ -1,3 +1,4 @@
+import {seedSyntheticTask,resealSyntheticState} from './fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,7 +17,7 @@ function mock(){
  });
  const store=new Store(path.join(tmp,'state'));
  const task={id:'TASK1234',frozen:{souls:{blind_a:{text:'A'},blind_b:{text:'B'},blind_c:{text:'C'}}}};
- store.init({id:task.id,frozen:{digest:'0'.repeat(64)},stage:'P0'});
+ seedSyntheticTask(store,{id:task.id,frozen:{digest:'0'.repeat(64)},stage:'P0'});
  return {nodes,store,task,tmp,done(){store.close();fs.rmSync(tmp,{recursive:true,force:true});}};
 }
 function fakeSsh(adapter,{third='pending',wrongKey=false}={}){

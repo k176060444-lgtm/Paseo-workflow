@@ -1,3 +1,4 @@
+import {seedSyntheticTask,resealSyntheticState} from './fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -17,7 +18,7 @@ function fixture() {
   const frozen={intent:'R3 synthetic task for offline safety checks',schema:1,
     policy:{maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
   frozen.digest=sha256(frozen);
-  store.init({id,stage:'BLOCKED',status:'BLOCKED',frozen,
+  seedSyntheticTask(store,{id,stage:'BLOCKED',status:'BLOCKED',frozen,
     aRound:10,bRound:9,currentSha:null,taskSpecSha:null,
     pendingHuman:'previous incident',inflight:null,history:[]});
   return {dir,store,id,close(){store.close();fs.rmSync(dir,{recursive:true,force:true});}};
@@ -80,7 +81,7 @@ test('R3-003: run cannot replace NEEDS_RECONCILIATION with ordinary BLOCKED',asy
     const t=w.store.get(w.id);
     t.stage='A_REVIEW';t.status='NEEDS_RECONCILIATION';
     t.pendingHuman='Reviewer ACK uncertain';t.inflight={role:'quality_reviewer',phase:'A1-review'};
-    w.store.save(t,'REVIEW_PAIR_UNCERTAIN');
+    resealSyntheticState(w.store,t);
     const baseline=w.store.verify(w.id);
     const c=new WorkflowController({store:w.store,runtime:null,p0:null});
     await assert.rejects(()=>c.run(w.id),/reconcile before dispatch/);

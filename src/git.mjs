@@ -1,4 +1,4 @@
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {assert} from './policy.mjs';
@@ -139,4 +139,34 @@ export async function makeTestCheckout(repo,sha,dir) {
   await git(repo,'worktree','add','--detach',dir,sha);
   assert(await head(dir)===sha,'test checkout SHA mismatch');
   return dir;
+}
+
+function syncGit(repo,...args){
+  assert(typeof repo==='string'&&fs.existsSync(repo),'Git repository missing');
+  return execFileSync('git',['-C',repo,...args],
+    {encoding:'utf8',env:childEnv(),windowsHide:true,timeout:15000,
+      maxBuffer:1024*1024,stdio:['ignore','pipe','pipe']}).trim();
+}
+// A synchronous trust boundary for human approval/recovery. No model calls,
+// no network and no writes. Checks real Git object, ancestry and exact HEAD.
+export function verifyCommitEvidenceSync(repo,baseSha,commitSha,worktree){
+  const valid=sha=>typeof sha==='string'&&/^[0-9a-f]{40}$/.test(sha);
+  assert(valid(baseSha)&&valid(commitSha),'Git SHA must be a full 40-char object ID');
+  try{
+    syncGit(repo,'cat-file','-e',baseSha+'^{commit}');
+    syncGit(repo,'cat-file','-e',commitSha+'^{commit}');
+    assert(syncGit(repo,'rev-parse',baseSha+'^{commit}')===baseSha,
+      'approved base SHA is not a commit');
+    assert(syncGit(repo,'rev-parse',commitSha+'^{commit}')===commitSha,
+      'final SHA is not a commit');
+    syncGit(repo,'merge-base','--is-ancestor',baseSha,commitSha);
+    assert(typeof worktree==='string'&&fs.existsSync(worktree),
+      'approved worktree missing');
+    assert(syncGit(worktree,'rev-parse','HEAD')===commitSha,
+      'final SHA does not match exact worktree HEAD');
+    return {baseSha,commitSha};
+  }catch(e){
+    throw new Error('Git commit existence, ancestry or worktree HEAD unverified: '+
+      String(e.message).slice(0,200));
+  }
 }

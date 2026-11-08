@@ -1,3 +1,4 @@
+import {seedSyntheticTask,resealSyntheticState} from './fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -16,7 +17,7 @@ function sandbox(){
   const frozen={schema:1,intent:'Synthetic offline fixture',
     policy:{maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
   frozen.digest=sha256(frozen);
-  store.init({id,stage:'BLOCKED',status:'BLOCKED',frozen,
+  seedSyntheticTask(store,{id,stage:'BLOCKED',status:'BLOCKED',frozen,
     aRound:0,bRound:9,currentSha:null,taskSpecSha:null,history:[],inflight:null});
   return {dir,store,id,dispose(){store.close();fs.rmSync(dir,{recursive:true,force:true});}};
 }
@@ -59,7 +60,7 @@ test('R2-003 readSnapshot uses one SQLite version despite concurrent writer',()=
   try{
     w.store.readSnapshot(()=>{
       const before=w.store.get(w.id);
-      const updated=other.get(w.id);updated.aRound=1;other.save(updated,'GATE_A_ROUND_START');
+      const updated=other.get(w.id);updated.aRound=1;resealSyntheticState(other,{...updated,stage:'A_WORKER',status:'READY'});
       assert.equal(w.store.get(w.id).aRound,before.aRound);
       w.store.verify(w.id);
     });
@@ -116,7 +117,7 @@ test('R2-010 successful reviewer report survives peer failure',async()=>{
       return {role,agentId:'spec-agent-id',verdict:'PASS',findings:[],summary:'Verified simulation'};
     }},p0:null,gitOps:{assertUnchanged:async()=>{}}});
     const t=w.store.get(w.id);t.stage='A_REVIEW';t.status='READY';t.worktree=w.dir;
-    w.store.save(t,'READY_FOR_REVIEW');
+    resealSyntheticState(w.store,t);
     await assert.rejects(()=>c.invokePair(t,'A1-review','a'.repeat(40)),/reconcile/);
     const after=w.store.get(w.id);
     assert.equal(after.status,'NEEDS_RECONCILIATION');

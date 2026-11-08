@@ -1,3 +1,4 @@
+import {seedSyntheticTask,resealSyntheticState} from './fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,7 +11,7 @@ import {PaseoAgentRuntime} from '../src/agents.mjs';
 import {childEnv} from '../src/git.mjs';
 
 function work(){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'p1-regression-'));const store=new Store(dir);
-  store.init({id:'TASK1234',stage:'A_REVIEW',status:'READY',frozen:{digest:'x'.repeat(64)},history:[]});
+  seedSyntheticTask(store,{id:'TASK1234',stage:'A_REVIEW',status:'READY',frozen:{digest:'x'.repeat(64)},history:[]});
   return {dir,store,close(){store.close();fs.rmSync(dir,{recursive:true,force:true});}};}
 
 test('F1: legacy verdict normalization and PASS with BLOCKER finding fail closed',()=>{
