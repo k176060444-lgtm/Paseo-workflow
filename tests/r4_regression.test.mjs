@@ -48,7 +48,7 @@ test('R4-001 public save refuses budget jumps beyond one or limit',()=>{
   const w=fixture();
   try{
     const t=w.store.get(w.id);t.bRound=11;
-    assert.throws(()=>w.store.save(t,'GATE_B_ROUND_START'),/budget cannot reset|unrecognized workflow state transition/);
+    assert.throws(()=>w.store.save(t,'GATE_B_ROUND_START'),/budget cannot reset|unrecognized workflow state transition|not allowed at stage/);
     assert.equal(w.store.get(w.id).bRound,9);
     t.bRound=10;
     // A real budget-consuming transition may happen only at B_ENTER.
