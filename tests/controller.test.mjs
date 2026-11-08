@@ -28,7 +28,8 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
   process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(manifest,'utf8'));
   function proof(gate,digest,receipt,actor='user'){
     const statement={purpose:'P1_HUMAN_GATE_V1',taskId:'TASK1234',gate,digest,
-      actor,receipt,nonce:randomUUID(),issuedAt:new Date().toISOString()};
+      actor,receipt,nonce:randomUUID(),issuedAt:new Date().toISOString(),
+      ...(gate==='5.9'?{evidenceSha256:store.evidenceDigest('TASK1234','final-compliance.json')}:{})};
     return {schema:1,keyId:'offline-auditor',statement,
       signature:sign(null,Buffer.from(canonical(statement)),keys.privateKey).toString('base64')};
   }
