@@ -96,3 +96,24 @@ test('F9: Git/test child process env omits arbitrary gateway secrets',()=>{
   try{const env=childEnv();assert(!('P1_TEST_FAKE_API_KEY' in env));}
   finally{delete process.env.P1_TEST_FAKE_API_KEY;}
 });
+
+test('R7 Paseo loopback /ws endpoint validation is fast and offline',async()=>{
+  for(const url of ['ws://127.0.0.1:6767','ws://remote.invalid:6767/ws',
+    'ws://user:password@127.0.0.1:6767/ws','http://127.0.0.1:6767/ws']){
+    const runtime=new PaseoAgentRuntime(url);
+    await assert.rejects(runtime.open(),/Paseo endpoint|local authenticated daemon/);
+    assert.equal(runtime.client,null);
+  }
+});
+test('R7 background-agent reconcile uses includeBackground and unwraps refresh',async()=>{
+  const runtime=new PaseoAgentRuntime('ws://127.0.0.1:6767/ws');
+  runtime.client={agents:{
+    list:async options=>{assert.equal(options.includeBackground,true);return [
+      {agent:{id:'agent-1',status:'idle',labels:{'p1-task':'TASK1234'}}}]},
+    ref:id=>({refresh:async()=>({agent:{id,status:'idle',lastUsage:{inputTokens:12}}})})
+  }};
+  const all=await runtime.listAllAgents();
+  assert.equal(all.length,1);assert.equal(all[0].id,'agent-1');
+  const fresh=await runtime.findExistingAgent('agent-1');
+  assert.equal(fresh.lastUsage.inputTokens,12);
+});

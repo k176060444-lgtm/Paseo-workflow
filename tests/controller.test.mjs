@@ -267,3 +267,23 @@ test('R6-004 direct Store final close independently checks real worktree HEAD',a
    x.store.verify('TASK1234');
  }finally{finish(x);}
 });
+
+test('R7-002 final Gate rejects late evidence not covered by signed compliance root',async()=>{
+ const x=setup();
+ try{
+   await movePastPlanning(x);
+   const final=await x.c.run('TASK1234');
+   assert.equal(final.stage,'WAIT_GATE_59');
+   const before=x.store.evidenceRoot('TASK1234');
+   const raw=JSON.parse(fs.readFileSync(path.join(x.store.dir('TASK1234'),'evidence','final-compliance.json'),'utf8'));
+   assert.equal(raw.evidenceRoot,before);
+   x.store.artifact('TASK1234','late-unapproved-evidence.json',{unexpected:'late'});
+   assert.notEqual(x.store.evidenceRoot('TASK1234'),before);
+   const msg='Human signs the new snapshot but old compliance is stale';
+   assert.throws(()=>x.c.approve({id:'TASK1234',gate:'5.9',digest:final.currentSha,
+     actor:'user',receipt:msg,proof:x.proof('5.9',final.currentSha,msg)}),
+     /final compliance receipt mismatched/);
+   assert.equal(x.c.required('TASK1234').stage,'WAIT_GATE_59');
+   x.store.verify('TASK1234');
+ }finally{finish(x);}
+});

@@ -4,8 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from '../src/store.mjs';
+import {generateKeyPairSync,randomUUID,sign} from 'node:crypto';
 import {seedSyntheticTask,syntheticHumanAuthority} from './fixtures.mjs';
-import {sha256,MAX_A,MAX_B,ROLE_PERMISSIONS} from '../src/policy.mjs';
+import {sha256,canonical,MAX_A,MAX_B,ROLE_PERMISSIONS} from '../src/policy.mjs';
 function fixture(stage){
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'p1-r7-'));
   const id='TASKR700',authority=syntheticHumanAuthority(root,id);
@@ -53,4 +54,52 @@ test('R7-003 consumed approval table exists and is bound to the hash ledger',()=
     w.store.db.prepare('DELETE FROM consumed_approvals WHERE task_id=?').run(w.id);
     assert.deepEqual(w.store.verify(w.id),before);
   }finally{w.close();}
+});
+
+test('R7-003 identical nonce is rejected across distinct tasks and valid signatures',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'p1-nonce-'));
+  const prevFile=process.env.P1_TRUST_ROOTS_FILE,prevHash=process.env.P1_TRUST_ROOTS_SHA256;
+  let store;
+  try{
+    const {privateKey,publicKey}=generateKeyPairSync('ed25519');
+    const manifest=path.join(root,'trust.json');
+    fs.writeFileSync(manifest,JSON.stringify({schema:1,human:{
+      'nonce-auditor':publicKey.export({format:'pem',type:'spki'})}}));
+    process.env.P1_TRUST_ROOTS_FILE=manifest;
+    process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(manifest,'utf8'));
+    store=new Store(path.join(root,'state'));
+    const nonce=randomUUID(),ids=['TASKNONCE1','TASKNONCE2'];
+    for(const [i,id] of ids.entries()){
+      const frozen={schema:1,intent:'Synthetic nonce-consumption test in independent tasks',
+        policy:{maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
+      frozen.digest=sha256(frozen);
+      const t={id,frozen,trustRootSha256:store.trustRootDigest(),stage:'WAIT_GATE_01',
+        status:'WAITING_HUMAN',aRound:0,bRound:0,taskSpec:null,taskSpecSha:null,
+        baseSha:null,currentSha:null,lastA:null,lastB:null,p0Initial:null,p0Final:null,
+        history:[],inflight:null,pendingHuman:null};
+      store.init(t);
+      const receipt='Approved in disposable synthetic nonce test '+i,actor='auditor';
+      const statement={purpose:'P1_HUMAN_GATE_V1',taskId:id,gate:'0.1',
+        digest:frozen.digest,actor,receipt,nonce,issuedAt:new Date().toISOString()};
+      const proof={schema:1,keyId:'nonce-auditor',statement,
+        signature:sign(null,Buffer.from(canonical(statement)),privateKey).toString('base64')};
+      const ev=store.artifact(id,'approval-0-1.json',{gate:'0.1',
+        digest:frozen.digest,actor,receipt,proof});
+      const next=store.get(id);next.stage='PLANNER';next.status='READY';
+      const save=()=>store.save(next,'GATE_0.1_APPROVED',{
+        digest:frozen.digest,actor,approvalSha256:ev.sha256,approvalNonce:nonce});
+      if(i===0)assert.doesNotThrow(save);
+      else assert.throws(save,/signed human approval nonce already consumed/);
+      assert.equal(store.get(id).stage,i===0?'PLANNER':'WAIT_GATE_01');
+      store.verify(id);
+    }
+    assert.equal(store.db.prepare('SELECT COUNT(*) AS count FROM consumed_approvals').get().count,1);
+  }finally{
+    store?.close();
+    if(prevFile===undefined)delete process.env.P1_TRUST_ROOTS_FILE;
+    else process.env.P1_TRUST_ROOTS_FILE=prevFile;
+    if(prevHash===undefined)delete process.env.P1_TRUST_ROOTS_SHA256;
+    else process.env.P1_TRUST_ROOTS_SHA256=prevHash;
+    fs.rmSync(root,{recursive:true,force:true});
+  }
 });
