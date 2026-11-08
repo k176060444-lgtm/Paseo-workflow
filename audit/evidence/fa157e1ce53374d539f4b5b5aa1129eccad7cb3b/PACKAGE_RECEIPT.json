@@ -3,11 +3,11 @@
   "audited_commit": "fa157e1ce53374d539f4b5b5aa1129eccad7cb3b",
   "parent_commit": "53bdaf2219292169ba4a24ef2f558c45bc26ddcf",
   "zip": "Paseo-S0-R3-fa157e1-Review.zip",
-  "zip_bytes": 96405,
-  "zip_sha256": "b25b39f1eb5ece70bbca1dcf2340527e4c3343b06ea895ce64f1ceded5f2ad42",
+  "zip_bytes": 96431,
+  "zip_sha256": "6682454bad009a9396e3d2d7878994c93c5b672844137f25d37f755a7fc8542d",
   "manifest": "EVIDENCE_MANIFEST.json",
-  "manifest_sha256": "c1b80359594de4c67071eeb5aff17786219d2791740ae01f236693a1af271185",
+  "manifest_sha256": "b121a542528cdd4a8eb4169b5e9e4b60e0d927b153db378601d9b30caf66c353",
   "manifest_file_count": 80,
-  "manifest_total_bytes": 227039,
-  "generated_at": "2026-11-08T09:27:15.884463+08:00"
+  "manifest_total_bytes": 227101,
+  "generated_at": "2026-11-08T09:31:24.921382+08:00"
 }

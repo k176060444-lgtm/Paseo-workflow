@@ -2,10 +2,10 @@
   "schema": "paseo-s0-r3-evidence-manifest/v1",
   "audited_commit": "fa157e1ce53374d539f4b5b5aa1129eccad7cb3b",
   "parent_commit": "53bdaf2219292169ba4a24ef2f558c45bc26ddcf",
-  "generated_at": "2026-11-08T09:27:15.822405+08:00",
+  "generated_at": "2026-11-08T09:31:24.869706+08:00",
   "root": "audit/evidence/fa157e1ce53374d539f4b5b5aa1129eccad7cb3b/",
   "file_count": 80,
-  "total_bytes": 227039,
+  "total_bytes": 227101,
   "hash_algorithms": {
     "sha256": "SHA-256 of file bytes",
     "git_blob_sha": "Git blob SHA-1: sha1(\"blob <size>\\0\" + bytes)"
@@ -13,9 +13,9 @@
   "files": [
     {
       "path": "AUDIT_REPORT.md",
-      "bytes": 21966,
-      "sha256": "85a14e490cc353a39771b3304e826a240ea76cce66a397ff456b8be66ddab3b8",
-      "git_blob_sha": "921183624cb5e9c971d8410eb3517715eb24e55d"
+      "bytes": 22028,
+      "sha256": "585d4b3b9c883d2ce2e8070a7090f87b698a447589ed231642c527ad92e62497",
+      "git_blob_sha": "f9c85185ec1f861be8b553b1afb6b0e6ea3f7d4d"
     },
     {
       "path": "CLI_PROMPT_FOCUSED.md",
