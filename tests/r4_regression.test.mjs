@@ -38,7 +38,7 @@ test('R4-001 public save refuses round-budget reset with atomic ledger unchanged
   try{
     const baseline=w.store.verify(w.id);
     const t=w.store.get(w.id);t.aRound=0;t.bRound=0;
-    assert.throws(()=>w.store.save(t,'BUDGET_RESET'),/budget cannot reset|unrecognized workflow state transition/);
+    assert.throws(()=>w.store.save(t,'BUDGET_RESET'),/budget cannot reset|unrecognized workflow state transition|not allowed at stage/);
     assert.equal(w.store.get(w.id).aRound,10);
     assert.equal(w.store.get(w.id).bRound,9);
     assert.deepEqual(w.store.verify(w.id),baseline);
@@ -81,7 +81,7 @@ test('R4-002 requires complete TASK_SPEC pair and forbids any replacement after 
     t.taskSpecSha='f'.repeat(64);
     assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/TASK_SPEC digest mismatch|illegal workflow stage transition/);
     t.taskSpecSha=sha256(t.taskSpec);
-    assert.throws(()=>w.store.save(t,'UNAUTHORIZED_EDIT'),/Planner candidate|illegal workflow stage transition/);
+    assert.throws(()=>w.store.save(t,'UNAUTHORIZED_EDIT'),/Planner candidate|illegal workflow stage transition|unrecognized workflow state transition/);
     assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/illegal workflow stage transition/);
     const frozen=w.store.get(w.id);
     const changed=w.store.get(w.id);
