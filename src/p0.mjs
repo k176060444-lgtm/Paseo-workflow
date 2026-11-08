@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import {createHmac,timingSafeEqual,createHash} from 'node:crypto';
 import {execArgv} from './git.mjs';
-import {assert,canonical,sha256,hasBlockingFinding} from './policy.mjs';
+import {assert,canonical,sha256,hasBlockingFinding,PASS} from './policy.mjs';
 
 function shellToken(s) {
   assert(typeof s==='string'&&!s.includes('\0'),'invalid SSH token');
@@ -49,11 +49,14 @@ export class SshP0Adapter {
     assert(b.jobId===jobId&&b.nodeId===node.id&&b.commit===commit,'P0 job/node/commit mismatch');
     assert(b.physicalId===node.physicalId,'P0 signed physical inventory mismatch');
     assert(b.harness===node.harness&&b.model===node.model,'P0 provider/model mismatch');
-    assert(['PASS','FAIL','QUESTION','NEEDS_SPECIALIST'].includes(b.verdict),'P0 invalid verdict');
+    assert(['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS'].includes(b.verdict),'P0 invalid verdict');
     assert(b.exitCode===0&&b.clean===true,'remote harness failed or changed read-only worktree');
     assert(typeof b.stdoutSha256==='string'&&/^[a-f0-9]{64}$/.test(b.stdoutSha256),'missing remote original log hash');
     assert(Array.isArray(b.findings)&&b.findings.every(x=>typeof x==='string'),'invalid P0 findings');
-    assert(!(b.verdict==='PASS'&&hasBlockingFinding(b.findings)),'P0 contradictory PASS/blocking findings');
+    assert(!(b.verdict==='PASS'&&b.findings.length>0),'P0 contradictory PASS/findings');
+    if(b.verdict==='APPROVE_WITH_COMMENTS')
+      assert(!b.findings.some(f=>!/^(?:\s*[-*]\s*)?\[?(?:LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]/i.test(f)),
+        'P0 comments have blocking or unclassified severity');
     // physicalId is only an identity claim bound to an authenticated key, not hardware attestation.
     return {...b,physicalId:node.physicalId};
   }
@@ -135,8 +138,8 @@ export class SshP0Adapter {
     assert(new Set(result.map(x=>x.physicalId)).size>=2,'P0 insufficient distinct physical nodes');
     return {commit,cycle,reports:result,skipped,cancelled,
       missing:[...skipped.map(x=>x.nodeId),...cancelled.map(x=>x.nodeId)],
-      passed:result.every(x=>x.verdict==='PASS'&&x.findings.length===0),
-      dispute:result.some(x=>['QUESTION','NEEDS_SPECIALIST'].includes(x.verdict))||result.some(x=>x.verdict==='PASS')&&result.some(x=>x.verdict==='FAIL'),
+      passed:result.every(x=>PASS(x.verdict)&&x.findings.length===0),
+      dispute:result.some(x=>['QUESTION','NEEDS_SPECIALIST'].includes(x.verdict))||result.some(x=>PASS(x.verdict))&&result.some(x=>x.verdict==='FAIL'),
       findings:result.flatMap(x=>x.findings)};
   }
 }

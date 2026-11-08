@@ -140,20 +140,20 @@ def process_alive(pid):
 def final_json(text):
     data=text.strip()
     choices=[data]
-    if data.endswith('```'):
-        before=data[:-3]
-        marker=before.rfind('```')
-        if marker>=0:
-            block=before[marker+3:].lstrip()
-            if block.startswith('json'):
-                block=block[4:].lstrip()
-            choices.append(block.strip())
-    idx=data.rfind('\n{')
-    if idx>=0:
-        choices.append(data[idx+1:].strip())
+    fence=chr(96)*3
+    fenced_pattern=(r'(?:^|\r?\n)[ \t]*'+re.escape(fence)+
+                    r'(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*'+
+                    re.escape(fence)+r'[ \t]*$')
+    fenced=re.search(fenced_pattern,data,re.IGNORECASE)
+    if fenced:
+        choices.append(fenced.group(1))
+    # A bare JSON envelope must occupy the entire final suffix. Support
+    # indentation/pretty JSON, but never consume arbitrary trailing prose.
+    for match in re.finditer(r'(?:^|\r?\n)[ \t]*(?=\{)',data):
+        choices.append(data[match.start():])
     for candidate in choices:
         try:
-            obj=json.loads(candidate)
+            obj=json.loads(candidate.strip())
             if isinstance(obj,dict) and isinstance(obj.get('verdict'),str):
                 return obj
         except (ValueError,TypeError):
@@ -178,11 +178,12 @@ def parse_output(text):
                 parts.append(obj['text'])
     for candidate in ["".join(parts), "\n".join(parts), text]:
         result=final_json(candidate)
-        if result and isinstance(result.get('findings'),list) and isinstance(result.get('summary'),str):
+        if result and isinstance(result.get('findings'),list) and all(isinstance(f,str) for f in result['findings']) and isinstance(result.get('summary'),str) and result['summary']:
             verdict={'APPROVE':'PASS','REQUEST_CHANGES':'FAIL'}.get(result['verdict'],result['verdict'])
             if verdict=='APPROVE_WITH_COMMENTS':
-                verdict='FAIL' if result['findings'] else 'PASS'
-            if verdict in ('PASS','FAIL','QUESTION','NEEDS_SPECIALIST'):
+                non_advisory=any(not re.match(r'^\s*(?:[-*]\s*)?\[?(?:LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]',f,re.IGNORECASE) for f in result['findings'])
+                if non_advisory: verdict='FAIL'
+            if verdict in ('PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS'):
                 if verdict=='PASS' and result['findings']:
                     verdict='FAIL'  # no PASS with unclassified findings
                 result['verdict']=verdict
@@ -302,7 +303,7 @@ def main():
             jobdir.mkdir(mode=0o700)
             atomic(jobdir/'spec.json',encode(payload))
             p=subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'execute','--config',str(Path(args.config).resolve()),'--job',job_id],
-                stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=(jobdir/'runner.log').open('ab'),start_new_session=True)
+                stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=(jobdir/'runner.log').open('ab'),start_new_session=True,env=child_env(cfg))
             atomic(jobdir/'pid',str(p.pid).encode('ascii'))
             response({'jobId':job_id,'status':'ACCEPTED'})
         else:

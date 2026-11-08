@@ -37,10 +37,17 @@ export class WorkflowController {
     return {id,stage:t.stage,approvalSha256:approval.sha256};
   }
   required(id){const t=this.store.get(id);assert(t,`unknown task ${id}`);return t;}
+  assertFrozenIntegrity(t){
+    assert(t.frozen&&typeof t.frozen.digest==='string','frozen config missing');
+    const {digest,...snapshot}=t.frozen;
+    assert(digest===sha256(snapshot),'frozen config digest mismatch');
+    if(t.taskSpecSha&&t.taskSpec)
+      assert(t.taskSpecSha===sha256(t.taskSpec),'TASK_SPEC immutable digest mismatch');
+  }
   async livePreflight(t){
     assert(process.env.P1_LIVE_ALLOWED==='YES','live dispatch disabled; set P1_LIVE_ALLOWED=YES after audit');
     assert(process.env.P1_HOST_ISOLATION_ATTESTED==='YES','host isolation has not been attested');
-    assert(t.frozen.digest===sha256(Object.fromEntries(Object.entries(t.frozen).filter(([k])=>k!=='digest'))),'frozen config digest mismatch');
+    this.assertFrozenIntegrity(t);
     this.compliance(t);
   }
   compliance(t){
@@ -182,7 +189,7 @@ export class WorkflowController {
         // A disagreement is a real issue. Do not collapse FAIL/QUESTION into a fabricated PASS.
         t.bFindings=[...r.findings];
         if(!r.passed && t.bFindings.length===0) t.bFindings=['P0 failed without a finding; block until reconciled'];
-        t.p0Dispute=r.dispute || (r.reports.some(x=>x.verdict==='PASS')&&r.reports.some(x=>x.verdict==='FAIL'));
+        t.p0Dispute=r.dispute || (r.reports.some(x=>PASS(x.verdict))&&r.reports.some(x=>x.verdict==='FAIL'));
         this.next(t,'B_ENTER','P0_INITIAL_COLLECTED',{pass:r.passed,dispute:t.p0Dispute});return;
       }
       case 'B_ENTER':{
@@ -223,7 +230,7 @@ export class WorkflowController {
         const r=await this.p0Review(t,`final-B${t.bRound}`);
         t.p0Final=r;t.bFindings=[...r.findings];
         if(!r.passed && t.bFindings.length===0) t.bFindings=['Final P0 verdict not PASS; report requires investigation'];
-        t.p0Dispute=r.dispute||(r.reports.some(x=>x.verdict==='PASS')&&r.reports.some(x=>x.verdict==='FAIL'));
+        t.p0Dispute=r.dispute||(r.reports.some(x=>PASS(x.verdict))&&r.reports.some(x=>x.verdict==='FAIL'));
         if(t.p0Dispute){this.next(t,'ARBITRATOR','P0_CONFLICT_NEEDS_ARBITRATION');return;}
         if(!r.passed || t.bFindings.length){this.next(t,'B_ENTER','P0_FINAL_REQUIRES_REMEDIATION');return;}
         this.next(t,'READY_FINAL','P0_FINAL_PASS',{sha:r.commit});return;
@@ -253,12 +260,17 @@ export class WorkflowController {
   async run(id,{maxSteps=100}={}){
     return this.store.withLock(id,async()=>{
       const start=this.required(id);
+      // An uncertain process must stay uncertain. Do not turn it into an
+      // ordinary preflight BLOCKED state or erase the original incident.
+      this.store.verify(id);
+      if(start.status==='NEEDS_RECONCILIATION'||start.inflight)
+        throw new Error('task state NEEDS_RECONCILIATION: reconcile before dispatch');
       try { await this.livePreflight(start); }
       catch (e) {
         // Never re-seal corrupted state: a detected ledger failure must stay corrupt
         // and require offline forensic recovery from a trusted anchor (R2-001).
         this.store.verify(id);
-        if (!TERMINAL.has(start.stage)) {
+        if (!TERMINAL.has(start.stage)&&start.status==='READY'&&!start.inflight) {
           start.status='BLOCKED'; start.pendingHuman=`Preflight failed: ${e.message}`;
           start.blockedStage=start.stage; start.stage='BLOCKED';
           this.store.save(start,'PREFLIGHT_BLOCKED',{reason:e.message});
@@ -295,6 +307,8 @@ export class WorkflowController {
   authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null}){
     this.store.verify(id);
     const t=this.required(id);
+    this.assertFrozenIntegrity(t);
+    this.compliance(t);
     assert(t.stage==='BLOCKED'&&t.status==='BLOCKED','recovery only for definitely blocked, non-inflight stage');
     assert(!t.inflight,'recovery requires zero in-flight operations');
     assert(this.store.dispatches(id).every(d=>d.state==='TERMINAL'),

@@ -4,6 +4,15 @@ import { DatabaseSync } from 'node:sqlite';
 import { canonical, sha256, assert, checkedId } from './policy.mjs';
 
 export class Store {
+  // Only the Store's own verified, synchronous mutation methods may append
+  // against an already-mutated row. No public caller can set this private flag.
+  #trustedEventWrite=false;
+  #appendVerifiedMutation(id,type,payload) {
+    assert(!this.#trustedEventWrite,'nested trusted event append forbidden');
+    this.#trustedEventWrite=true;
+    try { return this.event(id,type,payload); }
+    finally { this.#trustedEventWrite=false; }
+  }
   constructor(root,{readOnly=false}={}) {
     this.root=path.resolve(root);
     this.readOnly=readOnly;
@@ -44,7 +53,7 @@ export class Store {
     const digest=sha256(data);
     this.transaction(()=>{
       this.db.prepare('INSERT INTO artifacts(task_id,name,digest) VALUES(?,?,?)').run(id,name,digest);
-      this.event(id,'ARTIFACT_REGISTERED',{name,digest});
+      this.#appendVerifiedMutation(id,'ARTIFACT_REGISTERED',{name,digest});
     });
     return {path:file,sha256:digest};
   }
@@ -53,7 +62,7 @@ export class Store {
     fs.mkdirSync(this.dir(task.id),{recursive:true,mode:0o700});
     this.transaction(()=>{
       this.db.prepare('INSERT INTO tasks(id,data) VALUES(?,?)').run(task.id,canonical(task));
-      this.event(task.id,'CREATED',{digest:task.frozen.digest});
+      this.#appendVerifiedMutation(task.id,'CREATED',{digest:task.frozen.digest});
     });
   }
   get(id) {
@@ -64,11 +73,19 @@ export class Store {
     this.transaction(()=>{
       this.verify(t.id); // Verify persisted state BEFORE updating it (R2-001).
       this.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(canonical(t),t.id);
-      this.event(t.id,type,{stage:t.stage,status:t.status,...payload});
+      this.#appendVerifiedMutation(t.id,type,{stage:t.stage,status:t.status,...payload});
     });
   }
   event(id,type,payload){
     assert(!this.readOnly,'store opened read-only');
+    // Standalone events (including P0 probe-skip) MUST verify their anchor
+    // before they can add a new chain head. Atomic BEGIN IMMEDIATE prevents a
+    // concurrent writer from changing the anchor between verify and append.
+    if(!this.#trustedEventWrite)
+      return this.transaction(()=>{this.verify(id);return this.#appendEventRaw(id,type,payload);});
+    return this.#appendEventRaw(id,type,payload);
+  }
+  #appendEventRaw(id,type,payload) {
     const prev=this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest??'0'.repeat(64);
     const at=new Date().toISOString();
     const body=canonical({...payload,_state_sha256:sha256(this.get(id)),
@@ -82,7 +99,7 @@ export class Store {
       this.verify(id);
       this.db.prepare('INSERT INTO dispatches(id,task_id,phase,agent_id,state,created) VALUES(?,?,?,?,?,?)')
         .run(dispatchId,id,phase,null,'DISPATCH_INTENT',new Date().toISOString());
-      this.event(id,'DISPATCH_INTENT',{phase,dispatchId});
+      this.#appendVerifiedMutation(id,'DISPATCH_INTENT',{phase,dispatchId});
     });
   }
   recordAck(dispatchId,agentId){
@@ -93,7 +110,7 @@ export class Store {
       assert(d&&d.state==='DISPATCH_INTENT','unknown or previously acknowledged dispatch');
       this.db.prepare('UPDATE dispatches SET agent_id=?,state=? WHERE id=?')
         .run(agentId,'ACKNOWLEDGED',dispatchId);
-      this.event(d.task_id,'DISPATCH_ACK',{dispatchId,agentId,phase:d.phase});
+      this.#appendVerifiedMutation(d.task_id,'DISPATCH_ACK',{dispatchId,agentId,phase:d.phase});
     });
   }
   recordTerminal(dispatchId){
@@ -103,7 +120,7 @@ export class Store {
       this.verify(d.task_id);
       assert(d&&d.state==='ACKNOWLEDGED','terminal requires a known acknowledged dispatch');
       this.db.prepare('UPDATE dispatches SET state=? WHERE id=?').run('TERMINAL',dispatchId);
-      this.event(d.task_id,'DISPATCH_TERMINAL',{dispatchId,phase:d.phase,agentId:d.agent_id});
+      this.#appendVerifiedMutation(d.task_id,'DISPATCH_TERMINAL',{dispatchId,phase:d.phase,agentId:d.agent_id});
     });
   }
   dispatches(id){return this.db.prepare('SELECT * FROM dispatches WHERE task_id=? ORDER BY created,id').all(id);}

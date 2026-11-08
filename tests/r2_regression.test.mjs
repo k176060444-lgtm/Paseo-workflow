@@ -6,14 +6,17 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {Store} from '../src/store.mjs';
 import {WorkflowController} from '../src/controller.mjs';
-import {parseAgentOutput} from '../src/policy.mjs';
+import {parseAgentOutput,sha256,ROLE_PERMISSIONS,MAX_A,MAX_B} from '../src/policy.mjs';
 import {commitWorktree,porcelainPaths} from '../src/git.mjs';
 
 function sandbox(){
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'p1-r2-'));
   const store=new Store(path.join(dir,'state'));
   const id='TASK7777';
-  store.init({id,stage:'BLOCKED',status:'BLOCKED',frozen:{digest:'f'.repeat(64)},
+  const frozen={schema:1,intent:'Synthetic offline fixture',
+    policy:{maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
+  frozen.digest=sha256(frozen);
+  store.init({id,stage:'BLOCKED',status:'BLOCKED',frozen,
     aRound:0,bRound:9,currentSha:null,taskSpecSha:null,history:[],inflight:null});
   return {dir,store,id,dispose(){store.close();fs.rmSync(dir,{recursive:true,force:true});}};
 }
@@ -34,7 +37,7 @@ test('R2-001 tampered budget never re-anchored by run or recovery', async()=>{
     assert.throws(()=>w.store.verify(w.id),/state differs/);
     const c=new WorkflowController({store:w.store,runtime:null,p0:null});
     await assert.rejects(()=>c.run(w.id),/state differs/);
-    assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'human',receipt:'Explicit audited recovery approval.',expectedBasis:'f'.repeat(64)}),/state differs/);
+    assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'human',receipt:'Explicit audited recovery approval.',expectedBasis:w.store.get(w.id).frozen.digest}),/state differs/);
     assert.throws(()=>w.store.verify(w.id),/state differs/);
     assert.equal(w.store.get(w.id).bRound,0); // still corrupt, NOT trusted
   } finally {w.dispose();}
@@ -77,7 +80,7 @@ test('R2-008 early blocked task recovers only on matching frozen basis',()=>{
   try{
     const c=new WorkflowController({store:w.store,runtime:null,p0:null});
     assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'human',receipt:'Explicit local approval to recover.',expectedBasis:'0'.repeat(64)}),/basis/);
-    const r=c.authorizeRecovery({id:w.id,actor:'human',receipt:'Explicit local approval to recover.',expectedBasis:'f'.repeat(64)});
+    const r=c.authorizeRecovery({id:w.id,actor:'human',receipt:'Explicit local approval to recover.',expectedBasis:w.store.get(w.id).frozen.digest});
     assert.equal(r.stage,'PLANNER');
     assert.equal(w.store.get(w.id).bRound,9);
     w.store.verify(w.id);

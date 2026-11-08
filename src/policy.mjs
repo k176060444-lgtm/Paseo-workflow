@@ -95,20 +95,22 @@ export function finalJsonEnvelope(raw, role='agent') {
   assert(typeof raw==='string','agent result must be text');
   const text=raw.trim();
   const candidates=[text];
-  const fenced=/```(?:json)?\s*\n(\{[\s\S]*?\})\s*```\s*$/i.exec(text);
+  // Only a *terminal* fenced JSON block may be interpreted as the verdict.
+  const fenced=/(?:^|\r?\n)[ \t]*```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*$/i.exec(text);
   if(fenced)candidates.push(fenced[1]);
-  const last=text.lastIndexOf('\n{');
-  if(last!==-1)candidates.push(text.slice(last+1));
+  // Accept indented or pretty-printed bare JSON AFTER Markdown, provided
+  // the entire remaining suffix is one valid object (no trailing prose).
+  for(const m of text.matchAll(/(?:^|\r?\n)[ \t]*(?=\{)/g))
+    candidates.push(text.slice(m.index));
   for(const candidate of candidates){
     try {
-      const obj=JSON.parse(candidate);
+      const obj=JSON.parse(candidate.trim());
       if(obj&&typeof obj==='object'&&!Array.isArray(obj)&&typeof obj.verdict==='string')
         return obj;
     }catch{}
   }
   throw new Error(`${role}: missing strict final JSON envelope; manual reconciliation required`);
 }
-
 export function parseAgentOutput(raw, role) {
   const output=finalJsonEnvelope(raw,role);
   assert(output && typeof output === 'object' && !Array.isArray(output), `${role}: invalid output`);

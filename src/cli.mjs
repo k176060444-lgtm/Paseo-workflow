@@ -24,7 +24,8 @@ Commands:
   verify --id TASK1234
   approve --id TASK1234 --gate 0.1|0.2|5.9 --digest SHA --actor NAME --receipt FILE
   run --id TASK1234                   # requires explicit safety environment and installed Paseo
-  recover --id TASK1234 --actor NAME --receipt FILE --sha EXACT_COMMIT\n  recover --id TASK1234 --actor NAME --receipt FILE --basis FROZEN_SPEC_OR_CONFIG_SHA  # pre-commit only
+  recover --id TASK1234 --actor NAME --receipt FILE --sha EXACT_COMMIT
+  recover --id TASK1234 --actor NAME --receipt FILE --basis FROZEN_SPEC_OR_CONFIG_SHA  # pre-commit only
 State root: --state /secure/state (default .p1-state)
 Environment required for run: P1_LIVE_ALLOWED=YES and P1_HOST_ISOLATION_ATTESTED=YES
 Never run live until local independent review and node-specific test have passed.`;

@@ -17,7 +17,7 @@ export function execArgv(bin,args,{cwd,timeoutMs=120000,stdin,env}={}) {
     const proc=spawn(bin,args,{cwd,env:childEnv(env),shell:false,windowsHide:true,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe']});
     const out=[],err=[];let bytes=0;let timedOut=false;let truncated=false;let settled=false;
     const killTree=()=>{
-      if(process.platform==='win32'){const killer=spawn('taskkill',['/PID',String(proc.pid),'/T','/F'],{shell:false,windowsHide:true,stdio:'ignore'});killer.on('error',()=>proc.kill());}
+      if(process.platform==='win32'){const killer=spawn('taskkill',['/PID',String(proc.pid),'/T','/F'],{shell:false,windowsHide:true,stdio:'ignore',env:childEnv()});killer.on('error',()=>proc.kill());}
       else {try{process.kill(-proc.pid,'SIGKILL');}catch{proc.kill('SIGKILL');}}
     };
     const timer=setTimeout(()=>{timedOut=true;killTree();
@@ -71,7 +71,19 @@ export function porcelainPaths(raw){
 }
 function safeChange(dir,p){
   assert(typeof p==='string'&&p.length>0&&!p.includes('\0'),'invalid git path');
-  assert(!SENSITIVE_PATH.test(p),`refusing to commit sensitive-looking file: ${p}`);
+  // Never silently normalize Git paths: Windows may alias whitespace/dots
+  // and Unicode format characters, while Git tracks their literal bytes.
+  // Reject ambiguous components before checking their sensitive basename.
+  const parts=p.split(/[\\/]/);
+  for(const part of parts){
+    assert(part.length>0&&part!=='.'&&part!=='..','unsafe git path component');
+    assert(part===part.trim()&&!/[. ]$/.test(part),
+      `ambiguous whitespace or trailing-dot Git path: ${p}`);
+    assert(!/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/u.test(part),
+      `unsafe control/format character in Git path: ${p}`);
+  }
+  const comparable=parts.map(part=>part.normalize('NFKC')).join('/');
+  assert(!SENSITIVE_PATH.test(comparable),`refusing to commit sensitive-looking file: ${p}`);
   const root=path.resolve(dir), file=path.resolve(root,p);
   assert(file.startsWith(root+path.sep),'git change outside worktree');
   if(fs.existsSync(file))assert(!fs.lstatSync(file).isSymbolicLink(),`symlink in change: ${p}`);
