@@ -1,0 +1,8 @@
+CONFIRMED R4-002 init() accepts forged frozen snapshot/digest as initial trust root; recovery proceeds 
+CONFIRMED R4-002 init() accepts pre-set TASK_SPEC pair without TASK_SPEC_CANDIDATE; recovery proceeds 
+CONFIRMED R4-002 init() stores incomplete TASK_SPEC pair; only later integrity check rejects 
+CONFIRMED R4-002 save() can freeze TASK_SPEC at BLOCKED stage; recovery accepts forged basis 
+CONFIRMED R4-002 wrong recovery basis rejected 
+CONFIRMED R4-002 outstanding dispatch blocks recovery 
+CONFIRMED R4-002 init() arbitrary currentSha accepted as recovery basis with no Git check 
+TOTAL 7 CONFIRMED 7

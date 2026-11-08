@@ -1,0 +1,37 @@
+[
+  {
+    "name": "R4-002 init() accepts forged frozen snapshot/digest as initial trust root; recovery proceeds",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-002 init() accepts pre-set TASK_SPEC pair without TASK_SPEC_CANDIDATE; recovery proceeds",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-002 init() stores incomplete TASK_SPEC pair; only later integrity check rejects",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-002 save() can freeze TASK_SPEC at BLOCKED stage; recovery accepts forged basis",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-002 wrong recovery basis rejected",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-002 outstanding dispatch blocks recovery",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-002 init() arbitrary currentSha accepted as recovery basis with no Git check",
+    "result": "CONFIRMED",
+    "detail": ""
+  }
+]

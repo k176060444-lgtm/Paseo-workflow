@@ -1,0 +1,27 @@
+[
+  {
+    "name": "R4-003 same-connection fsync tamper rejected + DB rollback + orphan fail-closed",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-003 second SQLite writer blocked by BEGIN IMMEDIATE; artifact committed",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-003 registration failure rolls back DB, leaves orphan, verify fail-closed",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-003 pre-existing orphan blocks artifact before write",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-003 duplicate artifact filename rejected, single manifest row",
+    "result": "CONFIRMED",
+    "detail": ""
+  }
+]

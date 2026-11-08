@@ -1,0 +1,106 @@
+diff --git a/remote/p0_runner.py b/remote/p0_runner.py
+index 4cb2b14..b2077f2 100644
+--- a/remote/p0_runner.py
++++ b/remote/p0_runner.py
+@@ -138,27 +138,25 @@ def process_alive(pid):
+         return False
+ 
+ def final_json(text):
+-    data=text.strip()
+-    choices=[data]
+-    fence=chr(96)*3
+-    fenced_pattern=(r'(?:^|\r?\n)[ \t]*'+re.escape(fence)+
+-                    r'(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*'+
+-                    re.escape(fence)+r'[ \t]*$')
+-    fenced=re.search(fenced_pattern,data,re.IGNORECASE)
+-    if fenced:
+-        choices.append(fenced.group(1))
+-    # A bare JSON envelope must occupy the entire final suffix. Support
+-    # indentation/pretty JSON, but never consume arbitrary trailing prose.
+-    for match in re.finditer(r'(?:^|\r?\n)[ \t]*(?=\{)',data):
+-        choices.append(data[match.start():])
+-    for candidate in choices:
++    # Exactly one independent, standalone verdict object may be accepted.
++    # A later PASS must NEVER override an earlier standalone FAIL.
++    decoder=json.JSONDecoder()
++    found=[]
++    for match in re.finditer(r'(?:^|\r?\n)[ \t]*(?=\{)',text):
++        start=match.end()
+         try:
+-            obj=json.loads(candidate.strip())
+-            if isinstance(obj,dict) and isinstance(obj.get('verdict'),str):
+-                return obj
++            obj,consumed=decoder.raw_decode(text[start:])
+         except (ValueError,TypeError):
+-            pass
+-    return None
++            continue
++        if isinstance(obj,dict) and isinstance(obj.get('verdict'),str):
++            found.append((obj,start+consumed))
++    if len(found)!=1:
++        return None
++    obj,end=found[0]
++    suffix=text[end:].strip()
++    if suffix and suffix!=chr(96)*3:
++        return None
++    return obj
+ 
+ def response(obj):
+     print(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), flush=True)
+diff --git a/src/policy.mjs b/src/policy.mjs
+index dfcd975..f550a91 100644
+--- a/src/policy.mjs
++++ b/src/policy.mjs
+@@ -93,23 +93,38 @@ export function providerOptions(role, harness) {
+ // fenced/bare JSON envelope. Never interpret arbitrary prose as PASS (R2-006).
+ export function finalJsonEnvelope(raw, role='agent') {
+   assert(typeof raw==='string','agent result must be text');
+-  const text=raw.trim();
+-  const candidates=[text];
+-  // Only a *terminal* fenced JSON block may be interpreted as the verdict.
+-  const fenced=/(?:^|\r?\n)[ \t]*```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*$/i.exec(text);
+-  if(fenced)candidates.push(fenced[1]);
+-  // Accept indented or pretty-printed bare JSON AFTER Markdown, provided
+-  // the entire remaining suffix is one valid object (no trailing prose).
+-  for(const m of text.matchAll(/(?:^|\r?\n)[ \t]*(?=\{)/g))
+-    candidates.push(text.slice(m.index));
+-  for(const candidate of candidates){
++  // JSON verdicts are security decisions, not examples: find every complete
++  // standalone line-start verdict object, then require exactly ONE. In
++  // particular, FAIL followed by PASS must never silently return PASS.
++  const results=[];
++  for(const match of raw.matchAll(/(?:^|\r?\n)[ \t]*(?=\{)/g)){
++    const start=match.index+match[0].length;
++    let depth=0,inString=false,escaped=false,end=-1;
++    for(let i=start;i<raw.length;i++){
++      const c=raw[i];
++      if(inString){
++        if(escaped)escaped=false;
++        else if(c==='\\')escaped=true;
++        else if(c==='"')inString=false;
++        continue;
++      }
++      if(c==='"'){inString=true;continue;}
++      if(c==='{')depth++;
++      else if(c==='}'){if(--depth===0){end=i+1;break;}if(depth<0)break;}
++    }
++    if(end<0)continue;
+     try {
+-      const obj=JSON.parse(candidate.trim());
++      const obj=JSON.parse(raw.slice(start,end));
+       if(obj&&typeof obj==='object'&&!Array.isArray(obj)&&typeof obj.verdict==='string')
+-        return obj;
+-    }catch{}
++        results.push({obj,end});
++    } catch{}
+   }
+-  throw new Error(`${role}: missing strict final JSON envelope; manual reconciliation required`);
++  assert(results.length===1,
++    `${role}: ambiguous or missing final JSON verdict object; manual reconciliation required`);
++  const suffix=raw.slice(results[0].end).trim();
++  assert(suffix===''||suffix==='```',
++    `${role}: final JSON verdict must be terminal; manual reconciliation required`);
++  return results[0].obj;
+ }
+ export function parseAgentOutput(raw, role) {
+   const output=finalJsonEnvelope(raw,role);

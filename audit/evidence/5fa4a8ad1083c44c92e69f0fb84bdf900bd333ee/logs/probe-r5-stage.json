@@ -1,0 +1,34 @@
+[
+  {
+    "name": "R5-001a save() can jump WAIT_GATE_01 -> PLANNER/READY without Gate 0.1 approval",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R5-001b save() can forge currentSha and WAIT_GATE_59, then approve Gate 5.9 with no tests/P0",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R5-001c init() can create a task already at WAIT_GATE_59 with fake currentSha, then approve",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R5-001d TASK_SPEC can be frozen at WAIT_GATE_01, then stage set to PREPARE without Gate 0.1/0.2",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R5-001e save() can forge lastB/P0 evidence and pass compliance() at READY_FINAL",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R5-001f save() can advance aRound with GATE_A_ROUND_START at WAIT_GATE_01 (no real round)",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R5-001g save() accepts arbitrary baseSha/currentSha with no Git object/ancestry check",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R5-001h save() appends forged reviewer history without any seat/commit validation",
+    "result": "CONFIRMED"
+  }
+]

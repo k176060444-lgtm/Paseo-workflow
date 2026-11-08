@@ -1,0 +1,698 @@
+{
+  "schema": "paseo-s0-r4-fifth-round-audit/v1",
+  "audited_commit": "5fa4a8ad1083c44c92e69f0fb84bdf900bd333ee",
+  "baseline_commit": "fa157e1ce53374d539f4b5b5aa1129eccad7cb3b",
+  "parent_commit": "e4c93d3ee6ed9be7081e06596ce96411a2708bdf",
+  "tree": "518032cba06467be3cf5e6b218b9ea0ce654ac06",
+  "remediation_doc": "docs/R4_REMEDIATION_20261108.md",
+  "previous_evidence_commit": "a37ed859ba57a46407d911c42c027595e2138e3a",
+  "audit_status": "COMPLETE",
+  "code_verdict": "FAIL",
+  "live_integration_status": "BLOCKED",
+  "counting_note": "R4-001..R4-007 are the remediation items under review. R5-001..R5-003 are new/residual defects found in this round. F1-F10, R2-001..R2-010 and R3-001..R3-008 are regression-checked. FIXED means only the stated offline subparts; never live acceptance.",
+  "r4_findings": [
+    {
+      "id": "R4-001",
+      "severity": "BLOCKER",
+      "disposition": "NOT_FIXED",
+      "title": "Round/frozen/history constraints work, but Store.save() still permits arbitrary stage/status/approval/P0 transitions",
+      "sources": [
+        "src/store.mjs:88-145",
+        "src/controller.mjs:23-37",
+        "src/controller.mjs:59-73"
+      ],
+      "evidence": [
+        "logs/probe-r5-stage.log",
+        "logs/probe-r5-rounds.log",
+        "logs/probe-r5-stage.json",
+        "logs/probe-r5-rounds.json"
+      ],
+      "fixed_subparts": {
+        "a_b_round_monotonic": "FIXED: 10/9 -> 0/0, decrease, skip, >10 and wrong event all rejected; legal +1 only via GATE_A/B_ROUND_START",
+        "frozen_immutable": "FIXED: save() rejects any frozen change even with recomputed digest",
+        "history_prefix": "FIXED: truncation rejected; append only",
+        "baseSha_replacement": "FIXED: replacement after establish rejected",
+        "currentSha_wrong_event": "FIXED: change only allowed on WORKTREE_PREPARED/A_COMMIT_FROZEN/B_COMMIT_FROZEN"
+      },
+      "open_subparts": {
+        "stage_status": "OPEN: save(t,'GATE_0.1_APPROVED') moves WAIT_GATE_01 -> PLANNER/READY with no approval",
+        "gate_5_9": "OPEN: save currentSha='d'*40, stage=WAIT_GATE_59, then Controller.approve(gate 5.9) closes with no tests/P0",
+        "p0_lastB": "OPEN: save arbitrary lastB.tests.pass/commit and p0Initial.passed/reports; compliance() returns true",
+        "history_forgery": "OPEN: arbitrary reviewer/tester/P0 history entries append",
+        "round_start": "OPEN: GATE_A_ROUND_START advances aRound at WAIT_GATE_01 without a real round"
+      },
+      "observed": "The new #validateTaskTransition covers frozen/rounds/TASK_SPEC/history/baseSha/currentSha but has no stage/status/pendingHuman/lastB/p0/reviewers checks. A direct public save() can therefore jump gates, forge final P0/tester evidence, and approve Gate 5.9. This is exactly the '阶段跃迁或审批绕过' the task required, and the round counter not decreasing does not make Store safe.",
+      "minimal_fix": "Add a Controller-owned stage/status transition table and validate it in save() (allowed from/to pairs per event type), require approval artifacts/receipts for GATE_0.1/0.2/5.9, require lastB/P0 fields to be produced by typed transitions with matching commit/evidence, and reject history entries not backed by a matching artifact/event."
+    },
+    {
+      "id": "R4-002",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Frozen/pair/type constraints fixed, but init() and first TASK_SPEC are not bound to a trusted Planner/approval root",
+      "sources": [
+        "src/store.mjs:76-83",
+        "src/store.mjs:103-124",
+        "src/controller.mjs:40-52",
+        "src/controller.mjs:313-340"
+      ],
+      "evidence": [
+        "logs/probe-r5-trust.log",
+        "logs/probe-r5-trust.json",
+        "logs/probe-r5-rounds.log"
+      ],
+      "fixed_subparts": {
+        "frozen_replacement": "FIXED: save() rejects frozen with recomputed digest",
+        "task_spec_pair": "FIXED: save() requires spec+sha both present/absent and matching",
+        "task_spec_replacement": "FIXED: approved spec immutable",
+        "controller_pair": "FIXED: assertFrozenIntegrity rejects incomplete pair"
+      },
+      "open_subparts": {
+        "init_trust_root": "OPEN: Store.init() accepts a forged frozen snapshot with recomputed digest; authorizeRecovery accepts it",
+        "init_task_spec": "OPEN: Store.init() accepts a pre-set TASK_SPEC pair without TASK_SPEC_CANDIDATE; recovery proceeds",
+        "init_incomplete_pair": "OPEN: Store.init() stores an incomplete pair; only later assertFrozenIntegrity rejects",
+        "planner_binding": "OPEN: save(t,'TASK_SPEC_CANDIDATE') works at BLOCKED/WAIT_GATE_01; no stage/role binding",
+        "current_sha": "OPEN: init() accepts arbitrary currentSha as recovery basis; no Git object/ancestry verification"
+      },
+      "observed": "Controller-side pair check and save-side immutability are real. However, the initial trust root is still caller-supplied: Store.init() does not require WAIT_GATE_01/WAITING_HUMAN, a valid approved frozen config, or absence of taskSpec/currentSha. First TASK_SPEC is guarded only by the caller-chosen event type, not by stage/role. A forged initial snapshot can therefore be recovered as if approved.",
+      "minimal_fix": "Make init() accept only a minimal creation record (WAIT_GATE_01/WAITING_HUMAN, aRound=bRound=0, no spec/baseSha/currentSha/history) and require the Controller to establish frozen/spec through typed, stage-bound transitions. Bind TASK_SPEC_CANDIDATE to stage PLANNER and a Planner artifact/agent identity."
+    },
+    {
+      "id": "R4-003",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "artifact() spans verify, file write/fsync, manifest insert and ledger append in one BEGIN IMMEDIATE; tamper/orphan cases fail closed",
+      "sources": [
+        "src/store.mjs:42-75",
+        "src/store.mjs:194-224"
+      ],
+      "evidence": [
+        "logs/probe-r5-artifact.log",
+        "logs/probe-r5-artifact.json"
+      ],
+      "observed": "Same-connection fsync tamper: rejected with 'task state changed during evidence fsync', DB rolled back, unregistered file causes verify() to fail closed. Second SQLite writer: blocked by BEGIN IMMEDIATE (locked/busy), artifact commits. Registration event failure: DB rollback, file remains orphan, verify() rejects. Pre-existing orphan: artifact rejected before write. Duplicate filename: EEXIST, single manifest row. File system and SQLite are not atomic; the code correctly keeps the orphan for manual reconciliation rather than claiming atomicity.",
+      "residual": "A crashed registration leaves an orphan requiring manual reconciliation; no automatic cleanup (by design)."
+    },
+    {
+      "id": "R4-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Multiple independent verdict fenced blocks are conservatively rejected; no example-based winner selection",
+      "sources": [
+        "src/policy.mjs:94-128",
+        "remote/p0_runner.py:140-159"
+      ],
+      "evidence": [
+        "logs/probe-r5-parser-local.log",
+        "logs/probe-r5-parser-remote.log"
+      ],
+      "observed": "Two fenced verdicts reject as ambiguous; only a single terminal fenced/bare verdict parses. This is the intended fail-closed contract, not an automatic failure."
+    },
+    {
+      "id": "R4-005",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Local and remote parsers require exactly one terminal verdict; FAIL then PASS never becomes PASS",
+      "sources": [
+        "src/policy.mjs:94-128",
+        "remote/p0_runner.py:140-159",
+        "remote/p0_runner.py:164-189"
+      ],
+      "evidence": [
+        "logs/probe-r5-parser-local.log",
+        "logs/probe-r5-parser-local.json",
+        "logs/probe-r5-parser-remote.log",
+        "logs/probe-r5-parser-remote.json"
+      ],
+      "observed": "Local: FAIL/PASS either order rejects; two fences reject; inline example + terminal FAIL returns FAIL; single terminal bare/fenced/indented/CRLF parses; truncated/trailing prose rejects; PASS+BLOCKER rejects; APPROVE_WITH_COMMENTS+LOW passes, +HIGH rejects. Remote: final_json returns None for FAIL/PASS and two fences; parse_output returns QUESTION for multi-verdict JSONL and FAIL for a single terminal JSONL; trailing/truncated returns QUESTION; PASS+BLOCKER -> FAIL; APPROVE_WITH_COMMENTS LOW/HIGH severity matches local.",
+      "residual": "Multi-verdict reports require manual reconciliation (intentional conservative behavior)."
+    },
+    {
+      "id": "R4-006",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Invisible/deceptive Unicode prefixes are rejected; Chinese and normal filenames remain accepted",
+      "sources": [
+        "src/git.mjs:78-86"
+      ],
+      "evidence": [
+        "logs/probe-r5-git.log",
+        "logs/probe-r5-git.json"
+      ],
+      "observed": "U+00AD, U+034F, U+180E, U+3164, U+2800, U+200B, U+200D, U+2060, U+202E, U+FFA0 prefixes before .env are rejected. U+FEFF is rejected as ambiguous whitespace. Fullwidth NFKC .env and leading-space .env are rejected. Normal ASCII foo.env/env/normal.txt/.gitignore and Chinese 中文.txt/中文目录/说明.md/环境.env are accepted. U+2215 is a normal filename, not a path separator."
+    },
+    {
+      "id": "R4-007",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "validateStaged scans the full Git index and rejects inherited 120000/160000 and sensitive .env paths",
+      "sources": [
+        "src/git.mjs:49-52",
+        "src/git.mjs:91-105",
+        "src/git.mjs:107-118"
+      ],
+      "evidence": [
+        "logs/probe-r5-git.log",
+        "logs/probe-r5-git.json",
+        "logs/npm-test.stdout.log"
+      ],
+      "observed": "prepare() rejects a base index containing a 120000 symlink, a 160000 gitlink, or a sensitive .env path. commitWorktree() rejects a clean worktree with an inherited symlink. The official Windows test skips real OS symlink creation with EPERM, but the index-level 120000 case is exercised by an independent probe.",
+      "residual": "Real Windows OS symlink creation is NOT_VERIFIED (EPERM); Git index mode 120000 is verified."
+    }
+  ],
+  "r5_findings": [
+    {
+      "id": "R5-001",
+      "severity": "BLOCKER",
+      "kind": "code_defect",
+      "title": "Public Store.save() still allows arbitrary stage/status/approval/P0/tester/history forgery",
+      "sources": [
+        "src/store.mjs:88-145",
+        "src/controller.mjs:23-37",
+        "src/controller.mjs:59-73"
+      ],
+      "evidence": [
+        "logs/probe-r5-stage.log",
+        "logs/probe-r5-stage.json"
+      ],
+      "repro": "Init at WAIT_GATE_01. (a) save(t,'GATE_0.1_APPROVED') with stage=PLANNER/status=READY -> Gate 0.1 bypass. (b) save(t,'A_COMMIT_FROZEN') with currentSha='d'*40/stage=WAIT_GATE_59 -> Controller.approve({gate:'5.9',digest:sha}) -> CLOSED. (c) save arbitrary lastB.tests.pass/commit and p0Initial.passed/reports -> compliance() returns true. (d) append forged reviewer history. All verify() calls pass.",
+      "impact": "A caller with Store access can skip Gate 0.1/0.2, fake double review/tester/P0 evidence, and close Gate 5.9 without any real work. This is a gate/approval bypass, not just a missing round check.",
+      "minimal_fix": "Validate stage/status transitions inside save() against a Controller-owned allowlist per event type; require approval artifacts/receipts for GATE_0.1/0.2/5.9; require lastB/P0 fields to be produced by typed transitions with matching commit/evidence; reject history entries without matching artifact/event."
+    },
+    {
+      "id": "R5-002",
+      "severity": "BLOCKER",
+      "kind": "code_defect",
+      "title": "Store.init() accepts a task already at a final/high stage, with forged frozen/taskSpec/currentSha",
+      "sources": [
+        "src/store.mjs:76-83"
+      ],
+      "evidence": [
+        "logs/probe-r5-stage.log",
+        "logs/probe-r5-stage.json",
+        "logs/probe-r5-trust.log",
+        "logs/probe-r5-trust.json"
+      ],
+      "repro": "init({stage:'WAIT_GATE_59',status:'READY',currentSha:'e'*40,aRound:10,bRound:10,frozen:forged}) -> verify() passes -> Controller.approve({gate:'5.9',digest:'e'*40}) -> CLOSED. init with a pre-set TASK_SPEC pair and no Planner event -> authorizeRecovery accepts and moves to PREPARE. init with only taskSpec (no sha) -> verify() passes; only later assertFrozenIntegrity rejects.",
+      "impact": "The initial trust root is caller-supplied; a new task can start at final gate with forged evidence and be approved. This defeats the intended Gate 0.1/0.2 root of trust.",
+      "minimal_fix": "Restrict init() to the exact creation record (WAIT_GATE_01/WAITING_HUMAN, aRound=bRound=0, no spec/baseSha/currentSha/history) and require the Controller to establish frozen/spec through typed, stage-bound transitions."
+    },
+    {
+      "id": "R5-003",
+      "severity": "HIGH",
+      "kind": "code_defect",
+      "title": "baseSha/currentSha are arbitrary strings; no Git object/ancestry check",
+      "sources": [
+        "src/store.mjs:121-129",
+        "src/controller.mjs:322"
+      ],
+      "evidence": [
+        "logs/probe-r5-stage.log",
+        "logs/probe-r5-stage.json",
+        "logs/probe-r5-rounds.log",
+        "logs/probe-r5-rounds.json",
+        "logs/probe-r5-trust.log"
+      ],
+      "repro": "save(t,'WORKTREE_PREPARED') with baseSha='1'*40; save(t,'A_COMMIT_FROZEN') with currentSha='2'*40; verify() passes. init(currentSha='7'*40) then authorizeRecovery(expectedSha='7'*40) accepts. No Git cat-file/merge-base or frozen baseRef comparison is performed.",
+      "impact": "A forged commit SHA can become the recovery basis or final commit without existing in the repository or descending from the approved base. This weakens final-commit/P0 binding.",
+      "minimal_fix": "At preparation/freeze/recovery, verify the SHA exists, is a commit, descends from the frozen baseRef, and matches the worktree's actual HEAD."
+    }
+  ],
+  "original_findings": [
+    {
+      "id": "F1",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "PASS+findings / blocking severity cannot advance",
+      "sources": [
+        "src/policy.mjs:129-145",
+        "src/controller.mjs:83-85"
+      ],
+      "evidence": [
+        "logs/probe-r5-parser-local.log",
+        "logs/probe-r5-parser-remote.log"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Two-seat quorum, third-seat window, cancel/lost ACK",
+      "sources": [
+        "src/p0.mjs:60-141"
+      ],
+      "evidence": [
+        "logs/regress-f_regression.stdout.log",
+        "logs/regress-r3_007_p0.stdout.log"
+      ],
+      "residual": "Real two hosts/600s/Linux process group NOT_VERIFIED."
+    },
+    {
+      "id": "F3",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Duplicate HMAC/physical identity",
+      "sources": [
+        "src/p0.mjs:27-59"
+      ],
+      "evidence": [
+        "logs/regress-f_regression.stdout.log",
+        "logs/regress-r3_007_p0.stdout.log"
+      ],
+      "residual": "Real physical identity NOT_VERIFIED."
+    },
+    {
+      "id": "F4",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "waitForFinish numeric timeout",
+      "sources": [
+        "src/agents.mjs:28"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real SDK/daemon NOT_VERIFIED."
+    },
+    {
+      "id": "F5",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Soul V2.1 migration and legal deliverable mapping",
+      "sources": [
+        "docs/SOUL_V21_MIGRATION_PENDING.md",
+        "docs/SOUL_PROVENANCE.md",
+        "src/policy.mjs:129-145"
+      ],
+      "evidence": [
+        "logs/regress-r2_006_parser_soul.stdout.log"
+      ],
+      "residual": "11 Soul blobs match provenance; 6 still contain legacy APPROVE/REQUEST_CHANGES/Pro-Audit text; no legal Markdown/JSON deliverable mapping."
+    },
+    {
+      "id": "F6",
+      "severity": "BLOCKER",
+      "disposition": "NOT_VERIFIED",
+      "title": "Windows OS boundary and TEST_ONLY",
+      "sources": [
+        "src/policy.mjs:75-90",
+        "docs/SECURITY.md"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "No Windows SID/ACL/network/Job Object, TEST_ONLY incorporation or real SDK/Harness acceptance."
+    },
+    {
+      "id": "F7",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "SQLite transactions, digests and evidence chain",
+      "sources": [
+        "src/store.mjs:30-224"
+      ],
+      "evidence": [
+        "logs/probe-r5-artifact.log",
+        "logs/probe-r5-stage.log"
+      ],
+      "residual": "R5-001 / R5-002 / R5-003."
+    },
+    {
+      "id": "F8",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Compliance stop and human recovery",
+      "sources": [
+        "src/controller.mjs:59-73",
+        "src/controller.mjs:313-340"
+      ],
+      "evidence": [
+        "logs/probe-r5-stage.log",
+        "logs/probe-r5-trust.log"
+      ],
+      "residual": "R5-001 / R5-002 / R5-003."
+    },
+    {
+      "id": "F9",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Child-process environment and raw-log boundary",
+      "sources": [
+        "src/git.mjs:15-21",
+        "remote/p0_runner.py:26-36",
+        "remote/p0_runner.py:305-306"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ],
+      "residual": "Env fixed; raw-log redaction/ACL NOT_VERIFIED."
+    },
+    {
+      "id": "F10",
+      "severity": "MEDIUM",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Query/worktree/process lifecycle",
+      "sources": [
+        "src/store.mjs:225-240",
+        "remote/p0_runner.py:112-138"
+      ],
+      "evidence": [
+        "logs/regress-r2_002_003_004.stdout.log"
+      ],
+      "residual": "Read-only WAL side files by design; real process tree NOT_VERIFIED."
+    }
+  ],
+  "r2_findings": [
+    {
+      "id": "R2-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Preflight re-anchor fixed; stage/approval path still open",
+      "sources": [
+        "src/controller.mjs:266-304",
+        "src/store.mjs:88-145"
+      ],
+      "evidence": [
+        "logs/probe-r5-stage.log"
+      ],
+      "residual": "R5-001."
+    },
+    {
+      "id": "R2-002",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Artifact orphan/registration/directory anomalies fail closed",
+      "sources": [
+        "src/store.mjs:42-75",
+        "src/store.mjs:194-224"
+      ],
+      "evidence": [
+        "logs/probe-r5-artifact.log",
+        "logs/regress-r2_002_003_004.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "inspect/readSnapshot one SQLite snapshot",
+      "sources": [
+        "src/controller.mjs:306-311",
+        "src/store.mjs:225-230"
+      ],
+      "evidence": [
+        "logs/regress-r2_002_003_004.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Read-only WAL side files documented",
+      "sources": [
+        "src/store.mjs:16-28"
+      ],
+      "evidence": [
+        "logs/regress-r2_002_003_004.stdout.log"
+      ],
+      "residual": "Filesystem side effect remains by design."
+    },
+    {
+      "id": "R2-005",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "All subprocesses use minimal env",
+      "sources": [
+        "src/git.mjs:15-21",
+        "remote/p0_runner.py:26-36",
+        "remote/p0_runner.py:305-306"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ],
+      "residual": "Raw logs/ACL NOT_VERIFIED."
+    },
+    {
+      "id": "R2-006",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Parser compatibility fixed; Soul migration/deliverable mapping absent",
+      "sources": [
+        "src/policy.mjs:94-145",
+        "remote/p0_runner.py:140-189",
+        "docs/SOUL_V21_MIGRATION_PENDING.md"
+      ],
+      "evidence": [
+        "logs/probe-r5-parser-local.log",
+        "logs/probe-r5-parser-remote.log",
+        "logs/regress-r2_006_parser_soul.stdout.log"
+      ],
+      "residual": "F5 remains."
+    },
+    {
+      "id": "R2-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Windows Python suite/liveness",
+      "sources": [
+        "remote/p0_runner.py:112-138"
+      ],
+      "evidence": [
+        "logs/python-full.stderr.log"
+      ],
+      "residual": "Linux/real 600s NOT_VERIFIED."
+    },
+    {
+      "id": "R2-008",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "--basis recovery; forged matching digest/init basis remain",
+      "sources": [
+        "src/controller.mjs:313-340",
+        "src/store.mjs:76-83"
+      ],
+      "evidence": [
+        "logs/probe-r5-trust.log"
+      ],
+      "residual": "R4-002/R5-002/R5-003."
+    },
+    {
+      "id": "R2-009",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Leading-space/NFKC/rename/copy/index/symlink/gitlink path checks",
+      "sources": [
+        "src/git.mjs:49-118"
+      ],
+      "evidence": [
+        "logs/probe-r5-git.log",
+        "logs/regress-r2_009_paths.stdout.log"
+      ],
+      "residual": "Real Windows OS symlink creation NOT_VERIFIED (EPERM); index 120000 tested."
+    },
+    {
+      "id": "R2-010",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Successful reviewer evidence preserved; no redispatch",
+      "sources": [
+        "src/controller.mjs:93-125",
+        "src/controller.mjs:266-299"
+      ],
+      "evidence": [
+        "logs/regress-r2_010_pair.stdout.log"
+      ],
+      "residual": "No automated reconcile; manual external reconciliation."
+    }
+  ],
+  "r3_findings": [
+    {
+      "id": "R3-001",
+      "severity": "BLOCKER",
+      "disposition": "NOT_FIXED",
+      "title": "Event boundary fixed but public save still permits stage/approval bypass",
+      "sources": [
+        "src/store.mjs:6-15",
+        "src/store.mjs:88-145"
+      ],
+      "evidence": [
+        "logs/probe-r5-stage.log"
+      ],
+      "residual": "R5-001/R5-002."
+    },
+    {
+      "id": "R3-002",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "Frozen/pair checks fixed; init trust root and first Planner binding open",
+      "sources": [
+        "src/controller.mjs:40-52",
+        "src/store.mjs:76-83"
+      ],
+      "evidence": [
+        "logs/probe-r5-trust.log"
+      ],
+      "residual": "R4-002/R5-002."
+    },
+    {
+      "id": "R3-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "NEEDS_RECONCILIATION/inflight preserved, no redispatch",
+      "sources": [
+        "src/controller.mjs:266-299"
+      ],
+      "evidence": [
+        "logs/regress-r2_010_pair.stdout.log",
+        "logs/probe-r5-stage.log"
+      ]
+    },
+    {
+      "id": "R3-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "taskkill childEnv",
+      "sources": [
+        "src/git.mjs:19-21"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-005",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Popen child_env",
+      "sources": [
+        "remote/p0_runner.py:297-307"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-006",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "CLI real newline",
+      "sources": [
+        "src/cli.mjs:24-29"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "APPROVE_WITH_COMMENTS severity consistent",
+      "sources": [
+        "src/policy.mjs:129-145",
+        "src/p0.mjs:49-62",
+        "remote/p0_runner.py:180-190"
+      ],
+      "evidence": [
+        "logs/probe-r5-parser-local.log",
+        "logs/probe-r5-parser-remote.log",
+        "logs/regress-r3_007_p0.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-008",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Terminal JSON parsing and unique verdict",
+      "sources": [
+        "src/policy.mjs:94-128",
+        "remote/p0_runner.py:140-159"
+      ],
+      "evidence": [
+        "logs/probe-r5-parser-local.log",
+        "logs/probe-r5-parser-remote.log"
+      ],
+      "residual": "Multi-verdict intentionally requires manual reconciliation."
+    }
+  ],
+  "mandatory_unverified": [
+    "Windows distinct process identity/SID, file ACL, network boundary",
+    "TEST_ONLY newly added tests, independent review and merge into final commit",
+    "Real Paseo SDK/daemon authentication, timeout, disconnection and Agent lifecycle",
+    "Real remote OpenCode JSONL, permissions and job lifecycle",
+    "Two different physical P0 hosts and trusted host/key mapping",
+    "Real 600-second third-seat grace and Linux/Windows process-group/Job Object cancellation",
+    "OS crash/power-loss and sustained multi-process SQLite stress",
+    "External immutable evidence anchor and approval-principal authentication",
+    "Real Windows OS symlink creation (EPERM); index mode 120000 tested",
+    "Soul V2.1 migration approval and legal Markdown/JSON deliverable mapping"
+  ],
+  "independent_reports": [
+    {
+      "name": "Codex",
+      "status": "NOT_AVAILABLE",
+      "reason": "Codex CLI usage limit before producing a report",
+      "exit_code": 1,
+      "stderr_log": "CODEX_STDERR.log",
+      "started": "2026-11-08T10:08:53+08:00",
+      "finished": "2026-11-08T10:09:05+08:00"
+    },
+    {
+      "name": "OpenCode",
+      "status": "VALID",
+      "model": "magpie/group/deepseek-v4-pro",
+      "agent": "p1-audit (read-only)",
+      "report": "OPENCODE_REPORT.md",
+      "stderr_log": "OPENCODE_STDERR.log",
+      "exit_code": 0,
+      "report_bytes": 4478,
+      "started": "2026-11-08T10:09:15+08:00",
+      "finished": "2026-11-08T10:12:37+08:00",
+      "key_findings": [
+        "save() stage/status/approval bypass CONFIRMED",
+        "init() trust-root injection CONFIRMED",
+        "artifact transaction/orphan fail-closed CONFIRMED",
+        "Git ancestor check missing CONFIRMED",
+        "parsers unique terminal verdict CONFIRMED",
+        "Git Unicode/full-index CONFIRMED",
+        "normal flow no regression",
+        "CODE_VERDICT FAIL"
+      ]
+    }
+  ],
+  "summary": {
+    "r4_total": 7,
+    "r4_dispositions": {
+      "FIXED": 5,
+      "PARTIAL": 1,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 0
+    },
+    "r5_total": 3,
+    "r5_severities": {
+      "BLOCKER": 2,
+      "HIGH": 1
+    },
+    "original_total": 10,
+    "original_dispositions": {
+      "FIXED": 2,
+      "PARTIAL": 3,
+      "MITIGATED_FAIL_CLOSED": 3,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 1
+    },
+    "r2_total": 10,
+    "r2_dispositions": {
+      "FIXED": 7,
+      "PARTIAL": 3,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    },
+    "r3_total": 8,
+    "r3_dispositions": {
+      "FIXED": 6,
+      "PARTIAL": 1,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 0
+    }
+  }
+}

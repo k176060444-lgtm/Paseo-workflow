@@ -1,0 +1,16 @@
+CONFIRMED R4-001 reset 10/9 -> 0/0 rejected aRound budget cannot reset, decrease, skip rounds or exceed limit
+CONFIRMED R4-001 decrease 9 -> 8 rejected bRound budget cannot reset, decrease, skip rounds or exceed limit
+CONFIRMED R4-001 >10 rejected bRound budget cannot reset, decrease, skip rounds or exceed limit
+CONFIRMED R4-001 aRound 10 -> 0 rejected aRound budget cannot reset, decrease, skip rounds or exceed limit
+CONFIRMED R4-001 round change with wrong event type rejected bRound may only advance in its round-start transition
+CONFIRMED R4-001 legal +1 with GATE_B_ROUND_START accepted
+CONFIRMED R4-002 frozen replacement with recomputed digest rejected frozen config is immutable after task creation
+CONFIRMED R4-001 history truncation rejected history cannot be truncated
+CONFIRMED R4-001 arbitrary history append accepted
+CONFIRMED R4-001 baseSha replacement rejected baseSha cannot be replaced
+CONFIRMED R4-001 currentSha with wrong event rejected currentSha may only change when freezing a worktree or commit
+CONFIRMED R4-001 currentSha arbitrary value with A_COMMIT_FROZEN accepted
+CONFIRMED R4-001 old snapshot replay (lower rounds/history) rejected aRound budget cannot reset, decrease, skip rounds or exceed limit
+CONFIRMED R4-002 taskSpec with wrong event type rejected TASK_SPEC may only be frozen at the Planner candidate transition
+CONFIRMED R4-002 taskSpec freeze via TASK_SPEC_CANDIDATE accepted at BLOCKED stage
+TOTAL 15 CONFIRMED 15

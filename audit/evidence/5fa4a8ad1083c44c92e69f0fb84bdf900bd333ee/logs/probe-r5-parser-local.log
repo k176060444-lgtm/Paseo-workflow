@@ -1,0 +1,12 @@
+CONFIRMED R4-005 local FAIL then PASS rejected spec_reviewer: ambiguous or missing final JSON verdict object; manual reconciliation required
+CONFIRMED R4-005 local PASS then FAIL rejected spec_reviewer: ambiguous or missing final JSON verdict object; manual reconciliation required
+CONFIRMED R4-005 local two fenced verdicts rejected spec_reviewer: ambiguous or missing final JSON verdict object; manual reconciliation required
+CONFIRMED R4-005 local inline example + terminal FAIL accepted as FAIL
+CONFIRMED R4-005 local single terminal fenced FAIL accepted
+CONFIRMED R4-005 local indented/pretty/CRLF accepted
+CONFIRMED R4-005 local truncated JSON rejected spec_reviewer: ambiguous or missing final JSON verdict object; manual reconciliation required
+CONFIRMED R4-005 local trailing prose rejected spec_reviewer: final JSON verdict must be terminal; manual reconciliation required
+CONFIRMED R4-005 local PASS+BLOCKER finding rejected spec_reviewer: inconsistent PASS/findings severity; manual reconciliation required
+CONFIRMED R4-005 local APPROVE_WITH_COMMENTS+LOW accepted
+CONFIRMED R4-005 local APPROVE_WITH_COMMENTS+HIGH rejected spec_reviewer: inconsistent PASS/findings severity; manual reconciliation required
+TOTAL 11 CONFIRMED 11

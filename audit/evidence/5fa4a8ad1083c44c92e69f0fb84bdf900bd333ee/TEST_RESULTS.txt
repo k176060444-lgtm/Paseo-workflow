@@ -1,0 +1,68 @@
+Paseo-workflow S0-R4 第五轮独立审计 — 测试结果
+被审 Commit: 5fa4a8ad1083c44c92e69f0fb84bdf900bd333ee
+基线 Commit: fa157e1ce53374d539f4b5b5aa1129eccad7cb3b
+实际父提交: e4c93d3ee6ed9be7081e06596ce96411a2708bdf
+Tree: 518032cba06467be3cf5e6b218b9ea0ce654ac06
+
+环境: Windows 10 (21bao); Node v26.6.0; npm 11.18.0; Python 3.11.15; Git 2.54.0.windows.1; Codex 0.166.0; OpenCode 1.19.3
+注意: 探针 PASS/CONFIRMED 表示断言成立；缺陷复现探针的 CONFIRMED 不代表产品通过。
+
+批次                                用例  PASS  FAIL  ERR  SKIP  exit
+npm-check                          0     0     0    0     0     0
+npm-test                          53    52     0    0     1     0
+python-full                       11    11     0    0     0     0
+regress-r2-009                    50    50     0    0     0     0
+regress-r3-004-005                 5     5     0    0     0     0
+regress-r3-007                     6     6     0    0     0     0
+regress-f1-f10                    12    12     0    0     0     0
+regress-r2-002-003-004            10    10     0    0     0     0
+regress-r2-006-soul               14    14     0    0     0     0
+regress-r2-010                     4     3     1    0     0     1
+probe-r5-stage                     8     8     0    0     0     0
+probe-r5-rounds                   15    15     0    0     0     0
+probe-r5-artifact                  5     5     0    0     0     0
+probe-r5-trust                     7     7     0    0     0     0
+probe-r5-parser-local             11    11     0    0     0     0
+probe-r5-parser-remote            16    16     0    0     0     0
+probe-r5-git                      25    25     0    0     0     0
+合计                               252   250     1    0     1
+
+说明：regress-r2-010 的 1 个失败是上一轮缺陷复现探针，期望“对账状态被覆盖为 BLOCKED”；实际保持 NEEDS_RECONCILIATION，说明 R3-003 已修复。该失败不是产品失败。
+Node 原始套件的 1 个 skip 是 R4-007 真实 Windows symlink 创建因 EPERM 跳过；索引级 120000 已单独验证。
+
+逐批命令、cwd、日志：
+- npm-check: npm run check | cwd=offline-copy | exit=0 | log=logs/npm-check.stdout.log | expected_failure=False
+- npm-test: npm test (node --test tests/*.test.mjs) | cwd=offline-copy | exit=0 | log=logs/npm-test.stdout.log | expected_failure=False
+- python-full: python -B -m unittest discover -s remote/tests -p 'test*.py' -v | cwd=offline-copy | exit=0 | log=logs/python-full.stderr.log | expected_failure=False
+- regress-r2-009: node --test probes/r2_009_paths.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_009_paths.stdout.log | expected_failure=False
+- regress-r3-004-005: node --test probes/r3_004_005_env.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r3_004_005_env.stdout.log | expected_failure=False
+- regress-r3-007: node --test probes/r3_007_p0.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r3_007_p0.stdout.log | expected_failure=False
+- regress-f1-f10: node --test probes/f_regression.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-f_regression.stdout.log | expected_failure=False
+- regress-r2-002-003-004: node --test probes/r2_002_003_004.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_002_003_004.stdout.log | expected_failure=False
+- regress-r2-006-soul: node --test probes/r2_006_parser_soul.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_006_parser_soul.stdout.log | expected_failure=False
+- regress-r2-010: node --test probes/r2_010_pair.test.mjs | cwd=offline-copy | exit=1 | log=logs/regress-r2_010_pair.stdout.log | expected_failure=True
+- probe-r5-stage: node probes/r5_stage_bypass.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-stage.json | expected_failure=False
+- probe-r5-rounds: node probes/r5_store_rounds.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-rounds.json | expected_failure=False
+- probe-r5-artifact: node probes/r5_artifact.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-artifact.json | expected_failure=False
+- probe-r5-trust: node probes/r5_trust.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-trust.json | expected_failure=False
+- probe-r5-parser-local: node probes/r5_parser.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-parser-local.json | expected_failure=False
+- probe-r5-parser-remote: python probes/r5_parser_remote.py | cwd=offline-copy | exit=0 | log=logs/probe-r5-parser-remote.json | expected_failure=False
+- probe-r5-git: node probes/r5_git_paths.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-git.json | expected_failure=False
+
+Python 原始套件 stderr（完整）：
+test_explicit_env_allowlist_only_passes_whitelisted_names (test_r2_runner.R2RemoteRunnerTests.test_explicit_env_allowlist_only_passes_whitelisted_names) ... ok
+test_legacy_verdict_and_markdown_final_envelope (test_r2_runner.R2RemoteRunnerTests.test_legacy_verdict_and_markdown_final_envelope) ... ok
+test_remote_git_helper_excludes_unrelated_secret_environment (test_r2_runner.R2RemoteRunnerTests.test_remote_git_helper_excludes_unrelated_secret_environment) ... ok
+test_indented_final_json_and_no_false_terminal_verdict (test_r3_runner.R3RemoteRunnerTests.test_indented_final_json_and_no_false_terminal_verdict) ... ok
+test_low_comments_match_local_advisory_verdict_contract (test_r3_runner.R3RemoteRunnerTests.test_low_comments_match_local_advisory_verdict_contract) ... ok
+test_submit_process_env_does_not_inherit_gateway_secret (test_r3_runner.R3RemoteRunnerTests.test_submit_process_env_does_not_inherit_gateway_secret) ... ok
+test_fail_then_pass_not_accepted (test_r4_parser.R4RemoteParserTests.test_fail_then_pass_not_accepted) ... ok
+test_multiple_fenced_verdicts_fail_closed (test_r4_parser.R4RemoteParserTests.test_multiple_fenced_verdicts_fail_closed) ... ok
+test_regular_jsonl_with_one_extracted_report (test_r4_parser.R4RemoteParserTests.test_regular_jsonl_with_one_extracted_report) ... ok
+test_single_pretty_or_indented_final_verdict (test_r4_parser.R4RemoteParserTests.test_single_pretty_or_indented_final_verdict) ... ok
+test_native_harness_durable_job_and_hmac (test_runner.RemoteRunnerTests.test_native_harness_durable_job_and_hmac) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.851s
+
+OK

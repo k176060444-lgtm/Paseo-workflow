@@ -1,0 +1,26 @@
+CONFIRMED R4-006 rejects U+00AD prefix before .env unsafe control/format character in Git path: ­.env
+CONFIRMED R4-006 rejects U+034F prefix before .env unsafe control/format character in Git path: ͏.env
+CONFIRMED R4-006 rejects U+180E prefix before .env unsafe control/format character in Git path: ᠎.env
+CONFIRMED R4-006 rejects U+3164 prefix before .env unsafe control/format character in Git path: ㅤ.env
+CONFIRMED R4-006 rejects U+2800 prefix before .env unsafe control/format character in Git path: ⠀.env
+CONFIRMED R4-006 rejects U+200B prefix before .env unsafe control/format character in Git path: ​.env
+CONFIRMED R4-006 rejects U+200D prefix before .env unsafe control/format character in Git path: ‍.env
+CONFIRMED R4-006 rejects U+2060 prefix before .env unsafe control/format character in Git path: ⁠.env
+CONFIRMED R4-006 rejects U+FEFF prefix before .env ambiguous whitespace or trailing-dot Git path: ﻿.env
+CONFIRMED R4-006 rejects U+202E prefix before .env unsafe control/format character in Git path: ‮.env
+CONFIRMED R4-006 rejects U+FFA0 prefix before .env unsafe control/format character in Git path: ﾠ.env
+CONFIRMED R4-006 accepts normal ASCII foo.env 
+CONFIRMED R4-006 accepts normal ASCII env 
+CONFIRMED R4-006 accepts normal normal.txt 
+CONFIRMED R4-006 accepts normal .gitignore 
+CONFIRMED R4-006 accepts normal Chinese file 
+CONFIRMED R4-006 accepts normal Chinese path 
+CONFIRMED R4-006 accepts normal Chinese non-reserved env name 
+CONFIRMED R4-006 rejects fullwidth NFKC .env refusing to commit sensitive-looking file: ．ｅｎｖ
+CONFIRMED R4-006 rejects leading-space .env ambiguous whitespace or trailing-dot Git path:  .env
+CONFIRMED R4-006 accepts U+2215 as normal filename (not a separator) 
+CONFIRMED R4-007 prepare rejects inherited 120000 symlink index symlink/gitlink in index (including inherited base): link
+CONFIRMED R4-007 prepare rejects inherited 160000 gitlink index symlink/gitlink in index (including inherited base): submodule
+CONFIRMED R4-007 commitWorktree rejects clean worktree with inherited symlink symlink/gitlink in index (including inherited base): link
+CONFIRMED R4-007 prepare rejects inherited .env path in full index refusing to commit sensitive-looking file: .env
+TOTAL 25 CONFIRMED 25

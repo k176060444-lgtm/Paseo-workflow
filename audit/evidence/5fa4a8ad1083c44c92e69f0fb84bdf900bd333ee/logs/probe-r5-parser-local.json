@@ -1,0 +1,53 @@
+[
+  {
+    "name": "R4-005 local FAIL then PASS rejected",
+    "result": "CONFIRMED",
+    "error": "spec_reviewer: ambiguous or missing final JSON verdict object; manual reconciliation required"
+  },
+  {
+    "name": "R4-005 local PASS then FAIL rejected",
+    "result": "CONFIRMED",
+    "error": "spec_reviewer: ambiguous or missing final JSON verdict object; manual reconciliation required"
+  },
+  {
+    "name": "R4-005 local two fenced verdicts rejected",
+    "result": "CONFIRMED",
+    "error": "spec_reviewer: ambiguous or missing final JSON verdict object; manual reconciliation required"
+  },
+  {
+    "name": "R4-005 local inline example + terminal FAIL accepted as FAIL",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R4-005 local single terminal fenced FAIL accepted",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R4-005 local indented/pretty/CRLF accepted",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R4-005 local truncated JSON rejected",
+    "result": "CONFIRMED",
+    "error": "spec_reviewer: ambiguous or missing final JSON verdict object; manual reconciliation required"
+  },
+  {
+    "name": "R4-005 local trailing prose rejected",
+    "result": "CONFIRMED",
+    "error": "spec_reviewer: final JSON verdict must be terminal; manual reconciliation required"
+  },
+  {
+    "name": "R4-005 local PASS+BLOCKER finding rejected",
+    "result": "CONFIRMED",
+    "error": "spec_reviewer: inconsistent PASS/findings severity; manual reconciliation required"
+  },
+  {
+    "name": "R4-005 local APPROVE_WITH_COMMENTS+LOW accepted",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R4-005 local APPROVE_WITH_COMMENTS+HIGH rejected",
+    "result": "CONFIRMED",
+    "error": "spec_reviewer: inconsistent PASS/findings severity; manual reconciliation required"
+  }
+]

@@ -1,0 +1,16 @@
+✔ R3-004: childEnv omits an unrelated synthetic secret (1.6859ms)
+R3-004 taskkill options: shell:false,windowsHide:true,stdio:'ignore',env:childEnv()
+✔ R3-004: a real child process cannot see the synthetic secret (72.9045ms)
+✔ R3-004: taskkill spawn source carries env:childEnv() (0.6997ms)
+R3-004 timeout code=1 signal=null
+R3-005 Popen block: subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'execute','--config',str(Path(args.config).resolve()),'--job',job_id], |                 stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=(jobdir/'runner.log').open('ab'),start_new_session=True,env=child_env(cfg)) |             atomic(jobdir/'pid',str(p.pid).encode('ascii'))
+✔ R3-004: timeout kill path still terminates a long child (421.4184ms)
+✔ R3-005: remote Popen source passes env=child_env(cfg) (0.6313ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 588.4986

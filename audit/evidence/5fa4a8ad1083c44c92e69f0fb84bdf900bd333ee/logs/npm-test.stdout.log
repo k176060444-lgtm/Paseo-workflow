@@ -1,0 +1,65 @@
+
+> paseo-workflow@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ happy path uses exactly one Gate A and Gate B round, skips remediation and arbitration (2062.5837ms)
+✔ changed Gate B commit forces P0 again on precise final SHA (1383.7283ms)
+✔ Gate A exactly ten rounds and no eleventh dispatch (428.1806ms)
+✔ Gate B exactly ten rounds, no reset on remediation failure (676.9467ms)
+✔ post-dispatch ambiguous result blocks without silent redispatch (71.6346ms)
+✔ config SHA/role permissions and SQL ledger resist casual drift (60.9512ms)
+✔ permission policy is code-fixed and TEST_ONLY agent is read-only; no dangerous access (0.2932ms)
+✔ human gate requires precise digest and explicit approval text (54.8654ms)
+✔ real config/ and souls/ sibling layout freezes without path escape (42.749ms)
+✔ P0: two distinct signed nodes pass; third nonmandatory after extra window (827.1592ms)
+✔ P0: spoofed MAC cannot count toward quorum (623.997ms)
+✔ P0: same physical identity fails before dispatch (471.347ms)
+✔ F3: distinct key paths with identical key bytes never dispatch (409.9566ms)
+✔ F2: optional third probe failure does not prevent two valid seats (815.9155ms)
+✔ F2: lingering optional third is cancelled and separately receipted (751.8717ms)
+✔ F2: optional third lost submit ACK never silently passes (177.4272ms)
+✔ F3: signed physicalId mismatch cannot pass (258.8832ms)
+✔ P0 failover: 5bao unavailable, 9bao + rusty form two physical seats (333.5529ms)
+✔ R2-001 tampered budget never re-anchored by run or recovery (451.0865ms)
+✔ R2-002 orphan artifacts fail verification instead of silently accepting (508.0089ms)
+✔ R2-003 readSnapshot uses one SQLite version despite concurrent writer (446.9254ms)
+✔ R2-006 final Markdown plus bare/fenced JSON and alias (0.7237ms)
+✔ R2-008 early blocked task recovers only on matching frozen basis (503.2854ms)
+✔ R2-009 raw porcelain preserves leading status space and rename original (1.2397ms)
+✔ R2-009 tracked .env edit cannot be committed (669.9957ms)
+✔ R2-009 staged rename to .env.production cannot be committed (425.3759ms)
+✔ R2-010 successful reviewer report survives peer failure (230.4283ms)
+✔ R3-001: public Store.event cannot reanchor tampered A/B budget (510.9938ms)
+✔ R3-001: healthy standalone event and verified transaction append still work (496.7208ms)
+✔ R3-002: valid ledger containing tampered frozen config cannot be used as recovery basis (334.8669ms)
+✔ R3-003: run cannot replace NEEDS_RECONCILIATION with ordinary BLOCKED (490.6511ms)
+✔ R3-006: CLI help renders two separate recover commands (148.9421ms)
+✔ R2-009: leading-space .env is rejected before Git commit (497.4367ms)
+✔ R2-009: nested leading-space .env and invisible-prefix paths are rejected (428.9544ms)
+✔ R2-009: legitimate file names remain committable (832.5231ms)
+✔ R3-008: indented terminal bare and fenced JSON are accepted, trailing text rejected (0.8165ms)
+✔ R3-007: signed P0 APPROVE_WITH_COMMENTS preserves low comments but blocks high (30.7375ms)
+✔ R4-001 public save refuses round-budget reset with atomic ledger unchanged (110.5251ms)
+✔ R4-001 public save refuses budget jumps beyond one or limit (251.9672ms)
+✔ R4-002 frozen snapshot and digest cannot be replaced together (193.2313ms)
+✔ R4-002 requires complete TASK_SPEC pair and forbids any replacement after first candidate (121.7432ms)
+✔ R4-001 history is append-only and base/current SHA changes need freezing transitions (123.5995ms)
+✔ R4-003 state modified inside fsync cannot be trusted/reanchored by artifact (93.9618ms)
+✔ R4-005 a standalone FAIL followed by PASS can NEVER become PASS (0.9603ms)
+✔ R4-006 invisible and deceptive Unicode prefixes cannot be committed (581.0375ms)
+﹣ R4-007 inherited symlink index is rejected even without staged symlink diff (158.0745ms) # Windows symlink permission unavailable
+✔ F1: legacy verdict normalization and PASS with BLOCKER finding fail closed (2.3528ms)
+✔ F1: synthetic alternative runtime cannot pass a review pair with BLOCKER finding (173.431ms)
+✔ F7: ledger detects an altered dispatch row and evidence file (241.8555ms)
+✔ F7: dispatch intent and ledger event write together (rollback on duplicate) (46.2035ms)
+✔ F10: read-only store refuses to create missing state directory or database (0.539ms)
+✔ F4: exact SDK waitForFinish API receives numeric timeout (35.7477ms)
+✔ F9: Git/test child process env omits arbitrary gateway secrets (0.5214ms)
+ℹ tests 53
+ℹ suites 0
+ℹ pass 52
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 4907.9494

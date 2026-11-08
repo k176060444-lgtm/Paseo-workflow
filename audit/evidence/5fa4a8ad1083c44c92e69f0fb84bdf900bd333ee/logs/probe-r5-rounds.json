@@ -1,0 +1,73 @@
+[
+  {
+    "name": "R4-001 reset 10/9 -> 0/0 rejected",
+    "result": "CONFIRMED",
+    "error": "aRound budget cannot reset, decrease, skip rounds or exceed limit"
+  },
+  {
+    "name": "R4-001 decrease 9 -> 8 rejected",
+    "result": "CONFIRMED",
+    "error": "bRound budget cannot reset, decrease, skip rounds or exceed limit"
+  },
+  {
+    "name": "R4-001 >10 rejected",
+    "result": "CONFIRMED",
+    "error": "bRound budget cannot reset, decrease, skip rounds or exceed limit"
+  },
+  {
+    "name": "R4-001 aRound 10 -> 0 rejected",
+    "result": "CONFIRMED",
+    "error": "aRound budget cannot reset, decrease, skip rounds or exceed limit"
+  },
+  {
+    "name": "R4-001 round change with wrong event type rejected",
+    "result": "CONFIRMED",
+    "error": "bRound may only advance in its round-start transition"
+  },
+  {
+    "name": "R4-001 legal +1 with GATE_B_ROUND_START accepted",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R4-002 frozen replacement with recomputed digest rejected",
+    "result": "CONFIRMED",
+    "error": "frozen config is immutable after task creation"
+  },
+  {
+    "name": "R4-001 history truncation rejected",
+    "result": "CONFIRMED",
+    "error": "history cannot be truncated"
+  },
+  {
+    "name": "R4-001 arbitrary history append accepted",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R4-001 baseSha replacement rejected",
+    "result": "CONFIRMED",
+    "error": "baseSha cannot be replaced"
+  },
+  {
+    "name": "R4-001 currentSha with wrong event rejected",
+    "result": "CONFIRMED",
+    "error": "currentSha may only change when freezing a worktree or commit"
+  },
+  {
+    "name": "R4-001 currentSha arbitrary value with A_COMMIT_FROZEN accepted",
+    "result": "CONFIRMED"
+  },
+  {
+    "name": "R4-001 old snapshot replay (lower rounds/history) rejected",
+    "result": "CONFIRMED",
+    "error": "aRound budget cannot reset, decrease, skip rounds or exceed limit"
+  },
+  {
+    "name": "R4-002 taskSpec with wrong event type rejected",
+    "result": "CONFIRMED",
+    "error": "TASK_SPEC may only be frozen at the Planner candidate transition"
+  },
+  {
+    "name": "R4-002 taskSpec freeze via TASK_SPEC_CANDIDATE accepted at BLOCKED stage",
+    "result": "CONFIRMED"
+  }
+]
