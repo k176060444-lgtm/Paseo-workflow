@@ -4,8 +4,8 @@
   "baseline_commit": "20989c60226562a51886d5a979e773fecc7e4ddb",
   "parent_commit": "1e237028ab4029b38f6c48058a54a7520887c17f",
   "tree": "5743312c2e9f3595bee3fecc4819e935d0fcc73c",
-  "generated_at": "2026-11-08T15:16:58.695238+08:00",
-  "file_count": 75,
+  "generated_at": "2026-11-08T15:21:08.283935+08:00",
+  "file_count": 76,
   "files": [
     {
       "path": "AUDIT_REPORT.md",
@@ -348,6 +348,12 @@
       "size": 956,
       "sha256": "409d53312195084a6a96a684600722cea384b368bc4a817ec024f1e2ce459137",
       "git_blob": "00dd1c2121b473aea1514334d20978d41b36eccb"
+    },
+    {
+      "path": "OPENCODE_REPORT.md",
+      "size": 6509,
+      "sha256": "6f20e0b1ba577d5063f6aa98d5963ea7fff2120ea08bf19296af8724fdddcb87",
+      "git_blob": "75ec65788d49c4d2b76a496cc13dafbef2a76e84"
     },
     {
       "path": "PASEO_SDK_LIVE_REPORT.md",
