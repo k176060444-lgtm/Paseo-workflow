@@ -149,7 +149,7 @@ function syncGit(repo,...args){
 }
 // A synchronous trust boundary for human approval/recovery. No model calls,
 // no network and no writes. Checks real Git object, ancestry and exact HEAD.
-export function verifyCommitEvidenceSync(repo,baseSha,commitSha,worktree){
+export function verifyCommitEvidenceSync(repo,baseSha,commitSha,worktree,previousSha=null){
   const valid=sha=>typeof sha==='string'&&/^[0-9a-f]{40}$/.test(sha);
   assert(valid(baseSha)&&valid(commitSha),'Git SHA must be a full 40-char object ID');
   try{
@@ -160,6 +160,10 @@ export function verifyCommitEvidenceSync(repo,baseSha,commitSha,worktree){
     assert(syncGit(repo,'rev-parse',commitSha+'^{commit}')===commitSha,
       'final SHA is not a commit');
     syncGit(repo,'merge-base','--is-ancestor',baseSha,commitSha);
+    if(previousSha!==null){
+      assert(valid(previousSha),'previous Git SHA must be full 40 characters');
+      syncGit(repo,'merge-base','--is-ancestor',previousSha,commitSha);
+    }
     assert(typeof worktree==='string'&&fs.existsSync(worktree),
       'approved worktree missing');
     assert(syncGit(worktree,'rev-parse','HEAD')===commitSha,

@@ -123,3 +123,44 @@ test('R5-003 Git commit snapshot rejects missing, unrelated and wrong worktree H
     assert.throws(()=>verifyCommitEvidenceSync(repo,'not-sha',child,wt),/full 40/);
   }finally{fs.rmSync(root,{recursive:true,force:true});}
 });
+
+test('R5-003 public Store.save cannot record non-existent Git SHA even with valid stage type',()=>{
+  const w=fixture();
+  try{
+    seedSyntheticTask(w.store,{...w.honest,stage:'PREPARE',status:'READY'});
+    const before=w.store.verify(w.id);
+    const t=w.store.get(w.id);
+    t.stage='A_WORKER';t.status='READY';
+    t.baseSha='f'.repeat(40);t.currentSha=t.baseSha;
+    t.worktree=path.join(w.root,'worktree');
+    assert.throws(()=>w.store.save(t,'WORKTREE_PREPARED'),/Git repository missing|unverified/);
+    assert.deepEqual(w.store.verify(w.id),before);
+    assert.equal(w.store.get(w.id).baseSha,null);
+  }finally{w.close();}
+});
+test('R5-003 real Git base and child commits freeze through Store with ancestry+HEAD',()=>{
+  const w=fixture();
+  try{
+    const repo=path.join(w.root,'repo');fs.mkdirSync(repo);
+    git(repo,'init','-q');
+    fs.writeFileSync(path.join(repo,'file.txt'),'base');
+    git(repo,'add','.');git(repo,'-c','user.name=Test','-c','user.email=test@localhost','commit','-qm','base');
+    const base=git(repo,'rev-parse','HEAD');
+    const wt=path.join(w.root,'wt');
+    git(repo,'worktree','add','--detach',wt,base);
+    seedSyntheticTask(w.store,{...w.honest,stage:'PREPARE',status:'READY',
+      frozen:{...w.honest.frozen,project:{repo}}});
+    const prep=w.store.get(w.id);
+    prep.stage='A_WORKER';prep.baseSha=base;prep.currentSha=base;prep.worktree=wt;
+    w.store.save(prep,'WORKTREE_PREPARED');
+    let frozen=w.store.get(w.id);
+    assert.equal(frozen.currentSha,base);
+    fs.writeFileSync(path.join(wt,'file.txt'),'child');
+    git(wt,'add','.');git(wt,'-c','user.name=Test','-c','user.email=test@localhost','commit','-qm','child');
+    const child=git(wt,'rev-parse','HEAD');
+    frozen.currentSha=child;frozen.stage='A_REVIEW';frozen.status='READY';
+    w.store.save(frozen,'A_COMMIT_FROZEN');
+    assert.equal(w.store.get(w.id).currentSha,child);
+    w.store.verify(w.id);
+  }finally{w.close();}
+});

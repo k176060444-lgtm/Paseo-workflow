@@ -20,7 +20,14 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
   const matrix=path.join(tmp,'matrix.json');const intent=path.join(tmp,'intent.md');
   fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']]},roles}));
   fs.writeFileSync(intent,'Implement a precise and approved programming feature with fully independent review.');
-  const store=new Store(path.join(tmp,'state'));
+  // Only this fake-runtime test suite injects a fake Git verifier.
+  // Production Store defaults to real Git object/ancestry/HEAD validation.
+  const store=new Store(path.join(tmp,'state'),{gitVerifier:(repo,base,sha,worktree,previous)=>{
+    assert.match(base,/^[0-9a-f]{40}$/);assert.match(sha,/^[0-9a-f]{40}$/);
+    if(previous)assert.match(previous,/^[0-9a-f]{40}$/);
+    assert.equal(typeof worktree,'string');
+    return {base,sha};
+  }});
   let workerCount=0,remCount=0,reportCount=0,modelCalls=[];
   const runtime={execute:async x=>{
     modelCalls.push(x.role);

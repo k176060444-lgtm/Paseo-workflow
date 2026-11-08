@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { verifyCommitEvidenceSync } from './git.mjs';
 import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS } from './policy.mjs';
 
 export class Store {
@@ -13,7 +14,9 @@ export class Store {
     try { return this.event(id,type,payload); }
     finally { this.#trustedEventWrite=false; }
   }
-  constructor(root,{readOnly=false}={}) {
+  constructor(root,{readOnly=false,gitVerifier=verifyCommitEvidenceSync}={}) {
+    assert(typeof gitVerifier==='function','Git commit verifier must be available');
+    this.gitVerifier=gitVerifier;
     this.root=path.resolve(root);
     this.readOnly=readOnly;
     if (readOnly) {
@@ -351,6 +354,15 @@ export class Store {
     if(oldTask.currentSha!==undefined&&oldTask.currentSha!==nextTask.currentSha)
       assert(['WORKTREE_PREPARED','A_COMMIT_FROZEN','B_COMMIT_FROZEN'].includes(type),
         'currentSha may only change when freezing a worktree or commit');
+    if(oldTask.currentSha!==nextTask.currentSha||
+       oldTask.baseSha!==nextTask.baseSha){
+      assert(['WORKTREE_PREPARED','A_COMMIT_FROZEN','B_COMMIT_FROZEN'].includes(type),
+        'Git trust root can only change at verified freeze events');
+      // This check intentionally runs inside the existing immediate SQL
+      // transaction: bogus SHA cannot be persisted even transiently.
+      this.gitVerifier(nextTask.frozen?.project?.repo,nextTask.baseSha,
+        nextTask.currentSha,nextTask.worktree,oldTask.currentSha??null);
+    }
     if(Array.isArray(oldTask.history)){
       assert(Array.isArray(nextTask.history)&&nextTask.history.length>=oldTask.history.length,
         'history cannot be truncated');
