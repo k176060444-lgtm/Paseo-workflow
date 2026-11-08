@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {generateKeyPairSync,sign,randomUUID} from 'node:crypto';
 import {Store} from '../src/store.mjs';
+import {WorkflowController} from '../src/controller.mjs';
 import {canonical,sha256,MAX_A,MAX_B,ROLE_PERMISSIONS} from '../src/policy.mjs';
 import {seedSyntheticTask} from './fixtures.mjs';
 
@@ -128,6 +129,23 @@ test('R6-005 Git verifier cannot be injected at construction or monkeypatched to
     w.store.gitVerifier=()=>true; // public property is ignored: Store invokes imported verifier.
     assert.throws(()=>w.store.save(t,'WORKTREE_PREPARED'),/Git repository missing|unverified/);
     assert.equal(w.store.get(w.id).baseSha,null);
+    w.store.verify(w.id);
+  }finally{w.close();}
+});
+
+test('R6 recovery is also signed and cannot be reopened with actor/receipt alone',()=>{
+  const w=fixture(true);
+  try{
+    seedSyntheticTask(w.store,{...w.boot,stage:'BLOCKED',status:'BLOCKED'});
+    const c=new WorkflowController({store:w.store,runtime:null,p0:null});
+    const message='Independent operator explicitly approves safe controlled recovery';
+    const basis=w.boot.frozen.digest;
+    assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'human',receipt:message,
+      expectedBasis:basis}),/authenticated human approval not provisioned|signature envelope missing/);
+    assert.equal(w.store.get(w.id).stage,'BLOCKED');
+    const restored=c.authorizeRecovery({id:w.id,actor:'human',receipt:message,
+      expectedBasis:basis,proof:w.proof('recovery',basis,'human',message)});
+    assert.equal(restored.stage,'PLANNER');
     w.store.verify(w.id);
   }finally{w.close();}
 });

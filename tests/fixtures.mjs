@@ -1,6 +1,9 @@
 // TEST ONLY: construct adversarial persisted states without relaxing production
 // Store.init(). This module is imported exclusively by offline test files.
 // It intentionally rewrites SQLite rows/events; NEVER ship it as runtime code.
+import fs from 'node:fs';
+import path from 'node:path';
+import {generateKeyPairSync,sign,randomUUID} from 'node:crypto';
 import {canonical,sha256,MAX_A,MAX_B,ROLE_PERMISSIONS} from '../src/policy.mjs';
 
 export function resealSyntheticState(store,state) {
@@ -36,4 +39,29 @@ export function seedSyntheticTask(store,task) {
   const desired={...boot,...task,frozen};
   resealSyntheticState(store,desired);
   return desired;
+}
+
+export function syntheticHumanAuthority(dir,taskId) {
+  const oldFile=process.env.P1_TRUST_ROOTS_FILE;
+  const oldHash=process.env.P1_TRUST_ROOTS_SHA256;
+  const pair=generateKeyPairSync('ed25519');
+  const file=path.join(dir,'synthetic-human-public.json');
+  fs.writeFileSync(file,JSON.stringify({schema:1,human:{
+    'synthetic-operator':pair.publicKey.export({format:'pem',type:'spki'})}}));
+  process.env.P1_TRUST_ROOTS_FILE=file;
+  process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(file,'utf8'));
+  return {
+    proof(gate,digest,actor,receipt){
+      const statement={purpose:'P1_HUMAN_GATE_V1',taskId,gate,digest,actor,
+        receipt,nonce:randomUUID(),issuedAt:new Date().toISOString()};
+      return {schema:1,keyId:'synthetic-operator',statement,
+        signature:sign(null,Buffer.from(canonical(statement)),pair.privateKey).toString('base64')};
+    },
+    restore(){
+      if(oldFile===undefined)delete process.env.P1_TRUST_ROOTS_FILE;
+      else process.env.P1_TRUST_ROOTS_FILE=oldFile;
+      if(oldHash===undefined)delete process.env.P1_TRUST_ROOTS_SHA256;
+      else process.env.P1_TRUST_ROOTS_SHA256=oldHash;
+    }
+  };
 }

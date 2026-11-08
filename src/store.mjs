@@ -224,13 +224,39 @@ export class Store {
       const raw=JSON.parse(this.#requireArtifact(t.id,artifact.name,h.evidenceSha256));
       assert(raw.agentId===h.agentId&&raw.role===role&&raw.verdict===h.verdict&&
         raw.phase===phase+'-'+role&&PASS(raw.verdict)&&
-        Array.isArray(raw.findings)&&raw.findings.length===0,
-        'Reviewer result missing or not clean PASS');
+        Array.isArray(raw.findings)&&
+        (raw.verdict==='PASS'?raw.findings.length===0:
+          raw.findings.every(f=>/^\s*(?:[-*]\s*)?\[?(?:LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]/i.test(f))),
+        'Reviewer result missing or has unclassified/blocking findings');
       const dispatch=this.db.prepare('SELECT state,agent_id FROM dispatches WHERE task_id=? AND phase=?')
         .all(t.id,phase+'-'+role);
       assert(dispatch.some(d=>d.state==='TERMINAL'&&d.agent_id===h.agentId),
         'Reviewer has no completed Paseo dispatch/ACK');
     }
+  }
+  #verifyRecoveryReceipt(oldTask,nextTask,payload){
+    assert(oldTask.trustRootSha256!==null&&
+      oldTask.trustRootSha256===this.trustRootDigest(),
+      'recovery trust roots not independently provisioned');
+    const name=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+      .get(oldTask.id,payload.evidenceSha256)?.name;
+    assert(typeof name==='string'&&/^recovery-[a-z0-9-]+\.json$/.test(name),
+      'authenticated recovery artifact missing');
+    const data=JSON.parse(this.#requireArtifact(oldTask.id,name,payload.evidenceSha256));
+    const basis=oldTask.currentSha??oldTask.taskSpecSha??oldTask.frozen.digest;
+    assert(data.origin==='BLOCKED'&&data.target===nextTask.stage&&
+      data.actor===payload.actor&&data.expectedSha===(oldTask.currentSha??null)&&
+      data.expectedBasis===(oldTask.currentSha?null:oldTask.taskSpecSha??oldTask.frozen.digest),
+      'recovery artifact/target/basis mismatch');
+    this.verifyHumanProof(data.proof,{taskId:oldTask.id,gate:'recovery',
+      digest:basis,actor:data.actor,receipt:data.receipt});
+    assert(payload.recoveryNonce===data.proof.statement.nonce,
+      'recovery signed nonce mismatch');
+    for(const row of this.db.prepare(
+      "SELECT payload FROM events WHERE task_id=? AND type='HUMAN_CONTROLLED_RECOVERY'"
+    ).all(oldTask.id))
+      assert(JSON.parse(row.payload).recoveryNonce!==payload.recoveryNonce,
+        'replayed recovery authorization');
   }
   #validateStageTransition(oldTask,t,type,payload){
     const moves={
@@ -300,6 +326,7 @@ export class Store {
       assert(oldTask.stage==='BLOCKED'&&oldTask.status==='BLOCKED'&&
         ['PLANNER','PREPARE','A_WORKER','B_ENTER'].includes(t.stage)&&t.status==='READY',
         'recovery cannot skip a stage or clear unresolved state');
+      this.#verifyRecoveryReceipt(oldTask,t,payload);
     }else if(type==='AWAITING_CLARIFICATION'||type==='COMPLIANCE_OR_INFRA_BLOCK'){
       assert(t.stage===(type==='AWAITING_CLARIFICATION'?'WAIT_HUMAN':'BLOCKED')&&
         t.status==='WAITING_HUMAN','invalid human-stop transition');

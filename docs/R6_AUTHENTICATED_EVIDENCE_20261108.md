@@ -8,7 +8,7 @@
 
 ## 本轮 R6 对策
 
-- **R6-001/R6-003：** Gate 0.1、0.2、5.9 不再相信调用者写入的 actor/receipt/artifact；`src/auth.mjs` 要求由独立公钥信任清单验证的 Ed25519 签名，内容绑定 taskId、Gate、SHA/digest、actor、receipt、UUID nonce、签发时间。签名新鲜度：不得早于30分钟，不得超前2分钟。无签名、来源不受信任、根清单 SHA 不匹配全部拒绝。Store.save 自身在事务里二次验证，不能仅靠 Controller.approve。
+- **R6-001/R6-003：** Gate 0.1、0.2、5.9 及受控恢复不再相信调用者写入的 actor/receipt/artifact；`src/auth.mjs` 要求由独立公钥信任清单验证的 Ed25519 签名，内容绑定 taskId、Gate、SHA/digest、actor、receipt、UUID nonce、签发时间。受控恢复使用 `gate=recovery`，同样签署任务 ID、当前恢复 basis（spec/config/commit）、审批人和收据，并绑定恢复目标和 nonce；不再允许只用 actor/receipt 重开。签名新鲜度：不得早于30分钟，不得超前2分钟。无签名、来源不受信任、根清单 SHA 不匹配全部拒绝。Store.save 自身在事务里二次验证，不能仅靠 Controller.approve。
 - **R6-002：** A/B_REVIEW_PASS 必须存在 spec_reviewer 与 quality_reviewer 两席同 Commit、同轮次、不同 agentId、无未决 findings 的登记原始报告及对应终止 dispatch/ACK。仅通过 event name 无法跳过双审。
 - **R6-004：** Store 的 Gate 5.9 最终判定自身重新检查 Git base/final commit 存在、祖先、当前 worktree HEAD。并通过冻结的 P0 节点清单与每席独立 HMAC key，复核原始节点签名报告、job ID、model/harness/physicalId、Commit、stdout hash、派发终止收据及两台物理席位。
 - **R6-005：** 正式 Store 构造器拒绝任意 gitVerifier 注入；Git 真实性检查直接调用经过代码固定的 `verifyCommitEvidenceSync`。模拟测试改为真实临时 Git repo、自动生成真实 Commit，不再使用 fake verifier。
@@ -65,3 +65,7 @@
 **轨道 A（产品审计）**：固定 Commit 全部 Node/Python 离线测试 + 独立重放上轮18步伪造链。必须拒绝无真实密钥的 Gate 0.1、无双 Reviewer 的 REVIEW_PASS、假 P0 HMAC、直接 Store Gate 5.9、gitVerifier stub。测试必须覆盖正常完整合成签名工作流，不得把缺陷重放 PASS 解释成产品 PASS。
 
 **轨道 B（本机已可用的 Paseo App 实测）**：先只读识别 21bao 的实际 Daemon、CLI、SDK 版本及本机接口，仅在隔离一次性目录验证 SDK 连接/断连、Agent ID、派发/ACK、原始结果、会话对账。必要时至多一次短小、无敏感内容、无仓库写权限的 Codex 和 OpenCode 合成任务；必须遵守本机余额/费用与用户审批限制。严禁修改已有用户会话、Paseo 设置、Hermes 配置或远端 P0。**实测成功仅证明 SDK/Agent 某些接口可用，不等于真实 P1 流程放行。**
+
+## R6-003 执行说明
+
+`node src/cli.mjs approve` 与 `recover` 都要求 `--approval-proof SIGNED_JSON`。本轮**不提供自动签名脚本和私钥生成到项目目录的能力**，避免让 Agent/Controller 代替用户作出授权。真实签名需要由独立操作者安装受保护的本地签名端，先离线演练，绝不能读取现有 Hermes/Paseo 凭据或连接云端签名托管。

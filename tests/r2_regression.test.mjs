@@ -1,4 +1,4 @@
-import {seedSyntheticTask,resealSyntheticState} from './fixtures.mjs';
+import {seedSyntheticTask,resealSyntheticState,syntheticHumanAuthority} from './fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,14 +12,14 @@ import {commitWorktree,porcelainPaths} from '../src/git.mjs';
 
 function sandbox(){
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'p1-r2-'));
+  const id='TASK7777',authority=syntheticHumanAuthority(dir,id);
   const store=new Store(path.join(dir,'state'));
-  const id='TASK7777';
   const frozen={schema:1,intent:'Synthetic offline fixture',
     policy:{maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
   frozen.digest=sha256(frozen);
   seedSyntheticTask(store,{id,stage:'BLOCKED',status:'BLOCKED',frozen,
     aRound:0,bRound:9,currentSha:null,taskSpecSha:null,history:[],inflight:null});
-  return {dir,store,id,dispose(){store.close();fs.rmSync(dir,{recursive:true,force:true});}};
+  return {dir,store,id,proof:authority.proof,dispose(){store.close();authority.restore();fs.rmSync(dir,{recursive:true,force:true});}};
 }
 function git(dir,...args){return execFileSync('git',['-C',dir,...args],{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();}
 function repo(){
@@ -81,7 +81,9 @@ test('R2-008 early blocked task recovers only on matching frozen basis',()=>{
   try{
     const c=new WorkflowController({store:w.store,runtime:null,p0:null});
     assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'human',receipt:'Explicit local approval to recover.',expectedBasis:'0'.repeat(64)}),/basis/);
-    const r=c.authorizeRecovery({id:w.id,actor:'human',receipt:'Explicit local approval to recover.',expectedBasis:w.store.get(w.id).frozen.digest});
+    const message='Explicit local approval to recover.',basis=w.store.get(w.id).frozen.digest;
+    const r=c.authorizeRecovery({id:w.id,actor:'human',receipt:message,
+      expectedBasis:basis,proof:w.proof('recovery',basis,'human',message)});
     assert.equal(r.stage,'PLANNER');
     assert.equal(w.store.get(w.id).bRound,9);
     w.store.verify(w.id);

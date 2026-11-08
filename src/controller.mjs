@@ -330,7 +330,7 @@ export class WorkflowController {
       dispatches:this.store.dispatches(id),ledger:this.store.verify(id)};
   });}
   // Noncompliance recovery deliberately has no generic skip-a-gate operation.
-  authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null}){
+  authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null}){
     this.store.verify(id);
     const t=this.required(id);
     this.assertFrozenIntegrity(t);
@@ -350,17 +350,23 @@ export class WorkflowController {
       assert(expectedBasis===(t.taskSpecSha??t.frozen.digest),
         'pre-commit recovery requires the frozen task/spec digest as explicit basis');
     }
-    assert(typeof actor==='string'&&actor.trim().length>1&&typeof receipt==='string'&&receipt.length>15,'explicit recovery receipt required');
-    const ev=this.store.artifact(id,`recovery-${randomUUID().slice(0,10)}.json`,{actor,receipt,expectedSha,expectedBasis,origin:t.stage});
-    // Recovery moves only to a revalidation stage, never unconditionally to PASS.
-    t.pendingHuman=null;t.status='READY';
-    // Never skip review or tests after a compliance violation. Re-enter an earlier
-    // technical stage; its budget remains consumed, subject to the fixed limit.
-    if(t.p0Initial)t.stage='B_ENTER';
-    else if(t.taskSpecSha&&t.baseSha)t.stage='A_WORKER';
-    else if(t.taskSpecSha)t.stage='PREPARE';
-    else t.stage='PLANNER';
-    this.store.save(t,'HUMAN_CONTROLLED_RECOVERY',{actor,evidenceSha256:ev.sha256,target:t.stage});
+    assert(typeof actor==='string'&&actor.trim().length>1&&
+      typeof receipt==='string'&&receipt.length>15,'explicit recovery receipt required');
+    const basis=t.currentSha??t.taskSpecSha??t.frozen.digest;
+    const target=t.p0Initial?'B_ENTER':
+      t.taskSpecSha&&t.baseSha?'A_WORKER':
+      t.taskSpecSha?'PREPARE':'PLANNER';
+    // Recovery is also a human Gate. Merely writing actor+receipt is not auth.
+    this.store.verifyHumanProof(proof,{
+      taskId:id,gate:'recovery',digest:basis,actor,receipt,
+    });
+    assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
+      'recovery trust roots have changed');
+    const ev=this.store.artifact(id,`recovery-${randomUUID().slice(0,10)}.json`,
+      {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,proof});
+    t.pendingHuman=null;t.status='READY';t.stage=target;
+    this.store.save(t,'HUMAN_CONTROLLED_RECOVERY',{
+      actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce});
     return {id,stage:t.stage};
   }
 }

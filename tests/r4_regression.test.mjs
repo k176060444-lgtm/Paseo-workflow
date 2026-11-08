@@ -1,4 +1,4 @@
-import {seedSyntheticTask,resealSyntheticState} from './fixtures.mjs';
+import {seedSyntheticTask,resealSyntheticState,syntheticHumanAuthority} from './fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,13 +12,14 @@ import {commitWorktree,prepare} from '../src/git.mjs';
 
 function fixture() {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'p1-r4-store-'));
-  const store=new Store(path.join(dir,'state')),id='TASKR400';
+  const id='TASKR400',authority=syntheticHumanAuthority(dir,id);
+  const store=new Store(path.join(dir,'state'));
   const frozen={schema:1,intent:'Synthetic task for security regression tests',
     policy:{maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
   frozen.digest=sha256(frozen);
   seedSyntheticTask(store,{id,frozen,stage:'BLOCKED',status:'BLOCKED',aRound:10,bRound:9,
     taskSpec:null,taskSpecSha:null,baseSha:null,currentSha:null,history:[],pendingHuman:'Prior incident'});
-  return {dir,store,id,close(){store.close();fs.rmSync(dir,{recursive:true,force:true});}};
+  return {dir,store,id,proof:authority.proof,close(){store.close();authority.restore();fs.rmSync(dir,{recursive:true,force:true});}};
 }
 function git(dir,...args) {
   return execFileSync('git',['-C',dir,...args],{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
@@ -65,9 +66,10 @@ test('R4-002 frozen snapshot and digest cannot be replaced together',()=>{
     t.frozen.intent='Forged intent';t.frozen.digest=sha256(Object.fromEntries(Object.entries(t.frozen).filter(([k])=>k!=='digest')));
     assert.throws(()=>w.store.save(t,'FORGED_FREEZE'),/frozen config is immutable|unrecognized workflow state transition/);
     const c=new WorkflowController({store:w.store,runtime:null,p0:null});
-    const r=c.authorizeRecovery({id:w.id,actor:'human',
-      receipt:'Human explicitly permits recovery of original task basis',
-      expectedBasis:old.frozen.digest});
+    const message='Human explicitly permits recovery of original task basis';
+    const r=c.authorizeRecovery({id:w.id,actor:'human',receipt:message,
+      expectedBasis:old.frozen.digest,
+      proof:w.proof('recovery',old.frozen.digest,'human',message)});
     assert.equal(r.stage,'PLANNER');
     assert.equal(w.store.get(w.id).frozen.digest,old.frozen.digest);
   }finally{w.close();}
