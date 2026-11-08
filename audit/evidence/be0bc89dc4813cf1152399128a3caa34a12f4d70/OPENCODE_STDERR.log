@@ -1,0 +1,15 @@
+[0m
+> p1-audit · group/deepseek-v4-pro
+[0m
+[0m→ [0mRead .
+[0m→ [0mRead src/store.mjs
+[0m→ [0mRead src/controller.mjs
+[0m→ [0mRead src/git.mjs
+[0m→ [0mRead src/policy.mjs
+[0m→ [0mRead remote/p0_runner.py
+[0m→ [0mRead tests/fixtures.mjs
+[0m✱ [0mGrep "fixtures"[90m in . · 11 matches[0m
+[0m✱ [0mGrep "import .*store|import .*controller|from './store|from './controller|store\.mjs|controller\.mjs"[90m in . · 22 matches[0m
+[0m✱ [0mGlob "src/*.mjs"[90m 7 matches[0m
+[0m→ [0mRead src/p0.mjs
+[0m→ [0mRead src/cli.mjs

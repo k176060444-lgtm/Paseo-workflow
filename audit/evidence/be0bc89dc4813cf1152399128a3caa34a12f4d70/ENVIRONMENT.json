@@ -1,0 +1,61 @@
+{
+  "schema": "paseo-s0-r5-environment/v1",
+  "generated_at": "2026-11-08T11:47:47.213921+08:00",
+  "host": "21bao",
+  "os": "Windows 10 10.0.19044",
+  "machine": "AMD64",
+  "versions": {
+    "node": "v26.6.0",
+    "npm": "11.18.0",
+    "python": "Python 3.11.15",
+    "git": "git version 2.54.0.windows.1",
+    "codex": "codex-cli 0.166.0",
+    "opencode": "1.19.3"
+  },
+  "paseo_read_only_detection": {
+    "on_path": false,
+    "process_matches": [
+      "Paseo.exe                     4076 Services                   0     17,868 K",
+      "Paseo.exe                     9844 Services                   0     24,936 K",
+      "Paseo.exe                     2372 Services                   0     17,176 K"
+    ],
+    "programs_install_matches": [],
+    "roaming_matches": [],
+    "updater_installer": {
+      "path": "C:\\Users\\KK\\AppData\\Local\\@getpaseodesktop-updater\\installer.exe",
+      "exists": true,
+      "bytes": 145569446,
+      "mtime": "2026-11-08T07:59:06.327606+08:00"
+    },
+    "note": "Read-only detection only. Paseo App/Daemon was not started, stopped, updated, configured or taken over."
+  },
+  "config_hashes": {
+    "before": {
+      "codex_config": "3ee33c0ad9633ea41ce90bea5b5e3be1b02a8b576d0fed7a73f2656e78a836aa",
+      "opencode_config": "1652e9626f1dbee1c505fb539a96b6145bf59173f879e0fed174e5678c3a40ea",
+      "hermes_config": "21dea749e82a00ff9750c279f2dbeff3e64dbe745ad9d5640823fb7bf6b99bba"
+    },
+    "after": {
+      "codex_config": "3ee33c0ad9633ea41ce90bea5b5e3be1b02a8b576d0fed7a73f2656e78a836aa",
+      "opencode_config": "1652e9626f1dbee1c505fb539a96b6145bf59173f879e0fed174e5678c3a40ea",
+      "hermes_config": "21dea749e82a00ff9750c279f2dbeff3e64dbe745ad9d5640823fb7bf6b99bba"
+    },
+    "unchanged": {
+      "codex_config": true,
+      "opencode_config": true,
+      "hermes_config": true
+    }
+  },
+  "audit_workspace": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r5",
+  "audited_source_copy": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r5\\offline-copy",
+  "protected_not_modified": [
+    "Hermes gateway/config",
+    "Codex global config",
+    "OpenCode global config",
+    "Paseo App/Daemon",
+    "Magpie/proxy/model/auth settings",
+    "system PATH",
+    "services",
+    "user working directories"
+  ]
+}

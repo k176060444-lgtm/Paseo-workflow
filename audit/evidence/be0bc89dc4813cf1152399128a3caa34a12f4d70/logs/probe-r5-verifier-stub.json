@@ -1,0 +1,7 @@
+[
+  {
+    "name": "R6-005 gitVerifier stub can disable Git trust",
+    "result": "CONFIRMED",
+    "detail": "stub gitVerifier accepted fake SHA"
+  }
+]

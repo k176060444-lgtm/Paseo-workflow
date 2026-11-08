@@ -1,0 +1,115 @@
+{
+  "steps": [
+    {
+      "name": "Gate 0.1 fake approval artifact",
+      "result": "OK"
+    },
+    {
+      "name": "Planner TASK_SPEC fake artifact",
+      "result": "OK"
+    },
+    {
+      "name": "Gate 0.2 fake approval artifact",
+      "result": "OK"
+    },
+    {
+      "name": "WORKTREE_PREPARED real repo",
+      "result": "OK"
+    },
+    {
+      "name": "GATE_A_ROUND_START",
+      "result": "OK"
+    },
+    {
+      "name": "A_COMMIT_FROZEN real child commit",
+      "result": "OK"
+    },
+    {
+      "name": "A_REVIEW_PASS with no reviewer evidence",
+      "result": "OK"
+    },
+    {
+      "name": "Tester A fake history/artifact",
+      "result": "OK"
+    },
+    {
+      "name": "GATE_A_PASS fake Tester A",
+      "result": "OK"
+    },
+    {
+      "name": "P0_STARTED",
+      "result": "OK"
+    },
+    {
+      "name": "P0_COMPLETE fake P0 history",
+      "result": "OK"
+    },
+    {
+      "name": "P0_INITIAL_COLLECTED fake 2-seat P0",
+      "result": "OK"
+    },
+    {
+      "name": "GATE_B_ROUND_START",
+      "result": "OK"
+    },
+    {
+      "name": "B_REMEDIATION_SKIPPED",
+      "result": "OK"
+    },
+    {
+      "name": "Tester B fake history/artifact",
+      "result": "OK"
+    },
+    {
+      "name": "GATE_B_TEST_PASS fake Tester B",
+      "result": "OK"
+    },
+    {
+      "name": "WAITING_HUMAN_GATE_5_9 fake compliance",
+      "result": "OK"
+    },
+    {
+      "name": "GATE_5.9_APPROVED fake human receipt with final Git verifier stubbed to throw",
+      "result": "OK"
+    }
+  ],
+  "finalStage": "CLOSED",
+  "finalStatus": "APPROVED_FOR_SEPARATE_RELEASE_REVIEW",
+  "currentSha": "c0d1256c651c03777e3bdb4810508c3b409c4327",
+  "aRound": 1,
+  "bRound": 1,
+  "evidence": [
+    {
+      "name": "TASK_SPEC.md",
+      "digest": "4289501c48fdd819116c93db2055ed50a99912dbe6d810a95a0e4231809c7677"
+    },
+    {
+      "name": "approval-0-1.json",
+      "digest": "a0a5b98411beac94c90dbc73fff2fe879402dc81670683c4aa74d5f020a35235"
+    },
+    {
+      "name": "approval-0-2.json",
+      "digest": "4861f31ca3924aa892edbad128f9d56cde43350f57bcd2dc454b1f24bbcb7916"
+    },
+    {
+      "name": "approval-5-9.json",
+      "digest": "3b2dfec00ce4701d18222d8a7ab3b0f0ac9a37b755018af6286ebbedf9404d63"
+    },
+    {
+      "name": "final-compliance.json",
+      "digest": "19118cb63b0245ece078d8589bcaa9b82b7d35b82b4b140f418da9b565b10c16"
+    },
+    {
+      "name": "p0-evidence.json",
+      "digest": "ae8fb62dd15a64fd56860cfe31600449521927d61a646a51d70915fa8dff1109"
+    },
+    {
+      "name": "tester-a.json",
+      "digest": "09e53a99fea9e3b72927ed3a2563862b8ba83853438b30801ebd67c84b8485fd"
+    },
+    {
+      "name": "tester-b.json",
+      "digest": "09e53a99fea9e3b72927ed3a2563862b8ba83853438b30801ebd67c84b8485fd"
+    }
+  ]
+}

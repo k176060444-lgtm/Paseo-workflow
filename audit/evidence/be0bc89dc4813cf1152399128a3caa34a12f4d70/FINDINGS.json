@@ -1,0 +1,733 @@
+{
+  "schema": "paseo-s0-r5-sixth-round-audit/v1",
+  "audited_commit": "be0bc89dc4813cf1152399128a3caa34a12f4d70",
+  "baseline_commit": "5fa4a8ad1083c44c92e69f0fb84bdf900bd333ee",
+  "parent_commit": "88a7af38c7c2472a8c67ef674e2395143b9c30ed",
+  "tree": "91cf608442690fee0e5694aa6d068d3c416ea3e0",
+  "remediation_doc": "docs/R5_REMEDIATION_20261108.md",
+  "previous_evidence_commit": "4b508c6173f6286ed6001a7ffbe98c42cae4cc91",
+  "audit_status": "COMPLETE",
+  "code_verdict": "FAIL",
+  "live_integration_status": "BLOCKED",
+  "counting_note": "R5-001..R5-003 are the remediation items under review. R6-001..R6-003 are new/residual defects found in this round. F1-F10, R2-001..R2-010, R3-001..R3-008 and R4-001..R4-007 are regression-checked. FIXED means only the stated offline code-level subparts; never real identity, external anchor or live acceptance.",
+  "r5_findings": [
+    {
+      "id": "R5-001",
+      "severity": "BLOCKER",
+      "disposition": "NOT_FIXED",
+      "title": "Stage/status/receipt white-lists work against casual tamper, but public save+artifact can synthesize the entire workflow and close Gate 5.9",
+      "sources": [
+        "src/store.mjs:76-330",
+        "src/controller.mjs:23-40"
+      ],
+      "evidence": [
+        "logs/probe-r5-forged-flow.log",
+        "logs/probe-r5-forged-flow.json",
+        "logs/probe-r5-init-event.log"
+      ],
+      "fixed_subparts": {
+        "arbitrary_stage_status": "FIXED: direct save stage/status outside whitelist throws; simple GATE_0.1 without artifact throws",
+        "public_event": "FIXED: public Store.event accepts only CONFIG_FROZEN/P0_OPTIONAL_NOT_DISPATCHED",
+        "history_append": "FIXED: history append requires registered artifact and allowed event/role",
+        "round_start": "FIXED: only +1 at scoped A_WORKER/B_ENTER"
+      },
+      "open_subparts": {
+        "approval_artifact_forgery": "OPEN: Store.artifact can create approval-0-1/0-2/5-9.json with arbitrary actor/receipt; #checkGateReceipt only checks self-registered digest/content",
+        "review_gate": "OPEN: A_REVIEW_PASS (and B_REVIEW_PASS) moves to A_TEST/B_TEST without any Reviewer artifact or history",
+        "tester_p0_forgery": "OPEN: fake tester-a/tester-b/p0 artifacts + history satisfy GATE_A_PASS/GATE_B_TEST_PASS/P0_INITIAL_COLLECTED",
+        "gate_5_9_self_consistency": "OPEN: final-compliance.json and approval-5-9.json are caller-created; #validateFinalGate only checks DB/artifact self-consistency",
+        "full_chain": "OPEN: 18 public save/artifact steps produced stage=CLOSED/status=APPROVED_FOR_SEPARATE_RELEASE_REVIEW with only synthetic Git commits and no real review/test/P0"
+      },
+      "observed": "The new state machine blocks the simple R4-style attacks. However, it does not authenticate the evidence: any caller can register fake approval/TASK_SPEC/tester/P0/final-compliance artifacts and walk the allowed transitions. The independent probe reached CLOSED in 18 steps using only Store.save and Store.artifact, without tests/fixtures or direct SQLite writes. This directly violates the requirement that Gate 5.9 not close on field self-consistency.",
+      "minimal_fix": "Do not treat caller-registered artifacts as proof. Require role-specific signed evidence (Reviewer/Tester/P0/HMAC), bind approvals to an authenticated principal and an external immutable anchor, and make Gate 5.9 require a verifier-produced compliance receipt rather than a caller-written final-compliance.json."
+    },
+    {
+      "id": "R5-002",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "init() enforces Gate 0.1 start, zero budget, no preseeded spec/SHA/P0/Tester/history and validates frozen/policy/Soul",
+      "sources": [
+        "src/store.mjs:79-104",
+        "tests/fixtures.mjs:1-60"
+      ],
+      "evidence": [
+        "logs/probe-r5-init-event.log",
+        "logs/probe-r5-init-event.json",
+        "logs/npm-test.stdout.log"
+      ],
+      "observed": "10/10 invalid init variants rejected: WAIT_GATE_59, READY, nonzero rounds, pre-set TASK_SPEC, currentSha, lastB/P0, nonempty history, forged frozen digest, inflated policy and bad Soul digest. Honest init accepted. tests/fixtures.mjs is imported only by test files; src/ and remote/ do not import it. The fixture is an explicit test-only SQLite resealer, not a production backdoor.",
+      "residual": "A self-consistent but forged frozen snapshot can still be created; Gate 0.1 approval must bind it to a real principal (R6-003)."
+    },
+    {
+      "id": "R5-003",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Git verifier is strict at freeze/approve/recovery, but Store Gate 5.9 save skips it and constructor verifier can be stubbed",
+      "sources": [
+        "src/git.mjs:140-176",
+        "src/store.mjs:349-367",
+        "src/controller.mjs:23-40",
+        "src/controller.mjs:332-340"
+      ],
+      "evidence": [
+        "logs/probe-r5-git-verify.log",
+        "logs/probe-r5-git-verify.json",
+        "logs/probe-r5-git-verify.exit.txt"
+      ],
+      "observed": "13/13: real base->child accepted; missing SHA, tree object, blob object, wrong ancestor, worktree HEAD mismatch, missing/replaced worktree, previousSha not ancestor rejected. Store WORKTREE_PREPARED/A_COMMIT_FROZEN/B_COMMIT_FROZEN reject fake SHA atomically; Controller.approve Gate 5.9 and authorizeRecovery reject fake SHA. Missing/invalid verifier fails closed. Gap 1: Store.save(t,\"GATE_5.9_APPROVED\") does not call gitVerifier; replacing it with a throwing stub still closes CLOSED (R6-004). Gap 2: Store constructor accepts an arbitrary gitVerifier; ()=>true accepts fake SHA (R6-005).",
+      "residual": "GATE_5.9 Store path lacks final Git re-verification; injectable verifier can disable trust. Controller.approve path does verify.",
+      "minimal_fix": "Call gitVerifier inside #validateFinalGate/Store GATE_5.9 path; make the verifier non-injectable in production (module-private default, test-only factory) or tag/attest it."
+    }
+  ],
+  "r6_findings": [
+    {
+      "id": "R6-001",
+      "severity": "BLOCKER",
+      "kind": "code_defect",
+      "title": "Public Store.save+artifact can synthesize the full workflow and close Gate 5.9 with fabricated approvals/tests/P0/compliance",
+      "sources": [
+        "src/store.mjs:76-330",
+        "src/controller.mjs:23-40",
+        "src/git.mjs:140-176"
+      ],
+      "evidence": [
+        "logs/probe-r5-forged-flow.log",
+        "logs/probe-r5-forged-flow.json"
+      ],
+      "repro": "Init honest WAIT_GATE_01; create approval-0-1.json/TASK_SPEC.md/approval-0-2.json via Store.artifact; save GATE_0.1_APPROVED, TASK_SPEC_CANDIDATE, GATE_0.2_APPROVED; real base/child Git commits for WORKTREE_PREPARED/A_COMMIT_FROZEN; A_REVIEW_PASS with no reviewer evidence; fake tester-a.json + TEST_RECEIPTS + GATE_A_PASS; fake p0-evidence.json + P0_COMPLETE + P0_INITIAL_COLLECTED; B_REMEDIATION_SKIPPED; fake tester-b.json + TEST_RECEIPTS + GATE_B_TEST_PASS; fake final-compliance.json + WAITING_HUMAN_GATE_5_9; fake approval-5-9.json + GATE_5.9_APPROVED -> CLOSED.",
+      "impact": "18/18 steps succeeded. Final state CLOSED/APPROVED_FOR_SEPARATE_RELEASE_REVIEW with aRound=1,bRound=1 and only synthetic Git commits; no real Planner/Worker/Reviewer/Tester/P0/human approval. verify() passes.",
+      "minimal_fix": "Require verifier-produced role evidence and authenticated approvals; do not accept caller-written artifacts as proof; bind final-compliance to an independent verifier."
+    },
+    {
+      "id": "R6-002",
+      "severity": "HIGH",
+      "kind": "code_defect",
+      "title": "A_REVIEW_PASS/B_REVIEW_PASS can be claimed without Reviewer identity or evidence",
+      "sources": [
+        "src/store.mjs:184-275",
+        "src/controller.mjs:93-125"
+      ],
+      "evidence": [
+        "logs/probe-r5-forged-flow.log"
+      ],
+      "repro": "From A_REVIEW/READY, save(t,'A_REVIEW_PASS') moves to A_TEST with no reviewer artifact/history; the forged flow uses this step and reaches CLOSED.",
+      "impact": "The independent double-review gate can be skipped entirely; only Tester/P0 artifacts are checked later.",
+      "minimal_fix": "Require both spec_reviewer and quality_reviewer registered artifacts/history for the exact commit before A_REVIEW_PASS; same for B_REVIEW_PASS."
+    },
+    {
+      "id": "R6-003",
+      "severity": "HIGH",
+      "kind": "trust_boundary",
+      "title": "Gate 0.1/0.2/5.9 approvals bind only caller-created artifacts and string actor/receipt; no real human identity or external anchor",
+      "sources": [
+        "src/store.mjs:105-150",
+        "src/controller.mjs:23-40"
+      ],
+      "evidence": [
+        "logs/probe-r5-forged-flow.log",
+        "logs/probe-r5-init-event.log"
+      ],
+      "observed": "approval-0-1/0-2/5-9.json are created by Store.artifact; #checkGateReceipt only checks gate/digest/actor/receipt strings and the registered digest. A caller can set actor='fake-human', receipt of sufficient length and close.",
+      "impact": "Code-level self-consistency is not human authorization. This is distinct from R6-001: even with real role evidence, approval identity is unauthenticated.",
+      "minimal_fix": "Bind approvals to an authenticated principal (OS account/SSH signature/HMAC key) and an external immutable anchor; mark real identity as NOT_VERIFIED until then."
+    },
+    {
+      "id": "R6-004",
+      "severity": "HIGH",
+      "kind": "code_defect",
+      "title": "Store GATE_5.9_APPROVED path does not re-run Git verifier; worktree HEAD drift can be ignored",
+      "sources": [
+        "src/store.mjs:130-161",
+        "src/store.mjs:310-330",
+        "src/controller.mjs:23-40"
+      ],
+      "evidence": [
+        "logs/probe-r5-forged-flow.log",
+        "logs/probe-r5-forged-flow.json"
+      ],
+      "repro": "Run the forged flow to WAIT_GATE_59; replace store.gitVerifier with a function that throws; save GATE_5.9_APPROVED still succeeds and reaches CLOSED. Only Controller.approve calls verifyCommitEvidenceSync; Store.save does not.",
+      "impact": "A direct Store GATE_5.9 closure can skip the final exact-HEAD/ancestry check. Combined with R6-001, it closes with stale or replaced worktree.",
+      "minimal_fix": "Call gitVerifier in #validateFinalGate and in the Store GATE_5.9 save path before appending CLOSED."
+    },
+    {
+      "id": "R6-005",
+      "severity": "MEDIUM",
+      "kind": "design",
+      "title": "Store constructor accepts an arbitrary gitVerifier; a ()=>true stub disables Git trust",
+      "sources": [
+        "src/store.mjs:17-20",
+        "src/store.mjs:364-372"
+      ],
+      "evidence": [
+        "logs/probe-r5-verifier-stub.log",
+        "logs/probe-r5-verifier-stub.json"
+      ],
+      "repro": "new Store(root,{gitVerifier:()=>true}); seed PREPARE/A_WORKER with baseSha=currentSha=\"f\"*40 and a worktree path; save WORKTREE_PREPARED succeeds and verify() passes.",
+      "impact": "The constructor asserts a function exists but cannot distinguish the production verifier from a stub. Tests need injection, but production has no attestation that verification is enabled.",
+      "minimal_fix": "Keep a module-private production verifier and expose test injection only behind a test-only factory/flag; or record a signed verifier identity."
+    }
+  ],
+  "original_findings": [
+    {
+      "id": "F1",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "PASS+findings/blocking severity",
+      "sources": [
+        "src/policy.mjs:129-145",
+        "src/controller.mjs:83-85"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log",
+        "logs/probe-r5_parser.log"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Two-seat quorum, third-seat/cancel/lost ACK",
+      "sources": [
+        "src/p0.mjs:60-141"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real two hosts/600s/Linux process group NOT_VERIFIED."
+    },
+    {
+      "id": "F3",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Duplicate HMAC/physical identity",
+      "sources": [
+        "src/p0.mjs:27-59"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real physical identity NOT_VERIFIED."
+    },
+    {
+      "id": "F4",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "waitForFinish numeric timeout",
+      "sources": [
+        "src/agents.mjs:28"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real SDK NOT_VERIFIED."
+    },
+    {
+      "id": "F5",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Soul V2.1 migration/deliverable mapping",
+      "sources": [
+        "docs/SOUL_V21_MIGRATION_PENDING.md",
+        "src/policy.mjs:129-145"
+      ],
+      "evidence": [
+        "logs/regress-r2_006_parser_soul.stdout.log"
+      ],
+      "residual": "11 Soul blobs match provenance; 6 legacy Souls and legal deliverable mapping still absent."
+    },
+    {
+      "id": "F6",
+      "severity": "BLOCKER",
+      "disposition": "NOT_VERIFIED",
+      "title": "Windows OS boundary/TEST_ONLY",
+      "sources": [
+        "docs/SECURITY.md"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "No SID/ACL/network/Job Object/TEST_ONLY/live SDK."
+    },
+    {
+      "id": "F7",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "SQLite transactions/digests/evidence chain",
+      "sources": [
+        "src/store.mjs:42-330"
+      ],
+      "evidence": [
+        "logs/probe-r5-forged-flow.log",
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "R6-001/R6-003."
+    },
+    {
+      "id": "F8",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Compliance stop/human recovery",
+      "sources": [
+        "src/controller.mjs:59-73",
+        "src/controller.mjs:313-340"
+      ],
+      "evidence": [
+        "logs/probe-r5-forged-flow.log",
+        "logs/probe-r5-git-verify.log"
+      ],
+      "residual": "R6-001/R6-003."
+    },
+    {
+      "id": "F9",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Child env/raw log boundary",
+      "sources": [
+        "src/git.mjs:15-21",
+        "remote/p0_runner.py:26-36"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ],
+      "residual": "Env fixed; raw-log redaction/ACL NOT_VERIFIED."
+    },
+    {
+      "id": "F10",
+      "severity": "MEDIUM",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Query/worktree/process lifecycle",
+      "sources": [
+        "src/store.mjs:225-240"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real process tree NOT_VERIFIED."
+    }
+  ],
+  "r2_findings": [
+    {
+      "id": "R2-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Preflight re-anchor",
+      "sources": [
+        "src/controller.mjs:266-304"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log",
+        "logs/probe-r5-forged-flow.log"
+      ],
+      "residual": "R6-001."
+    },
+    {
+      "id": "R2-002",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Artifact orphan/registration fail-closed",
+      "sources": [
+        "src/store.mjs:42-75"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "readSnapshot one SQLite snapshot",
+      "sources": [
+        "src/store.mjs:225-230"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Read-only WAL side files documented",
+      "sources": [
+        "src/store.mjs:16-28"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-005",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Minimal child env",
+      "sources": [
+        "src/git.mjs:15-21",
+        "remote/p0_runner.py:305-306"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ],
+      "residual": "Raw logs/ACL NOT_VERIFIED."
+    },
+    {
+      "id": "R2-006",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Parser compatibility/Soul mapping",
+      "sources": [
+        "src/policy.mjs:94-145"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log",
+        "logs/regress-r2_006_parser_soul.stdout.log"
+      ],
+      "residual": "F5 remains."
+    },
+    {
+      "id": "R2-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Windows Python suite/liveness",
+      "sources": [
+        "remote/p0_runner.py:112-138"
+      ],
+      "evidence": [
+        "logs/python-full.stderr.log"
+      ],
+      "residual": "Linux/600s NOT_VERIFIED."
+    },
+    {
+      "id": "R2-008",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "Basis recovery",
+      "sources": [
+        "src/controller.mjs:313-340"
+      ],
+      "evidence": [
+        "logs/probe-r5-git-verify.log"
+      ],
+      "residual": "R6-003."
+    },
+    {
+      "id": "R2-009",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Path/symlink/gitlink",
+      "sources": [
+        "src/git.mjs:49-118"
+      ],
+      "evidence": [
+        "logs/probe-r5_git_paths.log",
+        "logs/regress-r2_009_paths.stdout.log"
+      ],
+      "residual": "Real Windows OS symlink NOT_VERIFIED; index 120000 tested."
+    },
+    {
+      "id": "R2-010",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Reviewer evidence preservation/no redispatch",
+      "sources": [
+        "src/controller.mjs:93-125"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "No automated reconcile."
+    }
+  ],
+  "r3_findings": [
+    {
+      "id": "R3-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Event boundary/public save",
+      "sources": [
+        "src/store.mjs:6-15",
+        "src/store.mjs:76-330"
+      ],
+      "evidence": [
+        "logs/probe-r5-init-event.log",
+        "logs/probe-r5-forged-flow.log"
+      ],
+      "residual": "R6-001."
+    },
+    {
+      "id": "R3-002",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "Frozen/TASK_SPEC/recovery",
+      "sources": [
+        "src/controller.mjs:40-52",
+        "src/store.mjs:79-150"
+      ],
+      "evidence": [
+        "logs/probe-r5-init-event.log",
+        "logs/probe-r5-forged-flow.log"
+      ],
+      "residual": "Planner/TASK_SPEC artifact can be fabricated (R6-001)."
+    },
+    {
+      "id": "R3-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "NEEDS_RECONCILIATION preserved",
+      "sources": [
+        "src/controller.mjs:266-299"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "taskkill childEnv",
+      "sources": [
+        "src/git.mjs:19-21"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-005",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Popen child_env",
+      "sources": [
+        "remote/p0_runner.py:305-306"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-006",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "CLI newline",
+      "sources": [
+        "src/cli.mjs:24-29"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "APPROVE_WITH_COMMENTS severity",
+      "sources": [
+        "src/policy.mjs:129-145",
+        "src/p0.mjs:49-62",
+        "remote/p0_runner.py:180-190"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log",
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-008",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Unique terminal JSON verdict",
+      "sources": [
+        "src/policy.mjs:94-128",
+        "remote/p0_runner.py:140-159"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log"
+      ]
+    }
+  ],
+  "r4_findings": [
+    {
+      "id": "R4-001",
+      "severity": "BLOCKER",
+      "disposition": "NOT_FIXED",
+      "title": "Stage/approval/P0 bypass via save+artifact",
+      "sources": [
+        "src/store.mjs:76-330"
+      ],
+      "evidence": [
+        "logs/probe-r5-forged-flow.log"
+      ],
+      "residual": "R6-001."
+    },
+    {
+      "id": "R4-002",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Frozen/pair/init vs Planner binding",
+      "sources": [
+        "src/store.mjs:76-150"
+      ],
+      "evidence": [
+        "logs/probe-r5-init-event.log",
+        "logs/probe-r5-forged-flow.log"
+      ],
+      "residual": "TASK_SPEC/approval artifacts can be fabricated."
+    },
+    {
+      "id": "R4-003",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "artifact transaction/orphan boundary",
+      "sources": [
+        "src/store.mjs:42-75"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "File/SQLite non-atomicity documented; orphan manual."
+    },
+    {
+      "id": "R4-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Multi-verdict conservative rejection",
+      "sources": [
+        "src/policy.mjs:94-128"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log"
+      ]
+    },
+    {
+      "id": "R4-005",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Unique terminal verdict / FAIL-PASS",
+      "sources": [
+        "src/policy.mjs:94-128",
+        "remote/p0_runner.py:140-159"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log"
+      ]
+    },
+    {
+      "id": "R4-006",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Unicode invisible prefix rejection",
+      "sources": [
+        "src/git.mjs:78-86"
+      ],
+      "evidence": [
+        "logs/probe-r5_git_paths.log"
+      ]
+    },
+    {
+      "id": "R4-007",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Full Git index symlink/gitlink/sensitive path",
+      "sources": [
+        "src/git.mjs:49-118"
+      ],
+      "evidence": [
+        "logs/probe-r5_git_paths.log"
+      ],
+      "residual": "Real Windows OS symlink NOT_VERIFIED; index 120000 tested."
+    }
+  ],
+  "mandatory_unverified": [
+    "Real human approval identity (OS account/SSH signature/HMAC principal)",
+    "External immutable evidence anchor",
+    "Real P0 identity/HMAC over SSH and two physical hosts",
+    "Real Paseo SDK/daemon and remote OpenCode lifecycle",
+    "Windows SID/ACL/Job Object/TEST_ONLY isolation",
+    "Real third-seat 600s and Linux process-group cancellation",
+    "OS crash/power-loss and sustained multi-process SQLite stress",
+    "Real Windows OS symlink creation (EPERM); index 120000 tested",
+    "Soul V2.1 migration and legal Markdown/JSON deliverable mapping"
+  ],
+  "independent_reports": [
+    {
+      "name": "Codex",
+      "status": "NOT_AVAILABLE",
+      "reason": "429 Too Many Requests after 39,541 tokens; no report produced",
+      "exit_code": 1,
+      "stderr_log": "CODEX_STDERR.log",
+      "started": "2026-11-08T11:43:34+08:00",
+      "finished": "2026-11-08T11:44:08+08:00"
+    },
+    {
+      "name": "OpenCode",
+      "status": "VALID",
+      "model": "magpie/group/deepseek-v4-pro",
+      "agent": "p1-audit (read-only)",
+      "report": "OPENCODE_REPORT.md",
+      "stderr_log": "OPENCODE_STDERR.log",
+      "exit_code": 0,
+      "report_bytes": 3897,
+      "started": "2026-11-08T11:44:26+08:00",
+      "finished": "2026-11-08T11:47:48+08:00",
+      "key_findings": [
+        "public save+artifact full forged flow CLOSED CONFIRMED",
+        "A/B_REVIEW_PASS no reviewer evidence CONFIRMED",
+        "approval artifacts unauthenticated CONFIRMED",
+        "init creation guard FIXED",
+        "Git verifier FIXED but Store GATE_5.9 path skips + injectable stub CONFIRMED",
+        "normal flow no regression",
+        "CODE_VERDICT FAIL"
+      ]
+    }
+  ],
+  "summary": {
+    "r5_total": 3,
+    "r5_dispositions": {
+      "FIXED": 1,
+      "PARTIAL": 1,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 0
+    },
+    "r6_total": 5,
+    "r6_severities": {
+      "BLOCKER": 1,
+      "HIGH": 3,
+      "MEDIUM": 1
+    },
+    "r4_total": 7,
+    "r4_dispositions": {
+      "FIXED": 5,
+      "PARTIAL": 1,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 0
+    },
+    "original_total": 10,
+    "original_dispositions": {
+      "FIXED": 2,
+      "PARTIAL": 3,
+      "MITIGATED_FAIL_CLOSED": 3,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 1
+    },
+    "r2_total": 10,
+    "r2_dispositions": {
+      "FIXED": 7,
+      "PARTIAL": 3,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    },
+    "r3_total": 8,
+    "r3_dispositions": {
+      "FIXED": 6,
+      "PARTIAL": 2,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    }
+  }
+}

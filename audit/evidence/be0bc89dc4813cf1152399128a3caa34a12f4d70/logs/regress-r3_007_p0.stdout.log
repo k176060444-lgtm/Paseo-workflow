@@ -1,0 +1,99 @@
+✖ R3-007: one LOW-comment seat plus one PASS does not pass P0 (20.3216ms)
+✖ R3-007: APPROVE_WITH_COMMENTS without findings plus PASS passes (18.6531ms)
+✖ R3-007: LOW-comment seat plus FAIL creates a dispute and does not pass (18.3437ms)
+✖ R3-007: a single seat can never pass P0 (two distinct nodes required) (18.3187ms)
+✖ R3-007: duplicate physical identity is rejected before dispatch (18.1207ms)
+✖ R3-007: signed P0 APPROVE_WITH_COMMENTS HIGH/LOW and PASS+LOW gates (17.8563ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 0
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 232.9084
+
+✖ failing tests:
+
+test at ..\probes\r3_007_p0.test.mjs:44:1
+✖ R3-007: one LOW-comment seat plus one PASS does not pass P0 (20.3216ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:45:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.start (node:internal/test_runner/test:1257:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+
+test at ..\probes\r3_007_p0.test.mjs:56:1
+✖ R3-007: APPROVE_WITH_COMMENTS without findings plus PASS passes (18.6531ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:57:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\r3_007_p0.test.mjs:65:1
+✖ R3-007: LOW-comment seat plus FAIL creates a dispute and does not pass (18.3437ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:66:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\r3_007_p0.test.mjs:75:1
+✖ R3-007: a single seat can never pass P0 (two distinct nodes required) (18.3187ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:76:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\r3_007_p0.test.mjs:83:1
+✖ R3-007: duplicate physical identity is rejected before dispatch (18.1207ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:84:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\r3_007_p0.test.mjs:94:1
+✖ R3-007: signed P0 APPROVE_WITH_COMMENTS HIGH/LOW and PASS+LOW gates (17.8563ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/r3_007_p0.test.mjs:95:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)

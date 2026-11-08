@@ -1,0 +1,20 @@
+OK Gate 0.1 fake approval artifact
+OK Planner TASK_SPEC fake artifact
+OK Gate 0.2 fake approval artifact
+Preparing worktree (detached HEAD 044f2bc)
+OK WORKTREE_PREPARED real repo
+OK GATE_A_ROUND_START
+OK A_COMMIT_FROZEN real child commit
+OK A_REVIEW_PASS with no reviewer evidence
+OK Tester A fake history/artifact
+OK GATE_A_PASS fake Tester A
+OK P0_STARTED
+OK P0_COMPLETE fake P0 history
+OK P0_INITIAL_COLLECTED fake 2-seat P0
+OK GATE_B_ROUND_START
+OK B_REMEDIATION_SKIPPED
+OK Tester B fake history/artifact
+OK GATE_B_TEST_PASS fake Tester B
+OK WAITING_HUMAN_GATE_5_9 fake compliance
+OK GATE_5.9_APPROVED fake human receipt with final Git verifier stubbed to throw
+FINAL CLOSED APPROVED_FOR_SEPARATE_RELEASE_REVIEW steps 18

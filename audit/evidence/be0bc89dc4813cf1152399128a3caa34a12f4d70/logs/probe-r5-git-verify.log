@@ -1,0 +1,19 @@
+Preparing worktree (detached HEAD fd4a21e)
+Preparing worktree (detached HEAD b1481c7)
+CONFIRMED R5-003 verifier accepts real base->child and exact worktree HEAD 
+CONFIRMED R5-003 rejects missing SHA Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo cat-file -e ffffffffffffffffffffffffff
+CONFIRMED R5-003 rejects non-commit tree object Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo cat-file -e b497e0bfc7172d69101ad50277
+CONFIRMED R5-003 rejects non-commit blob object Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo cat-file -e b0c6ee1e00f4ab52bd72a934d0
+CONFIRMED R5-003 rejects wrong ancestor child->base Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo merge-base --is-ancestor fd4a21e4946ab
+CONFIRMED R5-003 rejects worktree HEAD mismatch Git commit existence, ancestry or worktree HEAD unverified: final SHA does not match exact worktree HEAD
+CONFIRMED R5-003 rejects previousSha not ancestor of new child Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo merge-base --is-ancestor 2528837dc225a
+CONFIRMED R5-003 rejects replaced/missing worktree directory Git commit existence, ancestry or worktree HEAD unverified: approved worktree missing
+CONFIRMED R5-003 Store WORKTREE_PREPARED rejects fake SHA Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo cat-file -e ffffffffffffffffffffffffff
+Preparing worktree (detached HEAD b1481c7)
+CONFIRMED R5-003 Store A_COMMIT_FROZEN rejects fake SHA Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo cat-file -e ffffffffffffffffffffffffff
+Preparing worktree (detached HEAD b1481c7)
+CONFIRMED R5-003 Store B_COMMIT_FROZEN rejects fake SHA Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo cat-file -e ffffffffffffffffffffffffff
+CONFIRMED R5-003 Controller.approve Gate 5.9 rejects fake SHA Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo cat-file -e ffffffffffffffffffffffffff
+Preparing worktree (detached HEAD b1481c7)
+CONFIRMED R5-003 authorizeRecovery rejects fake SHA Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\Users\KK\AppData\Local\Temp\p1-r5-gitverify-H64ZQG\repo cat-file -e ffffffffffffffffffffffffff
+TOTAL 13 CONFIRMED 13

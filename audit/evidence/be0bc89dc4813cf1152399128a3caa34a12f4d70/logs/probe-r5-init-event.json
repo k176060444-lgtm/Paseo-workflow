@@ -1,0 +1,67 @@
+[
+  {
+    "name": "R5-002 init rejects WAIT_GATE_59",
+    "result": "CONFIRMED",
+    "detail": "new tasks must start at human Gate 0.1"
+  },
+  {
+    "name": "R5-002 init rejects READY status",
+    "result": "CONFIRMED",
+    "detail": "new tasks must start at human Gate 0.1"
+  },
+  {
+    "name": "R5-002 init rejects nonzero rounds",
+    "result": "CONFIRMED",
+    "detail": "new task round budgets must start at zero"
+  },
+  {
+    "name": "R5-002 init rejects pre-set TASK_SPEC",
+    "result": "CONFIRMED",
+    "detail": "new task may not pre-seed taskSpec"
+  },
+  {
+    "name": "R5-002 init rejects pre-set currentSha",
+    "result": "CONFIRMED",
+    "detail": "new task may not pre-seed currentSha"
+  },
+  {
+    "name": "R5-002 init rejects pre-set lastB/P0",
+    "result": "CONFIRMED",
+    "detail": "new task may not pre-seed lastB"
+  },
+  {
+    "name": "R5-002 init rejects nonempty history",
+    "result": "CONFIRMED",
+    "detail": "new task history must be empty"
+  },
+  {
+    "name": "R5-002 init rejects forged frozen digest",
+    "result": "CONFIRMED",
+    "detail": "new task frozen digest mismatch"
+  },
+  {
+    "name": "R5-002 init rejects inflated policy",
+    "result": "CONFIRMED",
+    "detail": "new task budget policy mismatch"
+  },
+  {
+    "name": "R5-002 init rejects bad Soul digest",
+    "result": "CONFIRMED",
+    "detail": "new task Soul content/digest mismatch"
+  },
+  {
+    "name": "R5-002 honest init accepted",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R5-001 public event rejects workflow event",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R5-001 public event allows CONFIG_FROZEN only",
+    "result": "CONFIRMED",
+    "detail": ""
+  }
+]

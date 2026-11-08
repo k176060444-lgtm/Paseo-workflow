@@ -1,0 +1,67 @@
+Paseo-workflow S0-R5 第六轮独立审计 — 测试结果
+被审 Commit: be0bc89dc4813cf1152399128a3caa34a12f4d70
+基线 Commit: 5fa4a8ad1083c44c92e69f0fb84bdf900bd333ee
+实际父提交: 88a7af38c7c2472a8c67ef674e2395143b9c30ed
+Tree: 91cf608442690fee0e5694aa6d068d3c416ea3e0
+
+环境: Windows 10 (21bao); Node v26.6.0; npm 11.18.0; Python 3.11.15; Git 2.54.0.windows.1; Codex 0.166.0; OpenCode 1.19.3
+注意: 探针 CONFIRMED 表示断言成立；缺陷复现探针的 CONFIRMED 不代表产品通过。
+
+全量批次：
+批次                                  用例  PASS  FAIL  ERR  SKIP  exit
+npm-check                            0     0     0    0     0     0
+npm-test                            62    61     0    0     1     0
+python-full                         11    11     0    0     0     0
+probe-r5-forged-flow                18    18     0    0     0     0
+probe-r5-init-event                 13    13     0    0     0     0
+probe-r5-git-verify                 13    13     0    0     0     0
+probe-r5-parser-local               11    11     0    0     0     0
+probe-r5-parser-remote              16    16     0    0     0     0
+probe-r5-git-paths                  25    25     0    0     0     0
+probe-r5-verifier-stub               1     1     0    0     0     0
+regress-r2-009                      50    50     0    0     0     0
+regress-r3-004-005                   5     5     0    0     0     0
+regress-r2-006-soul                 14    14     0    0     0     0
+legacy-r3-007-incompatible           6     0     6    0     0     1
+legacy-f-regression-incompatible    12     3     9    0     0     1
+全量合计                               257   241    15    0     1
+
+有效产品/独立探针（排除旧夹具不兼容批次）：
+有效合计                               239   238     0    0     1
+
+说明：legacy-r3-007-incompatible 与 legacy-f-regression-incompatible 的失败，是旧探针直接用 Store.init 构造非 Gate 0.1 状态；R5-002 现在拒绝该类初始化。更新后的官方 P0/F2/F3/F7 测试在 npm-test 中通过，因此这些失败不是产品回归。
+
+逐批命令、cwd、日志：
+- npm-check: npm run check | cwd=offline-copy | exit=0 | log=logs/npm-check.stdout.log | expected_failure=False
+- npm-test: npm test (node --test tests/*.test.mjs) | cwd=offline-copy | exit=0 | log=logs/npm-test.stdout.log | expected_failure=False
+- python-full: python -B -m unittest discover -s remote/tests -p 'test*.py' -v | cwd=offline-copy | exit=0 | log=logs/python-full.stderr.log | expected_failure=False
+- probe-r5-forged-flow: node probes/r5_forged_flow.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-forged-flow.json | expected_failure=False
+- probe-r5-init-event: node probes/r5_init_event.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-init-event.json | expected_failure=False
+- probe-r5-git-verify: node probes/r5_git_verify.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-git-verify.json | expected_failure=False
+- probe-r5-parser-local: node probes/r5_parser.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-parser-local.json | expected_failure=False
+- probe-r5-parser-remote: python probes/r5_parser_remote.py | cwd=offline-copy | exit=0 | log=logs/probe-r5-parser-remote.json | expected_failure=False
+- probe-r5-git-paths: node probes/r5_git_paths.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-git-paths.json | expected_failure=False
+- probe-r5-verifier-stub: node probes/r5_verifier_stub.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-verifier-stub.json | expected_failure=False
+- regress-r2-009: node --test probes/r2_009_paths.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_009_paths.stdout.log | expected_failure=False
+- regress-r3-004-005: node --test probes/r3_004_005_env.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r3_004_005_env.stdout.log | expected_failure=False
+- regress-r2-006-soul: node --test probes/r2_006_parser_soul.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_006_parser_soul.stdout.log | expected_failure=False
+- legacy-r3-007-incompatible: node --test probes/r3_007_p0.test.mjs | cwd=offline-copy | exit=1 | log=logs/regress-r3_007_p0.stdout.log | expected_failure=True
+- legacy-f-regression-incompatible: node --test probes/f_regression.test.mjs | cwd=offline-copy | exit=1 | log=logs/regress-f_regression.stdout.log | expected_failure=True
+
+Python 原始套件 stderr（完整）：
+test_explicit_env_allowlist_only_passes_whitelisted_names (test_r2_runner.R2RemoteRunnerTests.test_explicit_env_allowlist_only_passes_whitelisted_names) ... ok
+test_legacy_verdict_and_markdown_final_envelope (test_r2_runner.R2RemoteRunnerTests.test_legacy_verdict_and_markdown_final_envelope) ... ok
+test_remote_git_helper_excludes_unrelated_secret_environment (test_r2_runner.R2RemoteRunnerTests.test_remote_git_helper_excludes_unrelated_secret_environment) ... ok
+test_indented_final_json_and_no_false_terminal_verdict (test_r3_runner.R3RemoteRunnerTests.test_indented_final_json_and_no_false_terminal_verdict) ... ok
+test_low_comments_match_local_advisory_verdict_contract (test_r3_runner.R3RemoteRunnerTests.test_low_comments_match_local_advisory_verdict_contract) ... ok
+test_submit_process_env_does_not_inherit_gateway_secret (test_r3_runner.R3RemoteRunnerTests.test_submit_process_env_does_not_inherit_gateway_secret) ... ok
+test_fail_then_pass_not_accepted (test_r4_parser.R4RemoteParserTests.test_fail_then_pass_not_accepted) ... ok
+test_multiple_fenced_verdicts_fail_closed (test_r4_parser.R4RemoteParserTests.test_multiple_fenced_verdicts_fail_closed) ... ok
+test_regular_jsonl_with_one_extracted_report (test_r4_parser.R4RemoteParserTests.test_regular_jsonl_with_one_extracted_report) ... ok
+test_single_pretty_or_indented_final_verdict (test_r4_parser.R4RemoteParserTests.test_single_pretty_or_indented_final_verdict) ... ok
+test_native_harness_durable_job_and_hmac (test_runner.RemoteRunnerTests.test_native_harness_durable_job_and_hmac) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.860s
+
+OK

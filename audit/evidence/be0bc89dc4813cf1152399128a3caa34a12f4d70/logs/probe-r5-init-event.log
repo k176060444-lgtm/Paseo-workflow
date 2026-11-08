@@ -1,0 +1,14 @@
+CONFIRMED R5-002 init rejects WAIT_GATE_59 new tasks must start at human Gate 0.1
+CONFIRMED R5-002 init rejects READY status new tasks must start at human Gate 0.1
+CONFIRMED R5-002 init rejects nonzero rounds new task round budgets must start at zero
+CONFIRMED R5-002 init rejects pre-set TASK_SPEC new task may not pre-seed taskSpec
+CONFIRMED R5-002 init rejects pre-set currentSha new task may not pre-seed currentSha
+CONFIRMED R5-002 init rejects pre-set lastB/P0 new task may not pre-seed lastB
+CONFIRMED R5-002 init rejects nonempty history new task history must be empty
+CONFIRMED R5-002 init rejects forged frozen digest new task frozen digest mismatch
+CONFIRMED R5-002 init rejects inflated policy new task budget policy mismatch
+CONFIRMED R5-002 init rejects bad Soul digest new task Soul content/digest mismatch
+CONFIRMED R5-002 honest init accepted 
+CONFIRMED R5-001 public event rejects workflow event 
+CONFIRMED R5-001 public event allows CONFIG_FROZEN only 
+TOTAL 13 CONFIRMED 13

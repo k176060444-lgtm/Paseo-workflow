@@ -1,0 +1,127 @@
+[
+  {
+    "name": "R4-006 rejects U+00AD prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ­.env"
+  },
+  {
+    "name": "R4-006 rejects U+034F prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ͏.env"
+  },
+  {
+    "name": "R4-006 rejects U+180E prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ᠎.env"
+  },
+  {
+    "name": "R4-006 rejects U+3164 prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ㅤ.env"
+  },
+  {
+    "name": "R4-006 rejects U+2800 prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ⠀.env"
+  },
+  {
+    "name": "R4-006 rejects U+200B prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ​.env"
+  },
+  {
+    "name": "R4-006 rejects U+200D prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ‍.env"
+  },
+  {
+    "name": "R4-006 rejects U+2060 prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ⁠.env"
+  },
+  {
+    "name": "R4-006 rejects U+FEFF prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "ambiguous whitespace or trailing-dot Git path: ﻿.env"
+  },
+  {
+    "name": "R4-006 rejects U+202E prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ‮.env"
+  },
+  {
+    "name": "R4-006 rejects U+FFA0 prefix before .env",
+    "result": "CONFIRMED",
+    "detail": "unsafe control/format character in Git path: ﾠ.env"
+  },
+  {
+    "name": "R4-006 accepts normal ASCII foo.env",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-006 accepts normal ASCII env",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-006 accepts normal normal.txt",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-006 accepts normal .gitignore",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-006 accepts normal Chinese file",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-006 accepts normal Chinese path",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-006 accepts normal Chinese non-reserved env name",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-006 rejects fullwidth NFKC .env",
+    "result": "CONFIRMED",
+    "detail": "refusing to commit sensitive-looking file: ．ｅｎｖ"
+  },
+  {
+    "name": "R4-006 rejects leading-space .env",
+    "result": "CONFIRMED",
+    "detail": "ambiguous whitespace or trailing-dot Git path:  .env"
+  },
+  {
+    "name": "R4-006 accepts U+2215 as normal filename (not a separator)",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R4-007 prepare rejects inherited 120000 symlink index",
+    "result": "CONFIRMED",
+    "detail": "symlink/gitlink in index (including inherited base): link"
+  },
+  {
+    "name": "R4-007 prepare rejects inherited 160000 gitlink index",
+    "result": "CONFIRMED",
+    "detail": "symlink/gitlink in index (including inherited base): submodule"
+  },
+  {
+    "name": "R4-007 commitWorktree rejects clean worktree with inherited symlink",
+    "result": "CONFIRMED",
+    "detail": "symlink/gitlink in index (including inherited base): link"
+  },
+  {
+    "name": "R4-007 prepare rejects inherited .env path in full index",
+    "result": "CONFIRMED",
+    "detail": "refusing to commit sensitive-looking file: .env"
+  }
+]

@@ -1,0 +1,67 @@
+[
+  {
+    "name": "R5-003 verifier accepts real base->child and exact worktree HEAD",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R5-003 rejects missing SHA",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo cat-file -e ffffffffffffffffffffffffff"
+  },
+  {
+    "name": "R5-003 rejects non-commit tree object",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo cat-file -e b497e0bfc7172d69101ad50277"
+  },
+  {
+    "name": "R5-003 rejects non-commit blob object",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo cat-file -e b0c6ee1e00f4ab52bd72a934d0"
+  },
+  {
+    "name": "R5-003 rejects wrong ancestor child->base",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo merge-base --is-ancestor fd4a21e4946ab"
+  },
+  {
+    "name": "R5-003 rejects worktree HEAD mismatch",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: final SHA does not match exact worktree HEAD"
+  },
+  {
+    "name": "R5-003 rejects previousSha not ancestor of new child",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo merge-base --is-ancestor 2528837dc225a"
+  },
+  {
+    "name": "R5-003 rejects replaced/missing worktree directory",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: approved worktree missing"
+  },
+  {
+    "name": "R5-003 Store WORKTREE_PREPARED rejects fake SHA",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo cat-file -e ffffffffffffffffffffffffff"
+  },
+  {
+    "name": "R5-003 Store A_COMMIT_FROZEN rejects fake SHA",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo cat-file -e ffffffffffffffffffffffffff"
+  },
+  {
+    "name": "R5-003 Store B_COMMIT_FROZEN rejects fake SHA",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo cat-file -e ffffffffffffffffffffffffff"
+  },
+  {
+    "name": "R5-003 Controller.approve Gate 5.9 rejects fake SHA",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo cat-file -e ffffffffffffffffffffffffff"
+  },
+  {
+    "name": "R5-003 authorizeRecovery rejects fake SHA",
+    "result": "CONFIRMED",
+    "detail": "Git commit existence, ancestry or worktree HEAD unverified: Command failed: git -C C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r5-gitverify-H64ZQG\\repo cat-file -e ffffffffffffffffffffffffff"
+  }
+]

@@ -1,0 +1,147 @@
+✖ F2: two distinct seats 5bao+rusty pass while 9bao is unavailable (20.5737ms)
+✖ F2: two distinct seats 5bao+9bao pass while rusty is unavailable (17.6305ms)
+✖ F2: two distinct seats 9bao+rusty pass while 5bao is unavailable (40.4436ms)
+✖ F2: third seat finishing with FAIL at cancel is included and blocks (26.4177ms)
+✖ F2: third seat finishing PASS at cancel is included without blocking (19.5727ms)
+✖ F2: cancellation ACK with the wrong node identity blocks (18.5632ms)
+✖ F3: duplicated HMAC key bytes at distinct paths never dispatch (18.4727ms)
+✖ F3: signed physicalId mismatch is rejected (19.4782ms)
+✔ F6: provider permission matrix is fixed and deny-by-default for unknown roles/harnesses (1.4216ms)
+✔ F1/F5: verdict helpers are consistent at the trust boundary (0.945ms)
+✖ F7: an empty event table is rejected (18.2692ms)
+✔ F10: a read-only store does not create a missing state directory (0.433ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 3
+ℹ fail 9
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 338.6752
+
+✖ failing tests:
+
+test at ..\probes\f_regression.test.mjs:55:3
+✖ F2: two distinct seats 5bao+rusty pass while 9bao is unavailable (20.5737ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:56:13)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.start (node:internal/test_runner/test:1257:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+
+test at ..\probes\f_regression.test.mjs:55:3
+✖ F2: two distinct seats 5bao+9bao pass while rusty is unavailable (17.6305ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:56:13)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\f_regression.test.mjs:55:3
+✖ F2: two distinct seats 9bao+rusty pass while 5bao is unavailable (40.4436ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:56:13)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\f_regression.test.mjs:69:1
+✖ F2: third seat finishing with FAIL at cancel is included and blocks (26.4177ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:70:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\f_regression.test.mjs:82:1
+✖ F2: third seat finishing PASS at cancel is included without blocking (19.5727ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:83:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\f_regression.test.mjs:93:1
+✖ F2: cancellation ACK with the wrong node identity blocks (18.5632ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:94:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\f_regression.test.mjs:101:1
+✖ F3: duplicated HMAC key bytes at distinct paths never dispatch (18.4727ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:102:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\f_regression.test.mjs:112:1
+✖ F3: signed physicalId mismatch is rejected (19.4782ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:113:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+
+test at ..\probes\f_regression.test.mjs:156:1
+✖ F7: an empty event table is rejected (18.2692ms)
+  Error: new tasks must start at human Gate 0.1
+      at assert (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/policy.mjs:25:68)
+      at #validateCreation (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:81:5)
+      at Store.init (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/offline-copy/src/store.mjs:302:27)
+      at fixture (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:19:9)
+      at TestContext.<anonymous> (file:///C:/Users/KK/AppData/Local/Temp/opencode/paseo-audit-s0-r5/probes/f_regression.test.mjs:157:11)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)

@@ -1,0 +1,53 @@
+diff --git a/src/controller.mjs b/src/controller.mjs
+index 1a8fbd8..cf3c89f 100644
+--- a/src/controller.mjs
++++ b/src/controller.mjs
+@@ -22,6 +22,15 @@ export class WorkflowController {
+   }
+   approve({id,gate,digest,actor,receipt}){
+     const t=this.required(id);
++    this.store.verify(id);
++    this.assertFrozenIntegrity(t);
++    assert(t.status==='WAITING_HUMAN','gate is not waiting for explicit human approval');
++    if(gate==='5.9'){
++      this.compliance(t);
++      assert(typeof this.git.verifyCommitEvidenceSync==='function',
++        'trusted synchronous Git verification unavailable');
++      this.git.verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
++    }
+     assert(typeof actor==='string'&&actor.trim().length>1,'approval actor required');
+     assert(typeof receipt==='string'&&receipt.trim().length>15,'human approval receipt required');
+     assert(gate==='0.1'||gate==='0.2'||gate==='5.9','unsupported gate');
+@@ -62,12 +71,16 @@ export class WorkflowController {
+     assert(t.frozen.policy.maxA===MAX_A&&t.frozen.policy.maxB===MAX_B,'budget policy mismatch');
+     for (const [role,perm] of Object.entries(ROLE_PERMISSIONS))
+       assert(t.frozen.policy.permissions[role]===perm,'role permissions modified');
+-    if(t.stage==='READY_FINAL'||t.stage==='WAIT_GATE_59'){
+-      assert(t.lastB?.tests?.pass===true,'missing final Tester B pass');
++    if(t.stage==='READY_FINAL'||t.stage==='WAIT_GATE_59'||t.stage==='CLOSED'){
++      assert(t.lastA?.pass===true,'missing independent Tester A pass');
++      assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true,'missing final Tester B pass');
+       assert(t.lastB?.commit===t.currentSha,'Tester B commit mismatch');
+       const p0=t.p0Final??t.p0Initial;
+       assert(p0?.passed===true&&p0.commit===t.currentSha,'P0 must cover final commit');
+       assert(p0.reports.length>=2&&new Set(p0.reports.map(r=>r.physicalId)).size>=2,'insufficient physical P0 seats');
++      assert(p0.reports.every(r=>r.commit===t.currentSha&&PASS(r.verdict)&&
++        Array.isArray(r.findings)&&r.findings.length===0),
++        'P0 quorum does not match final SHA or has unresolved findings');
+       assert(!t.bFindings.length,'unresolved P0 findings');
+     }
+     return true;
+@@ -319,7 +332,12 @@ export class WorkflowController {
+     assert(!t.inflight,'recovery requires zero in-flight operations');
+     assert(this.store.dispatches(id).every(d=>d.state==='TERMINAL'),
+       'outstanding dispatch must be reconciled with original provider/host receipts first');
+-    if(t.currentSha!==null) assert(t.currentSha===expectedSha,'Git SHA not the approved recovery basis');
++    if(t.currentSha!==null){
++      assert(t.currentSha===expectedSha,'Git SHA not the approved recovery basis');
++      assert(typeof this.git.verifyCommitEvidenceSync==='function',
++        'trusted synchronous Git verification unavailable for recovery');
++      this.git.verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
++    }
+     else {
+       assert(expectedSha===null,'pre-commit recovery must not invent a Git SHA');
+       assert(expectedBasis===(t.taskSpecSha??t.frozen.digest),
