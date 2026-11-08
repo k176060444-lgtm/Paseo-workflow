@@ -222,3 +222,25 @@ test('real config/ and souls/ sibling layout freezes without path escape',async(
    assert.equal(Object.keys(c.required('TASK5678').frozen.souls).length,11);
  }finally{store.close();fs.rmSync(tmp,{recursive:true,force:true});}
 });
+
+test('R6-004 direct Store final close independently checks real worktree HEAD',async()=>{
+ const x=setup();
+ try{
+   await movePastPlanning(x);
+   const final=await x.c.run('TASK1234');
+   assert.equal(final.stage,'WAIT_GATE_59');
+   const message='Human signs this exact final commit and compliance evidence';
+   const proof=x.proof('5.9',final.currentSha,message);
+   const artifact=x.store.artifact('TASK1234','approval-5-9.json',
+     {gate:'5.9',digest:final.currentSha,actor:'user',receipt:message,proof,
+       at:new Date().toISOString()});
+   const t=x.c.required('TASK1234');
+   execFileSync('git',['-C',t.worktree,'checkout','--detach','-q',t.baseSha]);
+   t.stage='CLOSED';t.status='APPROVED_FOR_SEPARATE_RELEASE_REVIEW';
+   assert.throws(()=>x.store.save(t,'GATE_5.9_APPROVED',{
+     digest:final.currentSha,actor:'user',approvalSha256:artifact.sha256,
+     approvalNonce:proof.statement.nonce}),/worktree HEAD|unverified/);
+   assert.equal(x.c.required('TASK1234').stage,'WAIT_GATE_59');
+   x.store.verify('TASK1234');
+ }finally{finish(x);}
+});

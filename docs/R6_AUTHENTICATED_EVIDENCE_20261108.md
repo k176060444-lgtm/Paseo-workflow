@@ -8,7 +8,7 @@
 
 ## 本轮 R6 对策
 
-- **R6-001/R6-003：** Gate 0.1、0.2、5.9 及受控恢复不再相信调用者写入的 actor/receipt/artifact；`src/auth.mjs` 要求由独立公钥信任清单验证的 Ed25519 签名，内容绑定 taskId、Gate、SHA/digest、actor、receipt、UUID nonce、签发时间。受控恢复使用 `gate=recovery`，同样签署任务 ID、当前恢复 basis（spec/config/commit）、审批人和收据，并绑定恢复目标和 nonce；不再允许只用 actor/receipt 重开。签名新鲜度：不得早于30分钟，不得超前2分钟。无签名、来源不受信任、根清单 SHA 不匹配全部拒绝。Store.save 自身在事务里二次验证，不能仅靠 Controller.approve。
+- **R6-001/R6-003：** Gate 0.1、0.2、5.9 及受控恢复不再相信调用者写入的 actor/receipt/artifact；`src/auth.mjs` 要求由独立公钥信任清单验证的 Ed25519 签名，内容绑定 taskId、Gate、SHA/digest、actor、receipt、UUID nonce、签发时间。Gate 5.9 还强制绑定已登记的 `final-compliance.json` SHA-256，不允许只签 Git SHA。受控恢复使用 `gate=recovery`，同样签署任务 ID、当前恢复 basis（spec/config/commit）、审批人和收据，并绑定恢复目标和 nonce；不再允许只用 actor/receipt 重开。签名新鲜度：不得早于30分钟，不得超前2分钟。无签名、来源不受信任、根清单 SHA 不匹配全部拒绝。Store.save 自身在事务里二次验证，不能仅靠 Controller.approve。
 - **R6-002：** A/B_REVIEW_PASS 必须存在 spec_reviewer 与 quality_reviewer 两席同 Commit、同轮次、不同 agentId、无未决 findings 的登记原始报告及对应终止 dispatch/ACK。仅通过 event name 无法跳过双审。
 - **R6-004：** Store 的 Gate 5.9 最终判定自身重新检查 Git base/final commit 存在、祖先、当前 worktree HEAD。并通过冻结的 P0 节点清单与每席独立 HMAC key，复核原始节点签名报告、job ID、model/harness/physicalId、Commit、stdout hash、派发终止收据及两台物理席位。
 - **R6-005：** 正式 Store 构造器拒绝任意 gitVerifier 注入；Git 真实性检查直接调用经过代码固定的 `verifyCommitEvidenceSync`。模拟测试改为真实临时 Git repo、自动生成真实 Commit，不再使用 fake verifier。
@@ -43,7 +43,7 @@
     "actor": "<approved actor>",
     "receipt": "<human approval text>",
     "nonce": "<UUID>",
-    "issuedAt": "<ISO 8601 UTC>"
+    "issuedAt": "<ISO 8601 UTC>",\n    "evidenceSha256": "<Gate 5.9 only: final-compliance.json digest>"
   },
   "signature": "<Ed25519 signature of canonical(statement), base64>"
 }
@@ -69,3 +69,5 @@
 ## R6-003 执行说明
 
 `node src/cli.mjs approve` 与 `recover` 都要求 `--approval-proof SIGNED_JSON`。本轮**不提供自动签名脚本和私钥生成到项目目录的能力**，避免让 Agent/Controller 代替用户作出授权。真实签名需要由独立操作者安装受保护的本地签名端，先离线演练，绝不能读取现有 Hermes/Paseo 凭据或连接云端签名托管。
+
+**R6-004 专门测试：** 在最终合规报告和人工签名均有效后，故意将一次性工作树 HEAD 移回基线，直接调用 `Store.save(...,'GATE_5.9_APPROVED')`，必须拒绝并保留 WAIT_GATE_59。此探针不接触用户真实项目 Git 仓库。

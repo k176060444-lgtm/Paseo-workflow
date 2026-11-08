@@ -33,6 +33,14 @@ export class Store {
       CREATE TABLE IF NOT EXISTS artifacts(task_id TEXT NOT NULL, name TEXT NOT NULL, digest TEXT NOT NULL, PRIMARY KEY(task_id,name));`);
   }
   dir(id) { return path.join(this.root,'tasks',checkedId(id)); }
+  evidenceDigest(id,name){
+    this.verify(id);
+    const entry=this.db.prepare('SELECT digest FROM artifacts WHERE task_id=? AND name=?')
+      .get(id,name);
+    assert(entry&&/^[a-f0-9]{64}$/.test(entry.digest),
+      'requested registered evidence digest unavailable');
+    return entry.digest;
+  }
   trustRootDigest(){return this.#trustRoots?.digest??null;}
   verifyHumanProof(envelope,fields){
     return verifyHumanApproval(this.#trustRoots,envelope,fields);
@@ -135,6 +143,7 @@ export class Store {
       'approval trust roots changed or were not independently provisioned');
     this.verifyHumanProof(receipt.proof,{
       taskId:oldTask.id,gate,digest,actor:receipt.actor,receipt:receipt.receipt,
+      evidenceSha256:gate==='5.9'?this.evidenceDigest(oldTask.id,'final-compliance.json'):null,
     });
     assert(receipt.proof.statement.nonce===payload.approvalNonce,
       'approval signature nonce does not match persisted transition');

@@ -28,7 +28,7 @@ export function loadTrustRoots(){
   return {digest:expected,keys};
 }
 
-export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,receipt}){
+export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,receipt,evidenceSha256=null}){
   assert(roots&&roots.keys.size>0,'authenticated human approval not provisioned; BLOCKED');
   assert(envelope&&envelope.schema===1&&typeof envelope.keyId==='string',
     'human approval signature envelope missing');
@@ -38,6 +38,12 @@ export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,rec
   assert(s&&s.purpose==='P1_HUMAN_GATE_V1'&&s.taskId===taskId&&
     s.gate===gate&&s.digest===digest&&s.actor===actor&&s.receipt===receipt,
     'human approval signed statement mismatch');
+  if(gate==='5.9')
+    assert(typeof evidenceSha256==='string'&&/^[0-9a-f]{64}$/.test(evidenceSha256)&&
+      s.evidenceSha256===evidenceSha256,
+      'Gate 5.9 signature must bind final compliance evidence SHA-256');
+  else assert(s.evidenceSha256===undefined,
+    'only final Gate 5.9 can carry compliance artifact binding');
   assert(typeof s.nonce==='string'&&/^[a-f0-9-]{36}$/i.test(s.nonce),
     'human approval nonce missing');
   assert(typeof s.issuedAt==='string','human approval timestamp missing');

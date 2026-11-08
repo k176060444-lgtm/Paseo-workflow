@@ -40,7 +40,9 @@ export class WorkflowController {
     assert(expected&&digest===expected,'approval does not match frozen digest');
     // Verify BEFORE writing the irreversible approval artifact. No signature
     // means this gate cannot pass, even when all task fields look consistent.
-    this.store.verifyHumanProof(proof,{taskId:id,gate,digest,actor,receipt});
+    this.store.verifyHumanProof(proof,{taskId:id,gate,digest,actor,receipt,
+      evidenceSha256:gate==='5.9'?this.store.evidenceDigest(id,'final-compliance.json'):null,
+    });
     assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
       'approval trust root is not pinned');
     const approval=this.store.artifact(id,`approval-${gate.replace('.','-')}.json`,
