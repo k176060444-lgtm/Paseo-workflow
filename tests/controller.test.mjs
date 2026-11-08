@@ -19,17 +19,30 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
   g(repo,'add','.');
   g(repo,'-c','user.name=Test','-c','user.email=test@localhost','commit','-qm','baseline');
   const keys=generateKeyPairSync('ed25519');
+  const witness=generateKeyPairSync('ed25519');
   const manifest=path.join(tmp,'public-trust.json');
   fs.writeFileSync(manifest,JSON.stringify({schema:1,human:{
-    'offline-auditor':keys.publicKey.export({format:'pem',type:'spki'})}}));
+    'offline-auditor':keys.publicKey.export({format:'pem',type:'spki'})},
+    execution:{'offline-execution-witness':witness.publicKey.export({format:'pem',type:'spki'})}}));
   const prevTrustFile=process.env.P1_TRUST_ROOTS_FILE;
   const prevTrustHash=process.env.P1_TRUST_ROOTS_SHA256;
   process.env.P1_TRUST_ROOTS_FILE=manifest;
   process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(manifest,'utf8'));
+  // TEST-ONLY external witness. Production Controller never receives this
+  // signing key and cannot manufacture execution attestation signatures.
+  function attest(fields){
+    const statement={purpose:'P1_EXECUTION_ATTESTATION_V1',...fields,
+      nonce:randomUUID(),issuedAt:new Date().toISOString()};
+    return {schema:1,keyId:'offline-execution-witness',statement,
+      signature:sign(null,Buffer.from(canonical(statement)),witness.privateKey).toString('base64')};
+  }
   function proof(gate,digest,receipt,actor='user'){
     const statement={purpose:'P1_HUMAN_GATE_V1',taskId:'TASK1234',gate,digest,
       actor,receipt,nonce:randomUUID(),issuedAt:new Date().toISOString(),
-      ...(gate==='5.9'?{evidenceSha256:store.evidenceDigest('TASK1234','final-compliance.json')}:{})};
+      ...(gate==='5.9'?{
+        evidenceSha256:store.evidenceDigest('TASK1234','final-compliance.json'),
+        evidenceRoot:store.evidenceRoot('TASK1234')
+      }:{})};
     return {schema:1,keyId:'offline-auditor',statement,
       signature:sign(null,Buffer.from(canonical(statement)),keys.privateKey).toString('base64')};
   }
@@ -62,9 +75,12 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     const verdict=x.role==='worker'&&workerFails?'FAIL':
       x.role==='worker_remediation'&&remediationFails?'FAIL':'PASS';
     x.store.recordTerminal(dispatchId);
-    return {role:x.role,phase:x.phase,agentId,dispatchId,verdict,
+    const base={role:x.role,phase:x.phase,agentId,dispatchId,verdict,
       summary:'synthetic test runtime only',findings:verdict==='FAIL'?['needs fixing']:[],
       taskSpec:x.role==='planner'?'Build a tested feature using the approved specification and TDD.':null};
+    const attestation=attest({taskId:x.task.id,role:x.role,phase:x.phase,
+      commit:x.task.currentSha??null,agentId,dispatchId,rawSha256:sha256(base)});
+    return {...base,attestation};
   }};
   let commitCount=0;
   const gitOps={
@@ -88,7 +104,13 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       g(source,'worktree','add','--detach',dir,sha);return dir;
     },
     verifyCommitEvidenceSync,
-    testRun:async()=>({pass:true,receipts:[{code:0,ok:true,argv:['node','--test'],logSha256:'0'.repeat(64)}]})
+    testRun:async (dir,commands,store,id,phase)=>{
+      const sha=g(dir,'rev-parse','HEAD');
+      const bare={pass:true,receipts:[{code:0,ok:true,argv:['node','--test'],logSha256:'0'.repeat(64)}]};
+      return {...bare,attestation:attest({taskId:id,role:'test_executor',phase,
+        commit:sha,agentId:'',dispatchId:'',
+        rawSha256:sha256({sha,tests:bare})})};
+    }
   };
   const p0={review:async({task,commit,cycle,store})=>{
     reportCount++;

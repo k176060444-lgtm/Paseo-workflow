@@ -42,6 +42,7 @@ export class WorkflowController {
     // means this gate cannot pass, even when all task fields look consistent.
     this.store.verifyHumanProof(proof,{taskId:id,gate,digest,actor,receipt,
       evidenceSha256:gate==='5.9'?this.store.evidenceDigest(id,'final-compliance.json'):null,
+      evidenceRoot:gate==='5.9'?this.store.evidenceRoot(id):null,
     });
     assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
       'approval trust root is not pinned');
@@ -107,7 +108,8 @@ export class WorkflowController {
       `${role}: contradictory PASS/findings; reconcile manually`);
     if(expectedSha) await this.git.assertUnchanged(cwd,expectedSha);
     const artifact=this.store.artifact(t.id,`${phase}-${role}-${randomUUID().slice(0,8)}.json`,result);
-    t.history.push({role,phase,agentId:result.agentId,verdict:result.verdict,evidenceSha256:artifact.sha256,at:new Date().toISOString()});
+    t.history.push({role,phase,agentId:result.agentId,verdict:result.verdict,
+      sha:t.currentSha??null,evidenceSha256:artifact.sha256,at:new Date().toISOString()});
     t.inflight=null;t.status='READY';
     this.store.save(t,'ROLE_TERMINAL',{role,phase,verdict:result.verdict,evidenceSha256:artifact.sha256});
     return result;
@@ -279,6 +281,7 @@ export class WorkflowController {
           finalSha:t.currentSha,aRound:t.aRound,bRound:t.bRound,
           p0:(t.p0Final??t.p0Initial).reports.map(x=>({nodeId:x.nodeId,physicalId:x.physicalId,commit:x.commit,verdict:x.verdict})),
           testerB:t.lastB.tests.receipts,controller:'v0.1.0',taskConfigSha:t.frozen.digest,
+          evidenceRoot:this.store.evidenceRoot(t.id),
           ledger:this.store.verify(t.id),pass:true});
         this.next(t,'WAIT_GATE_59','WAITING_HUMAN_GATE_5_9',{complianceSha256:compliance.sha256,finalCommit:t.currentSha});return;
       }

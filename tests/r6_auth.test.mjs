@@ -156,10 +156,11 @@ test('R6 Gate 5.9 signature cannot omit or substitute final compliance artifact 
     const message='Independent operator approves final compliance report';
     const fake=w.proof('5.9','d'.repeat(40),'human',message);
     const fields={taskId:w.id,gate:'5.9',digest:'d'.repeat(40),actor:'human',
-      receipt:message,evidenceSha256:'e'.repeat(64)};
+      receipt:message,evidenceSha256:'e'.repeat(64),evidenceRoot:'a'.repeat(64)};
     assert.throws(()=>w.store.verifyHumanProof(fake,fields),/must bind final compliance evidence/);
     // A signer with the actual private key can sign the exact evidence digest.
     fake.statement.evidenceSha256=fields.evidenceSha256;
+    fake.statement.evidenceRoot=fields.evidenceRoot;
     // Tampering with a signed statement without a new signature is rejected.
     assert.throws(()=>w.store.verifyHumanProof(fake,fields),/invalid independent human approval signature/);
   }finally{w.close();}

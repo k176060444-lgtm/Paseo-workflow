@@ -5,9 +5,31 @@ import {AGENT_SCHEMA,assert,parseAgentOutput,providerOptions} from './policy.mjs
 export class PaseoAgentRuntime {
   constructor(url) {this.url=url;this.client=null;}
   async open(){
+    // 21bao live observation: daemon 0.15.3 accepts /ws; a bare host:port
+    // can hang silently. Never try to connect to an unapproved remote target.
+    const uri=new URL(this.url);
+    assert(['ws:','wss:'].includes(uri.protocol)&&uri.pathname==='/ws'&&
+      !uri.username&&!uri.password&&!uri.search&&!uri.hash,
+      'Paseo endpoint must be an exact ws(s)://localhost:PORT/ws URL');
+    assert(['127.0.0.1','localhost','[::1]'].includes(uri.hostname),
+      'Paseo SDK must connect only to the local authenticated daemon');
     const {createPaseoClient}=await import('@getpaseo/client');
     this.client=createPaseoClient({url:this.url});
     await this.client.connect();
+  }
+  async findExistingAgent(agentId){
+    assert(this.client&&typeof agentId==='string'&&agentId.length>0,
+      'Paseo reconcile requires an existing Agent ID');
+    // A new ref may have current() === null; refresh() fetches from daemon.
+    const result=await this.client.agents.ref(agentId).refresh();
+    return result?.agent??result;
+  }
+  async listAllAgents(){
+    assert(this.client,'Paseo not connected');
+    // In 0.15.3 background:true agents are omitted from default list().
+    const entries=await this.client.agents.list({includeBackground:true});
+    assert(Array.isArray(entries),'unexpected Paseo background agent list shape');
+    return entries.map(x=>x?.agent??x);
   }
   async close(){if(this.client) await this.client.close();}
   async execute({task,role,phase,cwd,prompt,store}){

@@ -25,10 +25,18 @@ export function loadTrustRoots(){
     keys.set(id,pub);
   }
   assert(keys.size>0,'no approved human signing keys');
-  return {digest:expected,keys};
+  const execution=new Map();
+  for(const [id,pem] of Object.entries(manifest.execution??{})){
+    assert(/^[a-zA-Z0-9_-]{3,60}$/.test(id),'invalid execution issuer ID');
+    assert(typeof pem==='string','invalid execution issuer public PEM');
+    const pub=createPublicKey(pem);
+    assert(pub.asymmetricKeyType==='ed25519','execution issuer key must be Ed25519');
+    execution.set(id,pub);
+  }
+  return {digest:expected,keys,execution};
 }
 
-export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,receipt,evidenceSha256=null}){
+export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,receipt,evidenceSha256=null,evidenceRoot=null}){
   assert(roots&&roots.keys.size>0,'authenticated human approval not provisioned; BLOCKED');
   assert(envelope&&envelope.schema===1&&typeof envelope.keyId==='string',
     'human approval signature envelope missing');
@@ -40,10 +48,12 @@ export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,rec
     'human approval signed statement mismatch');
   if(gate==='5.9')
     assert(typeof evidenceSha256==='string'&&/^[0-9a-f]{64}$/.test(evidenceSha256)&&
-      s.evidenceSha256===evidenceSha256,
+      s.evidenceSha256===evidenceSha256&&
+      typeof evidenceRoot==='string'&&/^[0-9a-f]{64}$/.test(evidenceRoot)&&
+      s.evidenceRoot===evidenceRoot,
       'Gate 5.9 signature must bind final compliance evidence SHA-256');
-  else assert(s.evidenceSha256===undefined,
-    'only final Gate 5.9 can carry compliance artifact binding');
+  else assert(s.evidenceSha256===undefined&&s.evidenceRoot===undefined,
+    'only final Gate 5.9 can carry compliance evidence binding');
   assert(typeof s.nonce==='string'&&/^[a-f0-9-]{36}$/i.test(s.nonce),
     'human approval nonce missing');
   assert(typeof s.issuedAt==='string','human approval timestamp missing');
@@ -56,4 +66,35 @@ export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,rec
   assert(signature.length===64&&verify(null,Buffer.from(canonical(s)),key,signature),
     'invalid independent human approval signature');
   return {keyId:envelope.keyId,nonce:s.nonce,issuedAt:s.issuedAt};
+}
+
+// R7: Controller dispatch/ACK rows and locally written artifacts are NOT
+// execution provenance. Only an independent signing service with its own
+// protected Ed25519 key may attest a verified Paseo/OS execution. This
+// module verifies; it intentionally has no private key or signing method.
+export function verifyExecutionAttestation(roots,envelope,expected){
+  assert(roots?.execution?.size>0,
+    'independent execution attestor not provisioned; BLOCKED');
+  assert(envelope?.schema===1&&typeof envelope.keyId==='string',
+    'independently signed execution attestation required');
+  const key=roots.execution.get(envelope.keyId);
+  assert(key,'execution issuer is not in independently pinned trust roots');
+  const s=envelope.statement;
+  assert(s&&s.purpose==='P1_EXECUTION_ATTESTATION_V1',
+    'wrong execution attestation purpose');
+  for(const field of ['taskId','role','phase','commit','agentId','dispatchId','rawSha256'])
+    assert(s[field]===expected[field],`execution attestation ${field} mismatch`);
+  assert(typeof s.rawSha256==='string'&&/^[a-f0-9]{64}$/.test(s.rawSha256),
+    'invalid execution raw digest');
+  assert(typeof s.nonce==='string'&&/^[a-f0-9-]{36}$/i.test(s.nonce),
+    'execution attestation nonce invalid');
+  const issued=Date.parse(s.issuedAt);
+  assert(Number.isFinite(issued)&&issued<=Date.now()+120000,
+    'execution attestation has invalid/future issuance time');
+  assert(typeof envelope.signature==='string'&&/^[A-Za-z0-9+/]{86}==$/.test(envelope.signature),
+    'execution attestation signature malformed');
+  const sig=Buffer.from(envelope.signature,'base64');
+  assert(sig.length===64&&verify(null,Buffer.from(canonical(s)),key,sig),
+    'execution attestation signature invalid');
+  return {issuer:envelope.keyId,nonce:s.nonce};
 }

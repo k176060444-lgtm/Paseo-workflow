@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { verifyCommitEvidenceSync } from './git.mjs';
-import {loadTrustRoots,verifyHumanApproval} from './auth.mjs';
+import {loadTrustRoots,verifyHumanApproval,verifyExecutionAttestation} from './auth.mjs';
 import {SshP0Adapter} from './p0.mjs';
 import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS } from './policy.mjs';
 
@@ -30,7 +30,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS tasks(id TEXT PRIMARY KEY, data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL, type TEXT NOT NULL, payload TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL, at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS dispatches(id TEXT PRIMARY KEY, task_id TEXT NOT NULL, phase TEXT NOT NULL, agent_id TEXT, state TEXT NOT NULL, created TEXT NOT NULL);
-      CREATE TABLE IF NOT EXISTS artifacts(task_id TEXT NOT NULL, name TEXT NOT NULL, digest TEXT NOT NULL, PRIMARY KEY(task_id,name));`);
+      CREATE TABLE IF NOT EXISTS artifacts(task_id TEXT NOT NULL, name TEXT NOT NULL, digest TEXT NOT NULL, PRIMARY KEY(task_id,name));
+CREATE TABLE IF NOT EXISTS consumed_approvals(key_id TEXT NOT NULL,nonce TEXT NOT NULL,task_id TEXT NOT NULL,gate TEXT NOT NULL,PRIMARY KEY(key_id,nonce));`);
   }
   dir(id) { return path.join(this.root,'tasks',checkedId(id)); }
   evidenceDigest(id,name){
@@ -42,6 +43,23 @@ export class Store {
     return entry.digest;
   }
   trustRootDigest(){return this.#trustRoots?.digest??null;}
+  nonceHash(id){return sha256(this.db.prepare(
+    'SELECT key_id,nonce,gate FROM consumed_approvals WHERE task_id=? ORDER BY key_id,nonce').all(id));}
+  evidenceRoot(id){
+    return sha256({artifacts:this.db.prepare(
+      "SELECT name,digest FROM artifacts WHERE task_id=? AND name NOT IN ('final-compliance.json','approval-5-9.json') ORDER BY name"
+    ).all(id),dispatches:this.db.prepare(
+      'SELECT id,phase,agent_id,state,created FROM dispatches WHERE task_id=? ORDER BY id').all(id)});
+  }
+  #consumeApproval(id,gate,proof){
+    assert(proof?.schema===1&&typeof proof.keyId==='string'&&
+      typeof proof.statement?.nonce==='string','signed approval nonce missing');
+    const key=proof.keyId,nonce=proof.statement.nonce;
+    assert(!this.db.prepare('SELECT 1 FROM consumed_approvals WHERE key_id=? AND nonce=?').get(key,nonce),
+      'signed human approval nonce already consumed');
+    this.db.prepare('INSERT INTO consumed_approvals(key_id,nonce,task_id,gate) VALUES(?,?,?,?)')
+      .run(key,nonce,id,gate);
+  }
   verifyHumanProof(envelope,fields){
     return verifyHumanApproval(this.#trustRoots,envelope,fields);
   }
@@ -144,9 +162,11 @@ export class Store {
     this.verifyHumanProof(receipt.proof,{
       taskId:oldTask.id,gate,digest,actor:receipt.actor,receipt:receipt.receipt,
       evidenceSha256:gate==='5.9'?this.evidenceDigest(oldTask.id,'final-compliance.json'):null,
+      evidenceRoot:gate==='5.9'?this.evidenceRoot(oldTask.id):null,
     });
     assert(receipt.proof.statement.nonce===payload.approvalNonce,
       'approval signature nonce does not match persisted transition');
+    this.#consumeApproval(oldTask.id,gate,receipt.proof);
     if(gate==='0.2'){
       assert(oldTask.taskSpecSha&&oldTask.taskSpec,'Gate 0.2 needs frozen TASK_SPEC');
       this.#requireArtifact(oldTask.id,'TASK_SPEC.md',oldTask.taskSpecSha);
@@ -178,7 +198,8 @@ export class Store {
     const record=this.db.prepare("SELECT name,digest FROM artifacts WHERE task_id=? AND name='final-compliance.json'").get(t.id);
     const artifact=JSON.parse(this.#requireArtifact(t.id,'final-compliance.json',record?.digest));
     assert(artifact.pass===true&&artifact.finalSha===t.currentSha&&
-      artifact.baseSha===t.baseSha&&artifact.taskConfigSha===t.frozen.digest,
+      artifact.baseSha===t.baseSha&&artifact.taskConfigSha===t.frozen.digest&&
+      artifact.evidenceRoot===this.evidenceRoot(t.id),
       'Gate 5.9 final compliance receipt mismatched');
     assert(t.history.some(h=>h.role==='test_executor'&&h.sha===t.currentSha&&h.pass===true&&
       this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?').get(t.id,h.evidenceSha256)),
@@ -186,6 +207,9 @@ export class Store {
     assert(t.history.some(h=>h.role==='P0'&&h.sha===t.currentSha&&h.passed===true&&
       this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?').get(t.id,h.evidenceSha256)),
       'Gate 5.9 needs persisted P0 evidence');
+    for(const h of t.history)
+      if(['spec_reviewer','quality_reviewer','test_executor','tester_gate_a','tester_gate_b'].includes(h.role))
+        this.#verifyHistoryExecution(t,h);
   }
   #verifyP0Nodes(t,summary){
     const inventory=(t.frozen.p0?.nodes??[]).filter(n=>n.enabled===true);
@@ -241,7 +265,39 @@ export class Store {
         .all(t.id,phase+'-'+role);
       assert(dispatch.some(d=>d.state==='TERMINAL'&&d.agent_id===h.agentId),
         'Reviewer has no completed Paseo dispatch/ACK');
+      this.#verifyHistoryExecution(t,h);
     }
+  }
+  #verifyHistoryExecution(t,h){
+    const artifact=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+      .get(t.id,h.evidenceSha256);
+    assert(artifact,'execution history missing registered original artifact');
+    const raw=JSON.parse(this.#requireArtifact(t.id,artifact.name,h.evidenceSha256));
+    let proof,expected;
+    if(h.role==='test_executor'){
+      assert(raw.sha===h.sha&&raw.tests?.pass===h.pass&&raw.tests?.attestation,
+        'independently attested Tester commands required');
+      const {attestation,...bareTests}=raw.tests;
+      proof=attestation;
+      expected={taskId:t.id,role:'test_executor',phase:h.phase,commit:h.sha,
+        agentId:'',dispatchId:'',rawSha256:sha256({sha:raw.sha,tests:bareTests})};
+    }else{
+      const phase=['spec_reviewer','quality_reviewer'].includes(h.role)?h.phase+'-'+h.role:h.phase;
+      assert(raw.role===h.role&&raw.phase===phase&&raw.agentId===h.agentId&&
+        raw.verdict===h.verdict&&typeof raw.dispatchId==='string',
+        'Agent execution result/history mismatch');
+      const {attestation,...bare}=raw;
+      proof=attestation;
+      expected={taskId:t.id,role:h.role,phase,commit:h.sha??null,
+        agentId:h.agentId,dispatchId:raw.dispatchId,rawSha256:sha256(bare)};
+      const dispatch=this.db.prepare('SELECT state,agent_id,phase FROM dispatches WHERE id=? AND task_id=?')
+        .get(raw.dispatchId,t.id);
+      assert(dispatch?.state==='TERMINAL'&&dispatch.agent_id===h.agentId&&
+        dispatch.phase===phase,'execution attestation lacks matching terminal dispatch');
+    }
+    assert(t.trustRootSha256!==null&&t.trustRootSha256===this.trustRootDigest(),
+      'execution trust root not pinned to task');
+    return verifyExecutionAttestation(this.#trustRoots,proof,expected);
   }
   #verifyRecoveryReceipt(oldTask,nextTask,payload){
     assert(oldTask.trustRootSha256!==null&&
@@ -261,6 +317,7 @@ export class Store {
       digest:basis,actor:data.actor,receipt:data.receipt});
     assert(payload.recoveryNonce===data.proof.statement.nonce,
       'recovery signed nonce mismatch');
+    this.#consumeApproval(oldTask.id,'recovery',data.proof);
     for(const row of this.db.prepare(
       "SELECT payload FROM events WHERE task_id=? AND type='HUMAN_CONTROLLED_RECOVERY'"
     ).all(oldTask.id))
@@ -498,6 +555,8 @@ export class Store {
         if(type==='REVIEW_SEAT_RECORDED')
           assert(['spec_reviewer','quality_reviewer'].includes(entry.role)&&
             entry.agentId,'reviewer history role or identity invalid');
+        if(['ROLE_TERMINAL','REVIEW_SEAT_RECORDED','TEST_RECEIPTS'].includes(type))
+          this.#verifyHistoryExecution(nextTask,entry);
         if(type==='P0_COMPLETE')assert(entry.role==='P0'&&entry.sha===nextTask.currentSha,
           'P0 history must bind exact commit');
         if(type==='TEST_RECEIPTS')assert(entry.role==='test_executor'&&
@@ -529,7 +588,8 @@ export class Store {
     const prev=this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest??'0'.repeat(64);
     const at=new Date().toISOString();
     const body=canonical({...payload,_state_sha256:sha256(this.get(id)),
-      _dispatch_sha256:this.dispatchHash(id),_artifact_sha256:this.artifactHash(id)});
+      _dispatch_sha256:this.dispatchHash(id),_artifact_sha256:this.artifactHash(id),
+      _nonce_sha256:this.nonceHash(id)});
     const digest=sha256({id,type,body,previous:prev,at});
     this.db.prepare('INSERT INTO events(task_id,type,payload,previous,digest,at) VALUES(?,?,?,?,?,?)').run(id,type,body,prev,digest,at);
     return digest;
@@ -577,6 +637,7 @@ export class Store {
     assert(last._state_sha256===sha256(this.get(id)),'persisted task state differs from ledger');
     assert(last._dispatch_sha256===this.dispatchHash(id),'dispatch ledger mismatch');
     assert(last._artifact_sha256===this.artifactHash(id),'artifact manifest mismatch');
+    assert(last._nonce_sha256===this.nonceHash(id),'consumed approval nonce ledger mismatch');
     const registered=this.db.prepare('SELECT name,digest FROM artifacts WHERE task_id=?').all(id);
     const expectedNames=new Set(registered.map(entry=>entry.name));
     const evidenceDir=path.join(this.dir(id),'evidence');
