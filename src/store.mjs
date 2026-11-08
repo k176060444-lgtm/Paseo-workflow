@@ -164,7 +164,10 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
   #checkGateReceipt(oldTask,nextTask,type,payload){
     const gate=type==='GATE_0.1_APPROVED'?'0.1':type==='GATE_0.2_APPROVED'?'0.2':'5.9';
     const file=payload.approvalFile;
-    assert(typeof file==='string'&&new RegExp('^approval-'+gate.replace('.','-')+'-[a-f0-9-]{36}\\.json
+    assert(typeof payload.approvalNonce==='string'&&
+      file==='approval-'+gate.replace('.','-')+'-'+payload.approvalNonce+'.json',
+      'Gate approval requires nonce-scoped original filename');
+    const raw=this.#requireArtifact(oldTask.id,file,payload.approvalSha256);
     const receipt=JSON.parse(raw);
     const digest=gate==='0.1'?oldTask.frozen.digest:gate==='0.2'?oldTask.taskSpecSha:oldTask.currentSha;
     assert(receipt.gate===gate&&receipt.digest===digest&&payload.digest===digest,
