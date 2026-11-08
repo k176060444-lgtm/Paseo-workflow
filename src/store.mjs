@@ -196,7 +196,7 @@ export class Store {
       assert(oldTask.stage===moves[type][0]&&t.stage===moves[type][1],
         `illegal workflow stage transition ${type}: ${oldTask.stage} -> ${t.stage}`);
       const status=type==='GATE_5.9_APPROVED'?'APPROVED_FOR_SEPARATE_RELEASE_REVIEW':
-        ['TASK_SPEC_CANDIDATE','WAITING_HUMAN_GATE_5_9'].includes(type)?'WAITING_HUMAN':'READY';
+        ['TASK_SPEC_CANDIDATE','WAITING_HUMAN_GATE_5_9','GATE_A_EXHAUSTED','GATE_B_EXHAUSTED'].includes(type)?'WAITING_HUMAN':'READY';
       assert(t.status===status,`unexpected status for stage transition ${type}`);
     }else if(same.has(type)){
       assert(t.stage===oldTask.stage,`event ${type} cannot change stage`);

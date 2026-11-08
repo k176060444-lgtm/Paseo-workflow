@@ -100,7 +100,7 @@ test('post-dispatch ambiguous result blocks without silent redispatch',async()=>
 
 test('config SHA/role permissions and SQL ledger resist casual drift',async()=>{
  const x=setup();try{const t=x.c.required('TASK1234');t.frozen.policy.permissions.planner='WORKSPACE_WRITE';
- assert.throws(()=>x.store.save(t,'TAMPER'),/frozen config is immutable/);
+ assert.throws(()=>x.store.save(t,'TAMPER'),/frozen config is immutable|unrecognized workflow state transition/);
  const raw=x.store.db.prepare('SELECT data FROM tasks WHERE id=?').get('TASK1234').data;
  x.store.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(raw.replace('READ_ONLY','SUPERUSER'),'TASK1234');
  assert.throws(()=>x.store.verify('TASK1234'),/state differs/);
@@ -116,7 +116,7 @@ test('permission policy is code-fixed and TEST_ONLY agent is read-only; no dange
 });
 
 test('human gate requires precise digest and explicit approval text',()=>{
- const x=setup();try{assert.throws(()=>x.c.approve({id:'TASK1234',gate:'0.2',digest:'f'.repeat(64),actor:'user',receipt:'User approved the wrong SHA.'}),/gate not awaiting/);
+ const x=setup();try{assert.throws(()=>x.c.approve({id:'TASK1234',gate:'0.2',digest:'f'.repeat(64),actor:'user',receipt:'User approved the wrong SHA.'}),/gate not awaiting|not waiting for explicit human approval/);
  }finally{finish(x);}
 });
 

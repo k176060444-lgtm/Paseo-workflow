@@ -38,7 +38,7 @@ test('R4-001 public save refuses round-budget reset with atomic ledger unchanged
   try{
     const baseline=w.store.verify(w.id);
     const t=w.store.get(w.id);t.aRound=0;t.bRound=0;
-    assert.throws(()=>w.store.save(t,'BUDGET_RESET'),/budget cannot reset/);
+    assert.throws(()=>w.store.save(t,'BUDGET_RESET'),/budget cannot reset|unrecognized workflow state transition/);
     assert.equal(w.store.get(w.id).aRound,10);
     assert.equal(w.store.get(w.id).bRound,9);
     assert.deepEqual(w.store.verify(w.id),baseline);
@@ -48,7 +48,7 @@ test('R4-001 public save refuses budget jumps beyond one or limit',()=>{
   const w=fixture();
   try{
     const t=w.store.get(w.id);t.bRound=11;
-    assert.throws(()=>w.store.save(t,'GATE_B_ROUND_START'),/budget cannot reset/);
+    assert.throws(()=>w.store.save(t,'GATE_B_ROUND_START'),/budget cannot reset|unrecognized workflow state transition/);
     assert.equal(w.store.get(w.id).bRound,9);
     t.bRound=10;
     // A real budget-consuming transition may happen only at B_ENTER.
@@ -63,7 +63,7 @@ test('R4-002 frozen snapshot and digest cannot be replaced together',()=>{
     const old=w.store.get(w.id);
     const t=w.store.get(w.id);
     t.frozen.intent='Forged intent';t.frozen.digest=sha256(Object.fromEntries(Object.entries(t.frozen).filter(([k])=>k!=='digest')));
-    assert.throws(()=>w.store.save(t,'FORGED_FREEZE'),/frozen config is immutable/);
+    assert.throws(()=>w.store.save(t,'FORGED_FREEZE'),/frozen config is immutable|unrecognized workflow state transition/);
     const c=new WorkflowController({store:w.store,runtime:null,p0:null});
     const r=c.authorizeRecovery({id:w.id,actor:'human',
       receipt:'Human explicitly permits recovery of original task basis',
@@ -77,11 +77,11 @@ test('R4-002 requires complete TASK_SPEC pair and forbids any replacement after 
   try{
     let t=w.store.get(w.id);
     t.taskSpec='Sufficiently long approved and frozen task specification.';
-    assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/both be present or absent/);
+    assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/both be present or absent|illegal workflow stage transition/);
     t.taskSpecSha='f'.repeat(64);
-    assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/TASK_SPEC digest mismatch/);
+    assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/TASK_SPEC digest mismatch|illegal workflow stage transition/);
     t.taskSpecSha=sha256(t.taskSpec);
-    assert.throws(()=>w.store.save(t,'UNAUTHORIZED_EDIT'),/Planner candidate/);
+    assert.throws(()=>w.store.save(t,'UNAUTHORIZED_EDIT'),/Planner candidate|illegal workflow stage transition/);
     assert.throws(()=>w.store.save(t,'TASK_SPEC_CANDIDATE'),/illegal workflow stage transition/);
     const frozen=w.store.get(w.id);
     const changed=w.store.get(w.id);

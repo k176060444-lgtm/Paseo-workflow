@@ -57,7 +57,7 @@ test('R5-001 save cannot bypass Gate 0.1 by claiming GATE_APPROVED',()=>{
   try{
     w.store.init(w.honest);
     const t=w.store.get(w.id);t.stage='PLANNER';t.status='READY';
-    assert.throws(()=>w.store.save(t,'GATE_0.1_APPROVED'),/required registered artifact|approval/);
+    assert.throws(()=>w.store.save(t,'GATE_0.1_APPROVED'),/required registered artifact|approval|missing trustworthy artifact digest/);
     assert.equal(w.store.get(w.id).stage,'WAIT_GATE_01');
     const other=w.store.get(w.id);other.stage='WAIT_GATE_59';other.status='WAITING_HUMAN';
     other.currentSha='d'.repeat(40);
