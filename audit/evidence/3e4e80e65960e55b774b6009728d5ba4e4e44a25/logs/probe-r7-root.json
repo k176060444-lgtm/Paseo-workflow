@@ -1,0 +1,47 @@
+[
+  {
+    "name": "R7-002 evidenceRoot changes after artifact add",
+    "result": "CONFIRMED",
+    "detail": "16760f04cb8a -> 393581a67085"
+  },
+  {
+    "name": "R7-002 evidenceRoot deterministic ordered hash",
+    "result": "CONFIRMED",
+    "detail": "fea7f10a42fc"
+  },
+  {
+    "name": "R7-002 final/5.9 artifacts excluded",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-002 late artifact changes root",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-002 raw artifact tamper detected",
+    "result": "CONFIRMED",
+    "detail": "evidence artifact hash mismatch: base-artifact.json"
+  },
+  {
+    "name": "R7-002 dispatch tamper changes root",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-002 dispatch tamper detected by ledger",
+    "result": "CONFIRMED",
+    "detail": "dispatch ledger mismatch"
+  },
+  {
+    "name": "R7-002 artifact deletion changes root",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-002 artifact deletion detected",
+    "result": "CONFIRMED",
+    "detail": "dispatch ledger mismatch"
+  }
+]

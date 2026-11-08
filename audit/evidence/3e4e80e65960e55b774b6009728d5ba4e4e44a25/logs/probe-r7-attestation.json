@@ -1,0 +1,97 @@
+[
+  {
+    "name": "R7-001 signed two-seat A_REVIEW PASS",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-001 signed two-seat B_REVIEW PASS",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-001 no attestation",
+    "result": "CONFIRMED",
+    "detail": "independently signed execution attestation required"
+  },
+  {
+    "name": "R7-001 wrong issuer",
+    "result": "CONFIRMED",
+    "detail": "execution issuer is not in independently pinned trust roots"
+  },
+  {
+    "name": "R7-001 tampered raw",
+    "result": "CONFIRMED",
+    "detail": "execution attestation rawSha256 mismatch"
+  },
+  {
+    "name": "R7-001 replaced agentId",
+    "result": "CONFIRMED",
+    "detail": "Agent execution result/history mismatch"
+  },
+  {
+    "name": "R7-001 replaced dispatchId",
+    "result": "CONFIRMED",
+    "detail": "execution attestation lacks matching terminal dispatch"
+  },
+  {
+    "name": "R7-001 cross taskId",
+    "result": "CONFIRMED",
+    "detail": "execution attestation taskId mismatch"
+  },
+  {
+    "name": "R7-001 cross role",
+    "result": "CONFIRMED",
+    "detail": "Agent execution result/history mismatch"
+  },
+  {
+    "name": "R7-001 cross phase",
+    "result": "CONFIRMED",
+    "detail": "execution attestation phase mismatch"
+  },
+  {
+    "name": "R7-001 mixed PASS/FAIL cannot pass",
+    "result": "CONFIRMED",
+    "detail": "Reviewer result missing or has unclassified/blocking findings"
+  },
+  {
+    "name": "R7-001 mixed PASS/FAIL retains valid seat",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-001 cross-commit seat record",
+    "result": "NOT_CONFIRMED",
+    "detail": "accepted into history (cannot pass current commit)"
+  },
+  {
+    "name": "R7-001 cross-commit cannot pass A_REVIEW",
+    "result": "CONFIRMED",
+    "detail": "two independent Reviewer seats required for exact Commit"
+  },
+  {
+    "name": "R7-001 tampered signature",
+    "result": "CONFIRMED",
+    "detail": "execution attestation signature invalid"
+  },
+  {
+    "name": "R7-001 duplicate agentId",
+    "result": "CONFIRMED",
+    "detail": "Reviewer agent identity missing or reused"
+  },
+  {
+    "name": "R7-001 one reviewer seat",
+    "result": "CONFIRMED",
+    "detail": "two independent Reviewer seats required for exact Commit"
+  },
+  {
+    "name": "R7-001 same key in human+execution accepted",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-001 old execution attestation accepted",
+    "result": "CONFIRMED",
+    "detail": ""
+  }
+]

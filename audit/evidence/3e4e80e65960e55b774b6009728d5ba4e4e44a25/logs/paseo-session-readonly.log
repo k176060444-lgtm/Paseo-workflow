@@ -1,0 +1,260 @@
+{
+  "ec3595a0-3442-48d9-b430-2b5c4e08edf5": {
+    "currentBefore": null,
+    "refresh": {
+      "id": "ec3595a0-3442-48d9-b430-2b5c4e08edf5",
+      "provider": "codex",
+      "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+      "workspaceId": "wks_dbd708cd33d72a5a",
+      "model": "group/qwen-3.8-flash",
+      "thinkingOptionId": null,
+      "effectiveThinkingOptionId": "none",
+      "runtimeInfo": {
+        "provider": "codex",
+        "sessionId": "01a1b9b9-8f57-7ab3-9511-70c554ff112e",
+        "model": "group/qwen-3.8-flash",
+        "thinkingOptionId": "none",
+        "modeId": "auto",
+        "extra": {
+          "collaborationMode": "Default"
+        }
+      },
+      "createdAt": "2026-11-08T05:55:08.230Z",
+      "updatedAt": "2026-11-08T05:55:13.638Z",
+      "lastUserMessageAt": "2026-11-08T05:55:11.011Z",
+      "status": "closed",
+      "capabilities": {
+        "supportsStreaming": false,
+        "supportsSessionPersistence": true,
+        "supportsDynamicModes": false,
+        "supportsMcpServers": false,
+        "supportsReasoningStream": false,
+        "supportsToolInvocations": true,
+        "supportsRewindConversation": false,
+        "supportsRewindFiles": false,
+        "supportsRewindBoth": false
+      },
+      "currentModeId": "auto",
+      "availableModes": [],
+      "pendingPermissions": [],
+      "persistence": {
+        "provider": "codex",
+        "sessionId": "01a1b9b9-8f57-7ab3-9511-70c554ff112e",
+        "nativeHandle": "01a1b9b9-8f57-7ab3-9511-70c554ff112e",
+        "metadata": {
+          "provider": "codex",
+          "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+          "title": "p1-sdk-smoke-codex",
+          "threadId": "01a1b9b9-8f57-7ab3-9511-70c554ff112e",
+          "model": "group/qwen-3.8-flash",
+          "thinkingOptionId": "none",
+          "systemPrompt": "You are a synthetic connectivity probe. Follow the prompt exactly.",
+          "asyncQuestions": []
+        }
+      },
+      "title": "p1-sdk-smoke-codex",
+      "requiresAttention": true,
+      "attentionReason": "finished",
+      "attentionTimestamp": "2026-11-08T05:55:13.637Z",
+      "archivedAt": null,
+      "labels": {
+        "p1-audit": "s0-r6-sdk-smoke",
+        "p1-provider": "codex"
+      }
+    },
+    "wait": {
+      "status": "idle",
+      "final": {
+        "id": "ec3595a0-3442-48d9-b430-2b5c4e08edf5",
+        "provider": "codex",
+        "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+        "workspaceId": "wks_dbd708cd33d72a5a",
+        "model": "group/qwen-3.8-flash",
+        "thinkingOptionId": null,
+        "effectiveThinkingOptionId": "none",
+        "runtimeInfo": {
+          "provider": "codex",
+          "sessionId": "01a1b9b9-8f57-7ab3-9511-70c554ff112e",
+          "model": "group/qwen-3.8-flash",
+          "thinkingOptionId": "none",
+          "modeId": "auto",
+          "extra": {
+            "collaborationMode": "Default"
+          }
+        },
+        "createdAt": "2026-11-08T05:55:08.230Z",
+        "updatedAt": "2026-11-08T05:55:13.638Z",
+        "lastUserMessageAt": "2026-11-08T05:55:11.011Z",
+        "status": "closed",
+        "capabilities": {
+          "supportsStreaming": false,
+          "supportsSessionPersistence": true,
+          "supportsDynamicModes": false,
+          "supportsMcpServers": false,
+          "supportsReasoningStream": false,
+          "supportsToolInvocations": true,
+          "supportsRewindConversation": false,
+          "supportsRewindFiles": false,
+          "supportsRewindBoth": false
+        },
+        "currentModeId": "auto",
+        "availableModes": [],
+        "pendingPermissions": [],
+        "persistence": {
+          "provider": "codex",
+          "sessionId": "01a1b9b9-8f57-7ab3-9511-70c554ff112e",
+          "nativeHandle": "01a1b9b9-8f57-7ab3-9511-70c554ff112e",
+          "metadata": {
+            "provider": "codex",
+            "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+            "title": "p1-sdk-smoke-codex",
+            "threadId": "01a1b9b9-8f57-7ab3-9511-70c554ff112e",
+            "model": "group/qwen-3.8-flash",
+            "thinkingOptionId": "none",
+            "systemPrompt": "You are a synthetic connectivity probe. Follow the prompt exactly.",
+            "asyncQuestions": []
+          }
+        },
+        "title": "p1-sdk-smoke-codex",
+        "requiresAttention": true,
+        "attentionReason": "finished",
+        "attentionTimestamp": "2026-11-08T05:55:13.637Z",
+        "archivedAt": null,
+        "labels": {
+          "p1-audit": "s0-r6-sdk-smoke",
+          "p1-provider": "codex"
+        }
+      },
+      "error": null,
+      "lastMessage": "{\"verdict\": \"PASS\", \"summary\": \"sdk smoke ok\", \"findings\": []}"
+    }
+  },
+  "d715c192-9cb4-483e-a9c0-6443f8cff442": {
+    "currentBefore": null,
+    "refresh": {
+      "id": "d715c192-9cb4-483e-a9c0-6443f8cff442",
+      "provider": "opencode",
+      "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+      "workspaceId": "wks_e71adbd7f012bff0",
+      "model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+      "thinkingOptionId": null,
+      "effectiveThinkingOptionId": null,
+      "runtimeInfo": {
+        "provider": "opencode",
+        "sessionId": "ses_e46464ee9ffetKGzruvOgNA9Lf",
+        "model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+        "thinkingOptionId": null,
+        "modeId": null
+      },
+      "createdAt": "2026-11-08T05:55:18.262Z",
+      "updatedAt": "2026-11-08T05:55:24.527Z",
+      "lastUserMessageAt": "2026-11-08T05:55:18.405Z",
+      "status": "closed",
+      "capabilities": {
+        "supportsStreaming": false,
+        "supportsSessionPersistence": true,
+        "supportsDynamicModes": false,
+        "supportsMcpServers": false,
+        "supportsReasoningStream": false,
+        "supportsToolInvocations": true,
+        "supportsRewindConversation": false,
+        "supportsRewindFiles": false,
+        "supportsRewindBoth": false
+      },
+      "currentModeId": null,
+      "availableModes": [],
+      "pendingPermissions": [],
+      "persistence": {
+        "provider": "opencode",
+        "sessionId": "ses_e46464ee9ffetKGzruvOgNA9Lf",
+        "nativeHandle": "ses_e46464ee9ffetKGzruvOgNA9Lf",
+        "metadata": {
+          "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+          "model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free"
+        }
+      },
+      "title": "p1-sdk-smoke-opencode",
+      "requiresAttention": true,
+      "attentionReason": "finished",
+      "attentionTimestamp": "2026-11-08T05:55:24.524Z",
+      "archivedAt": null,
+      "labels": {
+        "p1-audit": "s0-r6-sdk-smoke",
+        "p1-provider": "opencode"
+      }
+    },
+    "wait": {
+      "status": "idle",
+      "final": {
+        "id": "d715c192-9cb4-483e-a9c0-6443f8cff442",
+        "provider": "opencode",
+        "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+        "workspaceId": "wks_e71adbd7f012bff0",
+        "model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+        "thinkingOptionId": null,
+        "effectiveThinkingOptionId": null,
+        "runtimeInfo": {
+          "provider": "opencode",
+          "sessionId": "ses_e46464ee9ffetKGzruvOgNA9Lf",
+          "model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+          "thinkingOptionId": null,
+          "modeId": null
+        },
+        "createdAt": "2026-11-08T05:55:18.262Z",
+        "updatedAt": "2026-11-08T05:55:24.527Z",
+        "lastUserMessageAt": "2026-11-08T05:55:18.405Z",
+        "status": "closed",
+        "capabilities": {
+          "supportsStreaming": false,
+          "supportsSessionPersistence": true,
+          "supportsDynamicModes": false,
+          "supportsMcpServers": false,
+          "supportsReasoningStream": false,
+          "supportsToolInvocations": true,
+          "supportsRewindConversation": false,
+          "supportsRewindFiles": false,
+          "supportsRewindBoth": false
+        },
+        "currentModeId": null,
+        "availableModes": [],
+        "pendingPermissions": [],
+        "persistence": {
+          "provider": "opencode",
+          "sessionId": "ses_e46464ee9ffetKGzruvOgNA9Lf",
+          "nativeHandle": "ses_e46464ee9ffetKGzruvOgNA9Lf",
+          "metadata": {
+            "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+            "model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free"
+          }
+        },
+        "title": "p1-sdk-smoke-opencode",
+        "requiresAttention": true,
+        "attentionReason": "finished",
+        "attentionTimestamp": "2026-11-08T05:55:24.524Z",
+        "archivedAt": null,
+        "labels": {
+          "p1-audit": "s0-r6-sdk-smoke",
+          "p1-provider": "opencode"
+        }
+      },
+      "error": null,
+      "lastMessage": "{\"verdict\":\"PASS\",\"summary\":\"sdk smoke ok\",\"findings\":[]}"
+    }
+  },
+  "list": {
+    "entries": [
+      {
+        "id": "d715c192-9cb4-483e-a9c0-6443f8cff442",
+        "status": "closed",
+        "provider": "opencode",
+        "title": "p1-sdk-smoke-opencode"
+      },
+      {
+        "id": "ec3595a0-3442-48d9-b430-2b5c4e08edf5",
+        "status": "closed",
+        "provider": "codex",
+        "title": "p1-sdk-smoke-codex"
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+CONFIRMED R4-005 remote final_json FAIL then PASS returns None None
+CONFIRMED R4-005 remote final_json PASS then FAIL returns None None
+CONFIRMED R4-005 remote final_json two fenced verdicts returns None None
+CONFIRMED R4-005 remote final_json single bare FAIL accepted {'verdict': 'FAIL', 'summary': 'real blocker', 'findings': ['BLOCKER: breaks gate']}
+CONFIRMED R4-005 remote final_json single fenced FAIL accepted {'verdict': 'FAIL', 'summary': 'real blocker', 'findings': ['BLOCKER: breaks gate']}
+CONFIRMED R4-005 remote final_json trailing prose returns None None
+CONFIRMED R4-005 remote final_json truncated returns None None
+CONFIRMED R4-005 remote parse_output JSONL FAIL then PASS -> QUESTION (not PASS) {'verdict': 'QUESTION', 'summary': 'Unverified OpenCode final JSON output', 'findings': ['Cannot parse structured final report from raw event stream; human reconciliation required.
+CONFIRMED R4-005 remote parse_output two JSONL parts FAIL/PASS -> QUESTION {'verdict': 'QUESTION', 'summary': 'Unverified OpenCode final JSON output', 'findings': ['Cannot parse structured final report from raw event stream; human reconciliation required.
+CONFIRMED R4-005 remote parse_output JSONL single fenced FAIL -> FAIL {'verdict': 'FAIL', 'summary': 'real blocker', 'findings': ['BLOCKER: breaks gate']}
+CONFIRMED R4-005 remote parse_output JSONL indented/pretty FAIL -> FAIL {'verdict': 'FAIL', 'summary': 'real blocker', 'findings': ['BLOCKER: breaks gate']}
+CONFIRMED R4-005 remote parse_output JSONL trailing prose -> QUESTION {'verdict': 'QUESTION', 'summary': 'Unverified OpenCode final JSON output', 'findings': ['Cannot parse structured final report from raw event stream; human reconciliation required.
+CONFIRMED R4-005 remote parse_output JSONL truncated -> QUESTION {'verdict': 'QUESTION', 'summary': 'Unverified OpenCode final JSON output', 'findings': ['Cannot parse structured final report from raw event stream; human reconciliation required.
+CONFIRMED R4-005 remote parse_output PASS+BLOCKER -> FAIL {'verdict': 'FAIL', 'summary': 'x', 'findings': ['BLOCKER: x']}
+CONFIRMED R4-005 remote parse_output APPROVE_WITH_COMMENTS+LOW accepted {'verdict': 'APPROVE_WITH_COMMENTS', 'summary': 'x', 'findings': ['LOW: nit']}
+CONFIRMED R4-005 remote parse_output APPROVE_WITH_COMMENTS+HIGH -> FAIL {'verdict': 'FAIL', 'summary': 'x', 'findings': ['HIGH: x']}
+TOTAL 16 CONFIRMED 16

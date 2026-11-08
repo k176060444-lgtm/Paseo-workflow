@@ -1,0 +1,7 @@
+CONFIRMED        R7-003 forced failure after consume rejected aRound may only advance in its round-start transition
+CONFIRMED        R7-003 nonce row rolled back 
+CONFIRMED        R7-003 same nonce reusable after rollback 
+CONFIRMED        R7-003 nonce consumed exactly once 
+CONFIRMED        R7-003 cross-gate nonce rejected signed human approval nonce already consumed
+CONFIRMED        R7-003 recovery nonce rejected signed human approval nonce already consumed
+TOTAL 6 CONFIRMED 6

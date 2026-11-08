@@ -1,0 +1,20 @@
+CONFIRMED         R7-001 signed two-seat A_REVIEW PASS 
+CONFIRMED         R7-001 signed two-seat B_REVIEW PASS 
+CONFIRMED         R7-001 no attestation independently signed execution attestation required
+CONFIRMED         R7-001 wrong issuer execution issuer is not in independently pinned trust roots
+CONFIRMED         R7-001 tampered raw execution attestation rawSha256 mismatch
+CONFIRMED         R7-001 replaced agentId Agent execution result/history mismatch
+CONFIRMED         R7-001 replaced dispatchId execution attestation lacks matching terminal dispatch
+CONFIRMED         R7-001 cross taskId execution attestation taskId mismatch
+CONFIRMED         R7-001 cross role Agent execution result/history mismatch
+CONFIRMED         R7-001 cross phase execution attestation phase mismatch
+CONFIRMED         R7-001 mixed PASS/FAIL cannot pass Reviewer result missing or has unclassified/blocking findings
+CONFIRMED         R7-001 mixed PASS/FAIL retains valid seat 
+NOT_CONFIRMED     R7-001 cross-commit seat record accepted into history (cannot pass current commit)
+CONFIRMED         R7-001 cross-commit cannot pass A_REVIEW two independent Reviewer seats required for exact Commit
+CONFIRMED         R7-001 tampered signature execution attestation signature invalid
+CONFIRMED         R7-001 duplicate agentId Reviewer agent identity missing or reused
+CONFIRMED         R7-001 one reviewer seat two independent Reviewer seats required for exact Commit
+CONFIRMED         R7-001 same key in human+execution accepted 
+CONFIRMED         R7-001 old execution attestation accepted 
+TOTAL 19 CONFIRMED 18 NOT_CONFIRMED 1

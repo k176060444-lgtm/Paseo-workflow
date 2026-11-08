@@ -1,0 +1,17 @@
+[
+  {
+    "name": "R7-001 production git.testRun emits attestation",
+    "result": "CONFIRMED",
+    "detail": "attestation=undefined"
+  },
+  {
+    "name": "R7-001 production Tester receipt rejected",
+    "result": "CONFIRMED",
+    "detail": "independently attested Tester commands required"
+  },
+  {
+    "name": "R7-001 synthetic signed Tester receipt accepted",
+    "result": "CONFIRMED",
+    "detail": ""
+  }
+]

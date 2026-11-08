@@ -1,0 +1,77 @@
+[
+  {
+    "name": "R6-004 P0 valid HMAC/job/commit/physicalId/model passes",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R6-004 P0 tampered MAC rejected",
+    "result": "CONFIRMED",
+    "detail": "invalid node attestation MAC"
+  },
+  {
+    "name": "R6-004 P0 rejects wrong jobId",
+    "result": "CONFIRMED",
+    "detail": "P0 job/node/commit mismatch"
+  },
+  {
+    "name": "R6-004 P0 rejects wrong commit",
+    "result": "CONFIRMED",
+    "detail": "P0 job/node/commit mismatch"
+  },
+  {
+    "name": "R6-004 P0 rejects wrong physicalId",
+    "result": "CONFIRMED",
+    "detail": "P0 signed physical inventory mismatch"
+  },
+  {
+    "name": "R6-004 P0 rejects wrong model",
+    "result": "CONFIRMED",
+    "detail": "P0 provider/model mismatch"
+  },
+  {
+    "name": "R6-004 P0 rejects wrong harness",
+    "result": "CONFIRMED",
+    "detail": "P0 provider/model mismatch"
+  },
+  {
+    "name": "R6-004 P0 rejects exitCode",
+    "result": "CONFIRMED",
+    "detail": "remote harness failed or changed read-only worktree"
+  },
+  {
+    "name": "R6-004 P0 rejects dirty worktree",
+    "result": "CONFIRMED",
+    "detail": "remote harness failed or changed read-only worktree"
+  },
+  {
+    "name": "R6-004 P0 rejects missing stdout hash",
+    "result": "CONFIRMED",
+    "detail": "missing remote original log hash"
+  },
+  {
+    "name": "R6-004 P0 rejects PASS with findings",
+    "result": "CONFIRMED",
+    "detail": "P0 contradictory PASS/findings"
+  },
+  {
+    "name": "R6-004 P0 rejects APPROVE_WITH_COMMENTS HIGH",
+    "result": "CONFIRMED",
+    "detail": "P0 comments have blocking or unclassified severity"
+  },
+  {
+    "name": "R6-004 P0 distinct inventory accepted",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R6-004 P0 duplicate physicalId rejected",
+    "result": "CONFIRMED",
+    "detail": "P0 nodes have duplicate physical IDs"
+  },
+  {
+    "name": "R6-004 P0 duplicate key content rejected",
+    "result": "CONFIRMED",
+    "detail": "duplicate P0 attestation key content"
+  }
+]

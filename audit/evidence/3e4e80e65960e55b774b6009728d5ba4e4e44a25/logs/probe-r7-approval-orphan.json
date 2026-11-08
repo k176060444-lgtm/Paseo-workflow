@@ -1,0 +1,27 @@
+[
+  {
+    "name": "R7-002 first approval succeeds",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-002 second same-nonce approval rejected",
+    "result": "CONFIRMED",
+    "detail": "signed human approval nonce already consumed"
+  },
+  {
+    "name": "R7-002 failed approval leaves registered artifact",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-002 failed approval keeps task stage",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-002 retry after failed approval",
+    "result": "CONFIRMED",
+    "detail": "EEXIST: file already exists, open 'C:\\Users\\KK\\AppData\\Local\\Temp\\p1-r7-orphan-2NuXnV\\state\\tasks\\TASKORPHAN2\\evidence\\a"
+  }
+]

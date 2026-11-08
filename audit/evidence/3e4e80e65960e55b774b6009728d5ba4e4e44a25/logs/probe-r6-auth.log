@@ -1,0 +1,17 @@
+CONFIRMED R6-003 valid Ed25519 proof accepted 
+CONFIRMED R6-003 rejects wrong task human approval signed statement mismatch
+CONFIRMED R6-003 rejects wrong gate human approval signed statement mismatch
+CONFIRMED R6-003 rejects wrong digest human approval signed statement mismatch
+CONFIRMED R6-003 rejects wrong actor human approval signed statement mismatch
+CONFIRMED R6-003 rejects wrong receipt human approval signed statement mismatch
+CONFIRMED R6-003 rejects tampered signature invalid independent human approval signature
+CONFIRMED R6-003 rejects stale 40-minute proof human approval signature stale or from the future
+CONFIRMED R6-003 rejects future 5-minute proof human approval signature stale or from the future
+CONFIRMED R6-003 rejects trust-root SHA mismatch at Store construction trust roots manifest digest mismatch
+CONFIRMED R6-003 verifier accepts same nonce twice (no nonce ledger) 
+CONFIRMED R6-001 unsigned self-consistent approval cannot pass Gate 0.1 human approval signature envelope missing
+CONFIRMED R6-003 Controller.approve with valid Ed25519 proof advances Gate 0.1 
+CONFIRMED R6-003 Gate 5.9 proof binds final-compliance SHA 
+CONFIRMED R6-003 Gate 5.9 proof rejects substituted evidence SHA Gate 5.9 signature must bind final compliance evidence SHA-256
+TOTAL 15 CONFIRMED 15
+CLEANUP_WARNING EPERM

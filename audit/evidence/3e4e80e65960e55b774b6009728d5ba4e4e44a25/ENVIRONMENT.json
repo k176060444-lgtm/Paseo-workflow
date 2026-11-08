@@ -1,0 +1,72 @@
+{
+  "schema": "paseo-s0-r7-environment/v1",
+  "generated_at": "2026-11-08T15:10:59.364146+08:00",
+  "host": "21bao",
+  "os": "Windows 10 10.0.19044",
+  "machine": "AMD64",
+  "audited_commit": "3e4e80e65960e55b774b6009728d5ba4e4e44a25",
+  "baseline_commit": "20989c60226562a51886d5a979e773fecc7e4ddb",
+  "tree": "5743312c2e9f3595bee3fecc4819e935d0fcc73c",
+  "parent_commit": "1e237028ab4029b38f6c48058a54a7520887c17f",
+  "versions": {
+    "node": "v26.6.0",
+    "npm": "11.18.0",
+    "python": "Python 3.11.15",
+    "git": "git version 2.54.0.windows.1",
+    "codex": "codex-cli 0.166.0",
+    "opencode": "1.19.3",
+    "paseo_app": "0.15.3",
+    "paseo_daemon": "0.15.3",
+    "paseo_cli": "0.15.3",
+    "sdk_declared": "0.15.2",
+    "sdk_bundled": "0.15.3"
+  },
+  "paseo_read_only": {
+    "process_matches": [
+      "Paseo.exe                     4076 Services                   0     18,488 K",
+      "Paseo.exe                     9844 Services                   0     34,828 K",
+      "Paseo.exe                     2372 Services                   0     17,192 K"
+    ],
+    "daemon_listen": [
+      "127.0.0.1:6767",
+      "127.0.0.1:56170"
+    ],
+    "daemon_pid": 9844,
+    "home": "D:\\Paseo-data\\home",
+    "userData": "D:\\Paseo-data\\userData",
+    "app": "D:\\Paseo\\Paseo.exe",
+    "cli": "C:\\Users\\KK\\.local\\bin\\paseo.cmd"
+  },
+  "config_hashes": {
+    "before": {
+      "codex_config": "3ee33c0ad9633ea41ce90bea5b5e3be1b02a8b576d0fed7a73f2656e78a836aa",
+      "opencode_config": "1652e9626f1dbee1c505fb539a96b6145bf59173f879e0fed174e5678c3a40ea",
+      "hermes_config": "21dea749e82a00ff9750c279f2dbeff3e64dbe745ad9d5640823fb7bf6b99bba",
+      "paseo_config": "f5042763cce3540cd99bda70718fe407e3d4b83c437a975cd7a3c0318d6f4e17"
+    },
+    "after": {
+      "codex_config": "3ee33c0ad9633ea41ce90bea5b5e3be1b02a8b576d0fed7a73f2656e78a836aa",
+      "opencode_config": "1652e9626f1dbee1c505fb539a96b6145bf59173f879e0fed174e5678c3a40ea",
+      "hermes_config": "21dea749e82a00ff9750c279f2dbeff3e64dbe745ad9d5640823fb7bf6b99bba",
+      "paseo_config": "f5042763cce3540cd99bda70718fe407e3d4b83c437a975cd7a3c0318d6f4e17"
+    },
+    "unchanged": {
+      "codex_config": true,
+      "opencode_config": true,
+      "hermes_config": true,
+      "paseo_config": true
+    }
+  },
+  "workspace": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r7",
+  "source_copy": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r7\\repo",
+  "protected_not_modified": [
+    "Hermes gateway/config",
+    "Codex global config",
+    "OpenCode global config",
+    "Paseo App/Daemon/HOME/config",
+    "Magpie/proxy/model/auth settings",
+    "system PATH",
+    "services",
+    "user working directories"
+  ]
+}

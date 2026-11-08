@@ -1,0 +1,12 @@
+[
+  {
+    "name": "R7-001 PaseoAgentRuntime result rejected",
+    "result": "CONFIRMED",
+    "detail": "independently signed execution attestation required"
+  },
+  {
+    "name": "R7-001 runtime returns attestation",
+    "result": "CONFIRMED",
+    "detail": "PaseoAgentRuntime.execute source returns no attestation field (src/agents.mjs:54)"
+  }
+]

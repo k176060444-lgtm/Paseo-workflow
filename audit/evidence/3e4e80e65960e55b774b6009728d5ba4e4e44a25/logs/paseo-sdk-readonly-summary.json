@@ -1,0 +1,38 @@
+{
+  "schema": "paseo-s0-r7-readonly/v1",
+  "app": "0.15.3",
+  "daemon": "0.15.3",
+  "cli": "0.15.3",
+  "declared_sdk": "0.15.2",
+  "endpoint": "ws://127.0.0.1:6767/ws",
+  "list_include_background": [
+    {
+      "id": "d715c192-9cb4-483e-a9c0-6443f8cff442",
+      "status": "closed",
+      "provider": "opencode",
+      "title": "p1-sdk-smoke-opencode"
+    },
+    {
+      "id": "ec3595a0-3442-48d9-b430-2b5c4e08edf5",
+      "status": "closed",
+      "provider": "codex",
+      "title": "p1-sdk-smoke-codex"
+    }
+  ],
+  "agents": {
+    "ec3595a0-3442-48d9-b430-2b5c4e08edf5": {
+      "current_before": null,
+      "refresh_status": "closed",
+      "refresh_model": "group/qwen-3.8-flash",
+      "wait_status": "idle",
+      "wait_lastMessage": "{\"verdict\": \"PASS\", \"summary\": \"sdk smoke ok\", \"findings\": []}"
+    },
+    "d715c192-9cb4-483e-a9c0-6443f8cff442": {
+      "current_before": null,
+      "refresh_status": "closed",
+      "refresh_model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+      "wait_status": "idle",
+      "wait_lastMessage": "{\"verdict\":\"PASS\",\"summary\":\"sdk smoke ok\",\"findings\":[]}"
+    }
+  }
+}

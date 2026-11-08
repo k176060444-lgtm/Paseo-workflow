@@ -1,0 +1,3 @@
+CONFIRMED        R7-001 PaseoAgentRuntime result rejected independently signed execution attestation required
+CONFIRMED        R7-001 runtime returns attestation PaseoAgentRuntime.execute source returns no attestation field (src/agents.mjs:54)
+TOTAL 2 CONFIRMED 2

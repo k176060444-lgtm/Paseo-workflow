@@ -1,0 +1,6 @@
+CONFIRMED        R7-002 first approval succeeds 
+CONFIRMED        R7-002 second same-nonce approval rejected signed human approval nonce already consumed
+CONFIRMED        R7-002 failed approval leaves registered artifact 
+CONFIRMED        R7-002 failed approval keeps task stage 
+CONFIRMED        R7-002 retry after failed approval EEXIST: file already exists, open 'C:\Users\KK\AppData\Local\Temp\p1-r7-orphan-2NuXnV\state\tasks\TASKORPHAN2\evidence\a
+TOTAL 5 CONFIRMED 5

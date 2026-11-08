@@ -1,0 +1,32 @@
+[
+  {
+    "name": "R7-003 forced failure after consume rejected",
+    "result": "CONFIRMED",
+    "detail": "aRound may only advance in its round-start transition"
+  },
+  {
+    "name": "R7-003 nonce row rolled back",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-003 same nonce reusable after rollback",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-003 nonce consumed exactly once",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R7-003 cross-gate nonce rejected",
+    "result": "CONFIRMED",
+    "detail": "signed human approval nonce already consumed"
+  },
+  {
+    "name": "R7-003 recovery nonce rejected",
+    "result": "CONFIRMED",
+    "detail": "signed human approval nonce already consumed"
+  }
+]

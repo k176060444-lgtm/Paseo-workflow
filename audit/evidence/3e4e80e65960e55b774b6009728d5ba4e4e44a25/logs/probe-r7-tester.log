@@ -1,0 +1,4 @@
+CONFIRMED        R7-001 production git.testRun emits attestation attestation=undefined
+CONFIRMED        R7-001 production Tester receipt rejected independently attested Tester commands required
+CONFIRMED        R7-001 synthetic signed Tester receipt accepted 
+TOTAL 3 CONFIRMED 3 NOT_CONFIRMED 0

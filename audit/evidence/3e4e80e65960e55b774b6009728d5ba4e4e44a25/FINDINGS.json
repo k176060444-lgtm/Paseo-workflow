@@ -1,0 +1,227 @@
+{
+  "schema": "paseo-s0-r7-eighth-round-audit/v1",
+  "audited_commit": "3e4e80e65960e55b774b6009728d5ba4e4e44a25",
+  "baseline_commit": "20989c60226562a51886d5a979e773fecc7e4ddb",
+  "parent_commit": "1e237028ab4029b38f6c48058a54a7520887c17f",
+  "tree": "5743312c2e9f3595bee3fecc4819e935d0fcc73c",
+  "previous_evidence_commit": "db6d0fe730d757bf02c313b4f4e5b62cdf7ce61b",
+  "remediation_doc": "docs/R7_EXECUTION_PROVENANCE_20261108.md",
+  "audit_status": "COMPLETE",
+  "code_verdict": "FAIL",
+  "execution_attestation_status": "NOT_VERIFIED/BLOCKED",
+  "paseo_sdk_status": "PARTIAL",
+  "live_integration_status": "BLOCKED",
+  "counting_note": "Probe CONFIRMED means the assertion held. For defect-reproduction probes, CONFIRMED means the defect was observed, not product acceptance. No real remote P0 was contacted.",
+  "r7_findings": [
+    {
+      "id": "R7-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Execution-attestation verification blocks unsigned fake reviewers, but production integration and issuer separation are incomplete",
+      "sources": ["src/auth.mjs:71-99", "src/store.mjs:271-300", "src/store.mjs:537-559", "src/agents.mjs:35-54", "src/git.mjs:124-134"],
+      "evidence": ["logs/probe-r7-attestation.log", "logs/probe-r7-attestation.json", "logs/probe-r7-runtime.log", "logs/probe-r7-tester.log", "logs/npm-test.stdout.log"],
+      "confirmed": [
+        "No attestation -> A/B reviewer seat rejected",
+        "Wrong issuer, tampered raw, replaced agentId/dispatchId, cross-task/role/phase, tampered signature, duplicate agentId, one seat -> rejected",
+        "Correct test-witness-signed two-seat A/B pass; one PASS/one FAIL retains both seats and rejects pass",
+        "R7-002 root: 9/9 add/delete/replace/dispatch/Git tests fail-closed",
+        "R7-003 nonce: rollback, cross-gate, recovery replay 6/6; official cross-task test passes"
+      ],
+      "residual": {
+        "production_attestation": "OPEN: PaseoAgentRuntime and git.testRun emit no attestation; normal production workflow stops at the first ROLE_TERMINAL/TEST_RECEIPTS (R8-001)",
+        "purpose_isolation": "OPEN: same Ed25519 public key accepted in human and execution roots (R8-002)",
+        "old_attestation": "OPEN: no issuedAt lower bound; 24h-old attestation accepted (R8-003)",
+        "cross_commit_history": "OPEN: a signed seat for a different commit can be appended to history; it cannot pass the current gate (R8-004)",
+        "external_issuer": "NOT_VERIFIED: no real isolated Paseo/OS attestor implementation or deployment"
+      }
+    },
+    {
+      "id": "R7-002",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "EvidenceRoot and Gate 5.9 binding work at code level; failed-approval artifact and external anchor remain",
+      "sources": ["src/store.mjs:48-53", "src/store.mjs:176-213", "src/store.mjs:475-483", "src/controller.mjs:277-286", "src/auth.mjs:49-55"],
+      "evidence": ["logs/probe-r7-root.log", "logs/probe-r7-root.json", "logs/npm-test.stdout.log", "logs/probe-r7-approval-orphan.log"],
+      "confirmed": [
+        "evidenceRoot includes artifact name/digest and complete dispatch id/phase/agent_id/state/created, sorted deterministically",
+        "final-compliance and approval-5-9 are excluded; other late evidence changes root",
+        "artifact add/delete/replace, raw tamper, dispatch tamper, Git HEAD change fail closed",
+        "Gate 5.9 human signature binds final Commit + compliance SHA + evidenceRoot (official tests)"
+      ],
+      "residual": {
+        "failed_approval_artifact": "OPEN: failed Gate approval leaves a registered approval artifact; retry fails EEXIST (R8-005)",
+        "external_anchor": "NOT_VERIFIED: evidenceRoot is not an external immutable anchor",
+        "concurrency": "NOT_VERIFIED: no independent concurrent-writer test of compliance-root generation",
+        "orphan_recovery": "Store fail-closes on unregistered evidence; no automatic cleanup"
+      }
+    },
+    {
+      "id": "R7-003",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "Nonce consumption works for new ledgers; old-ledger migration and full historical compatibility are unverified",
+      "sources": ["src/store.mjs:34", "src/store.mjs:46-61", "src/store.mjs:148-174", "src/store.mjs:302-325", "src/store.mjs:588-640"],
+      "evidence": ["logs/probe-r7-nonce.log", "logs/probe-r7-nonce.json", "logs/probe-r6-auth.log", "logs/npm-test.stdout.log"],
+      "confirmed": [
+        "consumed_approvals composite key (key_id,nonce); cross-task rejection official test",
+        "cross-gate and recovery replay rejected",
+        "transaction rollback releases nonce; reuse only after rollback",
+        "_nonce_sha256 participates in event-chain verification"
+      ],
+      "residual": {
+        "old_state": "NOT_VERIFIED/BLOCKED: new table and _nonce_sha256 are not an automatic migration for old ledgers; docs require explicit migration",
+        "external_rollback": "NOT_VERIFIED: whole-DB snapshot rollback needs external anchor"
+      }
+    }
+  ],
+  "r8_findings": [
+    {
+      "id": "R8-001",
+      "severity": "BLOCKER",
+      "disposition": "NOT_FIXED",
+      "title": "Production Paseo runtime and git.testRun never produce execution attestations; normal Controller stops at the first attested transition",
+      "sources": ["src/agents.mjs:35-54", "src/git.mjs:124-134", "src/controller.mjs:98-115", "src/controller.mjs:151-159", "src/store.mjs:537-559", "src/store.mjs:271-300"],
+      "evidence": ["logs/probe-r7-runtime.log", "logs/probe-r7-runtime.json", "logs/probe-r7-tester.log", "logs/probe-r7-tester.json", "logs/npm-test.stdout.log"],
+      "observed": "PaseoAgentRuntime.execute returns role/phase/agentId/dispatchId/verdict/summary/findings/raw but no attestation (src/agents.mjs:54). git.testRun returns {pass,receipts} without attestation (src/git.mjs:134). Store requires attestation for ROLE_TERMINAL, REVIEW_SEAT_RECORDED and TEST_RECEIPTS (src/store.mjs:558-559). A production-like runtime result is rejected; production git.testRun is rejected with 'independently attested Tester commands required'. The 77-test suite uses a test-only witness and a mock testRun that attaches signatures, so CI green does not cover the production path.",
+      "impact": "Even with a trusted external signing key deployed, the current Controller/Paseo adapter has no integration point to attach the signed execution attestation. Every normal task will fail closed at Planner/Worker/Tester, not just at real P0.",
+      "minimal_fix": "Add an explicit external-attestor adapter outside the Agent, have PaseoAgentRuntime obtain a signed receipt after verifying the real Paseo session, have git.testRun submit its command receipts to the same independent attestor, and add an end-to-end production-path test that does not hold the witness private key in the Controller process."
+    },
+    {
+      "id": "R8-002",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Human and execution trust domains accept the same Ed25519 public key; purpose isolation is not enforced",
+      "sources": ["src/auth.mjs:19-35", "src/auth.mjs:75-99"],
+      "evidence": ["logs/probe-r7-attestation.log", "logs/probe-r7-attestation.json"],
+      "observed": "A manifest with the same key ID and PEM in human and execution is accepted; verifyExecutionAttestation accepts an execution statement signed by that key. There is no disjoint-key/key-fingerprint assertion, so a human signer can also impersonate the independent execution witness.",
+      "impact": "The intended separation between human approval and independent execution attestation is only a naming convention. A single key compromise or misconfiguration collapses both trust roots.",
+      "minimal_fix": "Reject identical public-key fingerprints across human/execution maps and require distinct key IDs and key material; document separate custody."
+    },
+    {
+      "id": "R8-003",
+      "severity": "MEDIUM",
+      "disposition": "NOT_FIXED",
+      "title": "Execution attestation has no lower-bound freshness and nonce is not consumed",
+      "sources": ["src/auth.mjs:85-99"],
+      "evidence": ["logs/probe-r7-attestation.log", "logs/probe-r7-attestation.json"],
+      "observed": "verifyExecutionAttestation checks only issuedAt <= now+120000; a 24h-old signed attestation was accepted. nonce is format-checked but not stored/consumed. Context binding limits reuse, but there is no freshness/replay ledger for execution receipts.",
+      "impact": "An old valid receipt can be reused where the same task/role/phase/commit/agent/dispatch/raw still matches; no cryptographic freshness bound.",
+      "minimal_fix": "Add a lower freshness bound and/or a consumed execution-attestation table keyed by issuer/nonce; bind dispatch-created time."
+    },
+    {
+      "id": "R8-004",
+      "severity": "LOW",
+      "disposition": "NOT_FIXED",
+      "title": "A signed reviewer seat for a different commit can be appended to history",
+      "sources": ["src/store.mjs:243-269", "src/store.mjs:537-559"],
+      "evidence": ["logs/probe-r7-attestation.log", "logs/probe-r7-attestation.json"],
+      "observed": "REVIEW_SEAT_RECORDED for a seat whose h.sha is a different commit is accepted into append-only history. It cannot satisfy A_REVIEW_PASS because #verifyReviewerPair filters by t.currentSha, but it pollutes history and consumes append-only space.",
+      "impact": "No current-gate bypass; history pollution/DoS and misleading audit trail.",
+      "minimal_fix": "At REVIEW_SEAT_RECORDED, require h.sha===nextTask.currentSha and h.phase===current review prefix, not merely self-consistent attestation."
+    },
+    {
+      "id": "R8-005",
+      "severity": "MEDIUM",
+      "disposition": "NOT_FIXED",
+      "title": "Failed human approval leaves a registered approval artifact; retry fails EEXIST",
+      "sources": ["src/controller.mjs:49-55", "src/store.mjs:78-109"],
+      "evidence": ["logs/probe-r7-approval-orphan.log", "logs/probe-r7-approval-orphan.json"],
+      "observed": "Controller.approve writes and registers approval-0-1.json (or approval-5-9.json) before store.save. A subsequent save failure (nonce replay, later assertion) leaves the artifact. Retrying with a new signed proof hits EEXIST on the same filename. First task remains unchanged; second is permanently wedged until manual cleanup.",
+      "impact": "Operational fail-closed wedge of a Gate; manual reconciliation required; no automatic cleanup of a failed approval attempt.",
+      "minimal_fix": "Make approval-artifact creation and state transition atomic, or support an idempotent unique approval filename plus explicit failed-attempt reconciliation; do not reuse a registered filename blindly."
+    }
+  ],
+  "r6_findings": [
+    {"id": "R6-001", "severity": "BLOCKER", "disposition": "PARTIAL", "note": "Unsigned human approval blocked; execution attestation absent in production (R8-001)."},
+    {"id": "R6-002", "severity": "HIGH", "disposition": "PARTIAL", "note": "Fake unsigned reviewer seats blocked; production attestor and same-key issue remain (R8-001/R8-002)."},
+    {"id": "R6-003", "severity": "HIGH", "disposition": "PARTIAL", "note": "Human signature/nonce table fixed for new ledgers; old state migration unverified."},
+    {"id": "R6-004", "severity": "HIGH", "disposition": "FIXED", "note": "Store Gate 5.9 Git recheck; P0 HMAC/job/commit/physicalId/model 15/15; real remote P0 NOT_VERIFIED."},
+    {"id": "R6-005", "severity": "MEDIUM", "disposition": "FIXED", "note": "Constructor verifier injection rejected."}
+  ],
+  "r5_findings": [
+    {"id": "R5-001", "severity": "BLOCKER", "disposition": "PARTIAL", "note": "Unsigned approvals/fake reviewer blocked; production execution attestation absent (R8-001)."},
+    {"id": "R5-002", "severity": "BLOCKER", "disposition": "FIXED", "note": "init root constraints."},
+    {"id": "R5-003", "severity": "HIGH", "disposition": "FIXED", "note": "Git trust boundary; real remote not verified."}
+  ],
+  "r4_findings": [
+    {"id": "R4-001", "severity": "BLOCKER", "disposition": "PARTIAL", "note": "R8-001/R8-002 residual."},
+    {"id": "R4-002", "severity": "HIGH", "disposition": "PARTIAL", "note": "R8-001 residual; test witness not production."},
+    {"id": "R4-003", "severity": "BLOCKER", "disposition": "FIXED"},
+    {"id": "R4-004", "severity": "LOW", "disposition": "FIXED"},
+    {"id": "R4-005", "severity": "HIGH", "disposition": "FIXED"},
+    {"id": "R4-006", "severity": "MEDIUM", "disposition": "FIXED"},
+    {"id": "R4-007", "severity": "LOW", "disposition": "FIXED", "note": "Real Windows OS symlink NOT_VERIFIED; index 120000 tested."}
+  ],
+  "original_findings": [
+    {"id": "F1", "severity": "BLOCKER", "disposition": "FIXED"},
+    {"id": "F2", "severity": "BLOCKER", "disposition": "MITIGATED_FAIL_CLOSED", "residual": "Real two hosts/600s NOT_VERIFIED."},
+    {"id": "F3", "severity": "BLOCKER", "disposition": "MITIGATED_FAIL_CLOSED", "residual": "Real physical identity NOT_VERIFIED."},
+    {"id": "F4", "severity": "HIGH", "disposition": "FIXED", "residual": "Real timeout semantics partially observed."},
+    {"id": "F5", "severity": "HIGH", "disposition": "NOT_FIXED", "residual": "Soul V2.1/deliverable mapping."},
+    {"id": "F6", "severity": "BLOCKER", "disposition": "NOT_VERIFIED", "residual": "Windows OS isolation/TEST_ONLY."},
+    {"id": "F7", "severity": "HIGH", "disposition": "PARTIAL"},
+    {"id": "F8", "severity": "HIGH", "disposition": "PARTIAL"},
+    {"id": "F9", "severity": "HIGH", "disposition": "PARTIAL"},
+    {"id": "F10", "severity": "MEDIUM", "disposition": "MITIGATED_FAIL_CLOSED"}
+  ],
+  "r2_findings": [
+    {"id": "R2-001", "disposition": "PARTIAL"},
+    {"id": "R2-002", "disposition": "FIXED"},
+    {"id": "R2-003", "disposition": "FIXED"},
+    {"id": "R2-004", "disposition": "FIXED"},
+    {"id": "R2-005", "disposition": "FIXED"},
+    {"id": "R2-006", "disposition": "PARTIAL"},
+    {"id": "R2-007", "disposition": "FIXED"},
+    {"id": "R2-008", "disposition": "PARTIAL"},
+    {"id": "R2-009", "disposition": "FIXED"},
+    {"id": "R2-010", "disposition": "FIXED"}
+  ],
+  "r3_findings": [
+    {"id": "R3-001", "disposition": "PARTIAL"},
+    {"id": "R3-002", "disposition": "PARTIAL"},
+    {"id": "R3-003", "disposition": "FIXED"},
+    {"id": "R3-004", "disposition": "FIXED"},
+    {"id": "R3-005", "disposition": "FIXED"},
+    {"id": "R3-006", "disposition": "FIXED"},
+    {"id": "R3-007", "disposition": "FIXED"},
+    {"id": "R3-008", "disposition": "FIXED"}
+  ],
+  "paseo_sdk": {
+    "status": "PARTIAL",
+    "app_version": "0.15.3",
+    "daemon_version": "0.15.3",
+    "cli_version": "0.15.3",
+    "declared_sdk": "0.15.2",
+    "bundled_sdk": "0.15.3",
+    "endpoint": "ws://127.0.0.1:6767/ws",
+    "daemon_pid": 9844,
+    "read_only_agents": ["ec3595a0-3442-48d9-b430-2b5c4e08edf5", "d715c192-9cb4-483e-a9c0-6443f8cff442"],
+    "observations": [
+      "includeBackground:true returns two closed agents; default list excludes them",
+      "refresh returns the agent; current is null before refresh; waitForFinish returns idle",
+      "open rejects missing /ws/non-local/userinfo/search/hash",
+      "exact providerOptions, cancel, disconnect, restart reconciliation NOT_VERIFIED",
+      "no new paid Agent call; two existing agents only"
+    ]
+  },
+  "mandatory_unverified": [
+    "Real independent Paseo/OS execution attestor and its private-key custody",
+    "Attestor actually queries Paseo session, provider, commit, role and raw result instead of signing Controller self-report",
+    "Production Controller path that attaches attestation to PaseoAgentRuntime and git.testRun",
+    "Exact providerOptions live create",
+    "Paseo cancel/disconnect/restart reconciliation",
+    "Real two-physical-host P0 and 600s third seat",
+    "Windows SID/ACL/Job Object/TEST_ONLY",
+    "External immutable evidence anchor",
+    "Old-ledger migration without silent trust",
+    "Soul V2.1 and legal deliverable mapping"
+  ],
+  "summary": {
+    "r7_dispositions": {"FIXED": 0, "PARTIAL": 3, "NOT_FIXED": 0, "NOT_VERIFIED": 0},
+    "r8_dispositions": {"BLOCKER": 1, "HIGH": 1, "MEDIUM": 2, "LOW": 1},
+    "r6_dispositions": {"FIXED": 2, "PARTIAL": 3},
+    "r5_dispositions": {"FIXED": 2, "PARTIAL": 1},
+    "r4_dispositions": {"FIXED": 5, "PARTIAL": 2},
+    "tests": {"total": 268, "passed": 266, "failed": 1, "errors": 0, "skipped": 1}
+  }
+}
