@@ -1,0 +1,4 @@
+
+> paseo-workflow@0.1.0 check
+> node --check src/auth.mjs && node --check src/cli.mjs && node --check src/controller.mjs && node --check src/agents.mjs && node --check src/p0.mjs && node --check src/store.mjs && node --check src/policy.mjs && node --check src/git.mjs
+

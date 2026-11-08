@@ -1,0 +1,125 @@
+[
+  {
+    "agent": {
+      "id": "d715c192-9cb4-483e-a9c0-6443f8cff442",
+      "provider": "opencode",
+      "cwd": "C:\\Users\\KK\\AppData\\Local\\Temp\\opencode\\paseo-audit-s0-r6\\paseo\\agent-cwd",
+      "workspaceId": "wks_e71adbd7f012bff0",
+      "model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+      "thinkingOptionId": null,
+      "effectiveThinkingOptionId": null,
+      "runtimeInfo": {
+        "provider": "opencode",
+        "sessionId": "ses_e46464ee9ffetKGzruvOgNA9Lf",
+        "model": "magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+        "thinkingOptionId": null,
+        "modeId": null
+      },
+      "createdAt": "2026-11-08T05:55:18.262Z",
+      "updatedAt": "2026-11-08T05:55:24.527Z",
+      "lastUserMessageAt": "2026-11-08T05:55:18.405Z",
+      "status": "idle",
+      "activeTurn": null,
+      "capabilities": {
+        "supportsStreaming": true,
+        "supportsSessionPersistence": true,
+        "supportsSessionListing": true,
+        "supportsDynamicModes": true,
+        "supportsMcpServers": true,
+        "supportsReasoningStream": true,
+        "supportsToolInvocations": true,
+        "supportsRewindConversation": false,
+        "supportsRewindFiles": false,
+        "supportsRewindBoth": true
+      },
+      "currentModeId": null,
+      "availableModes": [
+        {
+          "id": "build",
+          "label": "Build",
+          "icon": "Bot",
+          "description": "The default agent. Executes tools based on configured permissions."
+        },
+        {
+          "id": "plan",
+          "label": "Plan",
+          "icon": "Bot",
+          "description": "Plan mode. Disallows all edit tools."
+        },
+        {
+          "id": "arbitrator",
+          "label": "Arbitrator",
+          "icon": "Bot",
+          "description": "首席仲裁官：中立评判盲审意见，对照代码行号证据裁决真缺陷 vs 虚惊，出具最终仲裁报告"
+        },
+        {
+          "id": "blind-reviewer",
+          "label": "Blind-reviewer",
+          "icon": "Bot",
+          "description": "独立红队盲审员：零上下文污染、黑客视角排查并发死锁、时序震荡与底层漏洞"
+        },
+        {
+          "id": "p1-pro-audit",
+          "label": "P1-pro-audit",
+          "icon": "Bot",
+          "description": "P1 role pro_audit; roles-only soft instructions"
+        },
+        {
+          "id": "p1-spec-reviewer",
+          "label": "P1-spec-reviewer",
+          "icon": "Bot",
+          "description": "P1 role spec_reviewer; roles-only soft instructions"
+        },
+        {
+          "id": "p1-tester-gate-b",
+          "label": "P1-tester-gate-b",
+          "icon": "Bot",
+          "description": "P1 role tester_gate_b; roles-only soft instructions"
+        },
+        {
+          "id": "p1-worker",
+          "label": "P1-worker",
+          "icon": "Bot",
+          "description": "P1 role worker; roles-only soft instructions"
+        },
+        {
+          "id": "p1-worker-remediation",
+          "label": "P1-worker-remediation",
+          "icon": "Bot",
+          "description": "P1 role worker_remediation; roles-only soft instructions"
+        },
+        {
+          "id": "planner",
+          "label": "Planner",
+          "icon": "Bot",
+          "description": "系统架构与规划师：负责通读代码、拆解任务与制定 Spec，严禁直接改写业务代码"
+        },
+        {
+          "id": "process-auditor",
+          "label": "Process-auditor",
+          "icon": "Bot",
+          "description": "流程合规督察官：专审流水线流程与证据链真实性，物理只读"
+        },
+        {
+          "id": "quality-reviewer",
+          "label": "Quality-reviewer",
+          "icon": "Bot",
+          "description": "代码质量审查员：深度排查代码异味、潜在死锁、异常捕获缺失与测试完备性"
+        },
+        {
+          "id": "spec-reviewer",
+          "label": "Spec-reviewer",
+          "icon": "Bot",
+          "description": "需求规格审查员：逐项核对工兵代码是否 100% 满足原始需求，严防偷工减料与私带私货"
+        },
+        {
+          "id": "tester",
+          "label": "Tester",
+          "icon": "Bot",
+          "description": "独立测试官：专门编写高强度对抗性测试、极端边界数据用例与回归套件，严禁修改任何生产业务代码"
+        },
+        {
+          "id": "worker",
+          "label": "Worker",
+          "icon": "Bot",
+          "des

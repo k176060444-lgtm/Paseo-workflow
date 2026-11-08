@@ -1,0 +1,778 @@
+{
+  "schema": "paseo-s0-r6-seventh-round-audit/v1",
+  "audited_commit": "20989c60226562a51886d5a979e773fecc7e4ddb",
+  "baseline_commit": "be0bc89dc4813cf1152399128a3caa34a12f4d70",
+  "parent_commit": "b20e113c595f4dacc4ce042d76c226d714396c60",
+  "tree": "5475fe904e2e5d6a71e45db8b8663215e7c7a372",
+  "remediation_doc": "docs/R6_AUTHENTICATED_EVIDENCE_20261108.md",
+  "previous_evidence_commit": "1d799a3108553c29958f2f00a30b8aa77d99778e",
+  "audit_status": "COMPLETE",
+  "code_verdict": "FAIL",
+  "paseo_sdk_status": "PARTIAL",
+  "live_integration_status": "BLOCKED",
+  "counting_note": "R6-001..R6-005 are the remediation items under review. R7-001..R7-003 are new/residual defects. F1-F10, R2-001..R2-010, R3-001..R3-008, R4-001..R4-007 and R5-001..R5-003 are regression-checked. FIXED means only the stated offline code-level subparts; never real identity, external anchor or live acceptance.",
+  "r6_findings": [
+    {
+      "id": "R6-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Unsigned/self-consistent approvals are blocked, but a valid human signature plus fabricated Reviewer/Tester/P0 artifacts can still close with unverified evidence provenance",
+      "sources": [
+        "src/auth.mjs:31-58",
+        "src/store.mjs:130-218",
+        "src/controller.mjs:23-56"
+      ],
+      "evidence": [
+        "logs/probe-r6-auth.log",
+        "logs/probe-r6-reviewer.log"
+      ],
+      "fixed_subparts": {
+        "unsigned_gate": "FIXED: no trust root/signature -> Gate 0.1 rejected",
+        "signed_statement_binding": "FIXED: keyId, taskId, gate, digest, actor, receipt, nonce, issuedAt, 5.9 evidenceSha256",
+        "trust_root_pin": "FIXED: manifest SHA mismatch rejected at Store construction; task pins digest",
+        "gate_5_9_evidence": "FIXED: signature must bind final-compliance.json SHA-256"
+      },
+      "open_subparts": {
+        "reviewer_provenance": "OPEN: recordIntent/recordAck/recordTerminal + artifact + save can fabricate both Reviewer seats (R7-001)",
+        "tester_p0_provenance": "OPEN: fake Tester A/B and P0 raw artifacts can be registered and summarized; Gate 5.9 checks their digests but not independent execution",
+        "full_chain": "OPEN: with a test signing key and fabricated evidence, the state machine can still reach CLOSED; signature authenticates the human receipt, not the underlying code review/test/P0 execution"
+      },
+      "minimal_fix": "Do not treat Controller-written dispatch/reviewer/tester/P0 artifacts as independent evidence. Require Paseo-server-signed or separately executed evidence, bind Gate 5.9 to digests of all raw reviewer/tester/P0 evidence, and anchor approvals externally."
+    },
+    {
+      "id": "R6-002",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Review gate enforces two seats/different agentId/registered artifacts, but caller can fabricate dispatch and reviewer history",
+      "sources": [
+        "src/store.mjs:219-245",
+        "src/store.mjs:368-369",
+        "src/store.mjs:537-570"
+      ],
+      "evidence": [
+        "logs/probe-r6-reviewer.log",
+        "logs/probe-r6-reviewer.json"
+      ],
+      "observed": "4/4: A_REVIEW_PASS without evidence rejected; duplicate agentId rejected; fabricated dispatch via public recordIntent/recordAck/recordTerminal + registered raw artifacts + REVIEW_SEAT_RECORDED passes A_REVIEW_PASS; same for B_REVIEW_PASS. The checks are Controller-internal consistency, not Paseo server authentication.",
+      "residual": "A caller with Store access can create fake dispatch/ACK/TERMINAL and reviewer artifacts; physical Paseo execution is not independently attested."
+    },
+    {
+      "id": "R6-003",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Ed25519/trust-root/time/Gate binding works; nonce is not consumed and real operator identity is still not attested",
+      "sources": [
+        "src/auth.mjs:9-58",
+        "src/store.mjs:105-150",
+        "src/controller.mjs:41-54"
+      ],
+      "evidence": [
+        "logs/probe-r6-auth.log",
+        "logs/probe-r6-auth.json"
+      ],
+      "observed": "15/15: valid Ed25519 proof accepted; wrong task/gate/digest/actor/receipt, tampered signature, stale/future timestamp, trust-root SHA mismatch all rejected; valid Controller.approve Gate 0.1 advances; Gate 5.9 proof binds/rejects substituted final-compliance SHA. However, the same valid nonce is accepted twice by verifyHumanApproval; no nonce consumption ledger exists for Gate approvals (recovery has an explicit event check). Actor identity is a string; trust-root env/private-key protection remains deployment responsibility.",
+      "residual": "Replay prevention for Gate approvals relies on the state machine, not a nonce ledger. Real operator identity is NOT_VERIFIED."
+    },
+    {
+      "id": "R6-004",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Store Gate 5.9 re-checks Git object/ancestry/HEAD and P0 HMAC/job/commit/physicalId/model/dispatch",
+      "sources": [
+        "src/store.mjs:156-218",
+        "src/store.mjs:475-483",
+        "src/p0.mjs:27-62"
+      ],
+      "evidence": [
+        "logs/probe-r6-p0.log",
+        "logs/npm-test.stdout.log"
+      ],
+      "observed": "P0 direct 15/15: valid HMAC passes; tampered MAC/jobId/commit/physicalId/model/harness/exitCode/clean/stdout hash/PASS+findings/HIGH comments rejected; distinct physical inventory accepted; duplicate physicalId/key content rejected. Store Gate 5.9 calls verifyCommitEvidenceSync; official R6-004 direct Store test passes. Real remote 5bao/9bao/rusty P0 not contacted."
+    },
+    {
+      "id": "R6-005",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Constructor rejects gitVerifier injection and Store uses imported verifier",
+      "sources": [
+        "src/store.mjs:20-22",
+        "src/store.mjs:475-483"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "observed": "Official R6-005 test passes: new Store(...,{gitVerifier:()=>true}) throws; monkeypatched property is ignored; fake SHA still rejected. No independent bypass found."
+    }
+  ],
+  "r7_findings": [
+    {
+      "id": "R7-001",
+      "severity": "BLOCKER",
+      "kind": "code_defect",
+      "title": "Public dispatch/artifact/history APIs can fabricate both Reviewer seats and pass A/B_REVIEW_PASS",
+      "sources": [
+        "src/store.mjs:219-245",
+        "src/store.mjs:368-369",
+        "src/store.mjs:537-570"
+      ],
+      "evidence": [
+        "logs/probe-r6-reviewer.log",
+        "logs/probe-r6-reviewer.json"
+      ],
+      "repro": "Seed A_REVIEW; recordIntent(A1-review-spec_reviewer), recordAck(job, fake-agent-spec), recordTerminal(job); register raw reviewer artifact; append REVIEW_SEAT_RECORDED. Repeat for quality_reviewer with a different agentId. save A_REVIEW_PASS succeeds. Same for B_REVIEW_PASS.",
+      "impact": "The independent double-review gate is only a Controller-internal record check; a caller with Store access can skip real review and still satisfy A/B_REVIEW_PASS. This is the residual of R6-002.",
+      "minimal_fix": "Require Paseo-server-signed reviewer evidence or an independently authenticated dispatch receipt bound to the exact commit/phase/agentId; do not accept Controller-written dispatch rows as proof of external execution."
+    },
+    {
+      "id": "R7-002",
+      "severity": "HIGH",
+      "kind": "trust_boundary",
+      "title": "Gate 5.9 human signature authenticates final-compliance.json, not Reviewer/Tester/P0 raw evidence provenance",
+      "sources": [
+        "src/auth.mjs:41-44",
+        "src/store.mjs:156-188"
+      ],
+      "evidence": [
+        "logs/probe-r6-reviewer.log",
+        "logs/probe-r6-auth.log"
+      ],
+      "observed": "The Gate 5.9 statement binds final-compliance.json SHA; final compliance is built from Controller fields/artifacts. Reviewer/Tester/P0 raw reports are only locally hashed; the human does not sign their digests, and a caller can fabricate them.",
+      "impact": "A valid human final approval can bless fabricated review/test/P0 evidence; signature authenticity does not imply execution authenticity.",
+      "minimal_fix": "Bind the final Gate statement to a Merkle root of all raw reviewer/tester/P0 evidence and require external execution receipts; or have the P0/Reviewer services sign their own reports."
+    },
+    {
+      "id": "R7-003",
+      "severity": "MEDIUM",
+      "kind": "replay",
+      "title": "Human approval nonce is not consumed; same signed envelope is accepted twice",
+      "sources": [
+        "src/auth.mjs:47-58",
+        "src/store.mjs:130-150"
+      ],
+      "evidence": [
+        "logs/probe-r6-auth.log",
+        "logs/probe-r6-auth.json"
+      ],
+      "observed": "verifyHumanProof accepts the same nonce twice. Gate state transitions prevent a second same-gate transition in normal flow, and recovery explicitly checks prior recoveryNonce events, but Gate 0.1/0.2/5.9 approvals have no nonce ledger. A DB restore/replay attack is not prevented by nonce alone.",
+      "impact": "Replay protection is state-machine-dependent, not cryptographic nonce consumption. The task explicitly asks for nonce replay testing.",
+      "minimal_fix": "Persist consumed nonces (task, gate, keyId, nonce) atomically with the Gate transition and reject duplicates; keep the recovery nonce check."
+    }
+  ],
+  "original_findings": [
+    {
+      "id": "F1",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "PASS+findings/blocking severity",
+      "sources": [
+        "src/policy.mjs:129-145"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log",
+        "logs/probe-r5_parser.log"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Two-seat quorum/third seat/cancel/ACK",
+      "sources": [
+        "src/p0.mjs:60-141"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real two hosts/600s/Linux process group NOT_VERIFIED."
+    },
+    {
+      "id": "F3",
+      "severity": "BLOCKER",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Duplicate HMAC/physical identity",
+      "sources": [
+        "src/p0.mjs:27-62"
+      ],
+      "evidence": [
+        "logs/probe-r6-p0.log",
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real physical identity NOT_VERIFIED."
+    },
+    {
+      "id": "F4",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "waitForFinish numeric timeout",
+      "sources": [
+        "src/agents.mjs:28"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log",
+        "logs/paseo-live-smoke.log"
+      ],
+      "residual": "Real provider timeout semantics partially observed; no forced timeout test."
+    },
+    {
+      "id": "F5",
+      "severity": "HIGH",
+      "disposition": "NOT_FIXED",
+      "title": "Soul V2.1 migration/deliverable mapping",
+      "sources": [
+        "docs/SOUL_V21_MIGRATION_PENDING.md"
+      ],
+      "evidence": [
+        "logs/regress-r2_006_parser_soul.stdout.log"
+      ],
+      "residual": "6 legacy Souls and legal deliverable mapping still absent."
+    },
+    {
+      "id": "F6",
+      "severity": "BLOCKER",
+      "disposition": "NOT_VERIFIED",
+      "title": "Windows OS isolation/TEST_ONLY",
+      "sources": [
+        "docs/SECURITY.md"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "No SID/ACL/Job Object/TEST_ONLY/live workflow."
+    },
+    {
+      "id": "F7",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "SQLite/digests/evidence chain",
+      "sources": [
+        "src/store.mjs:60-218"
+      ],
+      "evidence": [
+        "logs/probe-r6-reviewer.log",
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "R7-001/R7-002."
+    },
+    {
+      "id": "F8",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Compliance/recovery",
+      "sources": [
+        "src/controller.mjs:335-372"
+      ],
+      "evidence": [
+        "logs/probe-r6-auth.log",
+        "logs/probe-r6-reviewer.log"
+      ],
+      "residual": "R7-001/R7-002."
+    },
+    {
+      "id": "F9",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Child env/raw log boundary",
+      "sources": [
+        "src/git.mjs:15-21",
+        "remote/p0_runner.py:26-36"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ],
+      "residual": "Raw log redaction/ACL NOT_VERIFIED."
+    },
+    {
+      "id": "F10",
+      "severity": "MEDIUM",
+      "disposition": "MITIGATED_FAIL_CLOSED",
+      "title": "Query/worktree/process lifecycle",
+      "sources": [
+        "src/store.mjs:225-240"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real process tree NOT_VERIFIED."
+    }
+  ],
+  "r2_findings": [
+    {
+      "id": "R2-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Preflight re-anchor",
+      "sources": [
+        "src/controller.mjs:266-304"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "R7-001."
+    },
+    {
+      "id": "R2-002",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Artifact orphan/registration fail-closed",
+      "sources": [
+        "src/store.mjs:60-93"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "readSnapshot one SQLite snapshot",
+      "sources": [
+        "src/store.mjs:225-230"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Read-only WAL side files",
+      "sources": [
+        "src/store.mjs:16-33"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R2-005",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Minimal child env",
+      "sources": [
+        "src/git.mjs:15-21",
+        "remote/p0_runner.py:305-306"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ],
+      "residual": "Raw logs/ACL NOT_VERIFIED."
+    },
+    {
+      "id": "R2-006",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Parser compatibility/Soul mapping",
+      "sources": [
+        "src/policy.mjs:94-145"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log",
+        "logs/regress-r2_006_parser_soul.stdout.log"
+      ],
+      "residual": "F5 remains."
+    },
+    {
+      "id": "R2-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Windows Python suite/liveness",
+      "sources": [
+        "remote/p0_runner.py:112-138"
+      ],
+      "evidence": [
+        "logs/python-full.stderr.log"
+      ],
+      "residual": "Linux/600s NOT_VERIFIED."
+    },
+    {
+      "id": "R2-008",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "Basis recovery",
+      "sources": [
+        "src/controller.mjs:335-372"
+      ],
+      "evidence": [
+        "logs/probe-r6-auth.log"
+      ],
+      "residual": "R7-002/R7-003."
+    },
+    {
+      "id": "R2-009",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Path/symlink/gitlink",
+      "sources": [
+        "src/git.mjs:49-118"
+      ],
+      "evidence": [
+        "logs/probe-r5_git_paths.log",
+        "logs/regress-r2_009_paths.stdout.log"
+      ],
+      "residual": "Real Windows OS symlink NOT_VERIFIED; index 120000 tested."
+    },
+    {
+      "id": "R2-010",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Reviewer evidence preservation/no redispatch",
+      "sources": [
+        "src/controller.mjs:93-125"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "No automated reconcile."
+    }
+  ],
+  "r3_findings": [
+    {
+      "id": "R3-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Event boundary/public save",
+      "sources": [
+        "src/store.mjs:517-527",
+        "src/store.mjs:508-516"
+      ],
+      "evidence": [
+        "logs/probe-r6-reviewer.log"
+      ],
+      "residual": "R7-001."
+    },
+    {
+      "id": "R3-002",
+      "severity": "MEDIUM",
+      "disposition": "PARTIAL",
+      "title": "Frozen/TASK_SPEC/recovery",
+      "sources": [
+        "src/store.mjs:94-150"
+      ],
+      "evidence": [
+        "logs/probe-r6-auth.log",
+        "logs/probe-r6-reviewer.log"
+      ],
+      "residual": "TASK_SPEC/approval artifact can be fabricated (R7-001/R7-002)."
+    },
+    {
+      "id": "R3-003",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "NEEDS_RECONCILIATION preserved",
+      "sources": [
+        "src/controller.mjs:266-299"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "taskkill childEnv",
+      "sources": [
+        "src/git.mjs:19-21"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-005",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Popen child_env",
+      "sources": [
+        "remote/p0_runner.py:305-306"
+      ],
+      "evidence": [
+        "logs/regress-r3_004_005_env.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-006",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "CLI newline",
+      "sources": [
+        "src/cli.mjs:24-29"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-007",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "APPROVE_WITH_COMMENTS severity",
+      "sources": [
+        "src/policy.mjs:129-145",
+        "src/p0.mjs:49-62"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log",
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R3-008",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Unique terminal JSON verdict",
+      "sources": [
+        "src/policy.mjs:94-128",
+        "remote/p0_runner.py:140-159"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log"
+      ]
+    }
+  ],
+  "r4_findings": [
+    {
+      "id": "R4-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Stage/approval/P0 bypass",
+      "sources": [
+        "src/store.mjs:76-330"
+      ],
+      "evidence": [
+        "logs/probe-r6-reviewer.log",
+        "logs/probe-r6-auth.log"
+      ],
+      "residual": "R7-001/R7-002."
+    },
+    {
+      "id": "R4-002",
+      "severity": "HIGH",
+      "disposition": "PARTIAL",
+      "title": "Frozen/pair/init vs Planner binding",
+      "sources": [
+        "src/store.mjs:94-150"
+      ],
+      "evidence": [
+        "logs/probe-r6-auth.log",
+        "logs/probe-r6-reviewer.log"
+      ],
+      "residual": "TASK_SPEC/approval artifacts can be fabricated."
+    },
+    {
+      "id": "R4-003",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "artifact transaction/orphan boundary",
+      "sources": [
+        "src/store.mjs:60-93"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "File/SQLite non-atomicity documented; orphan manual."
+    },
+    {
+      "id": "R4-004",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Multi-verdict conservative rejection",
+      "sources": [
+        "src/policy.mjs:94-128"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log"
+      ]
+    },
+    {
+      "id": "R4-005",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Unique terminal verdict/FAIL-PASS",
+      "sources": [
+        "src/policy.mjs:94-128",
+        "remote/p0_runner.py:140-159"
+      ],
+      "evidence": [
+        "logs/probe-r5_parser.log",
+        "logs/probe-r5_parser_remote.log"
+      ]
+    },
+    {
+      "id": "R4-006",
+      "severity": "MEDIUM",
+      "disposition": "FIXED",
+      "title": "Unicode invisible prefix rejection",
+      "sources": [
+        "src/git.mjs:78-86"
+      ],
+      "evidence": [
+        "logs/probe-r5_git_paths.log"
+      ]
+    },
+    {
+      "id": "R4-007",
+      "severity": "LOW",
+      "disposition": "FIXED",
+      "title": "Full Git index symlink/gitlink/sensitive path",
+      "sources": [
+        "src/git.mjs:49-118"
+      ],
+      "evidence": [
+        "logs/probe-r5_git_paths.log"
+      ],
+      "residual": "Real Windows OS symlink NOT_VERIFIED; index 120000 tested."
+    }
+  ],
+  "r5_findings": [
+    {
+      "id": "R5-001",
+      "severity": "BLOCKER",
+      "disposition": "PARTIAL",
+      "title": "Stage/approval/P0 forgery",
+      "sources": [
+        "src/store.mjs:76-330"
+      ],
+      "evidence": [
+        "logs/probe-r6-reviewer.log",
+        "logs/probe-r6-auth.log"
+      ],
+      "residual": "R7-001/R7-002."
+    },
+    {
+      "id": "R5-002",
+      "severity": "BLOCKER",
+      "disposition": "FIXED",
+      "title": "init creation root",
+      "sources": [
+        "src/store.mjs:94-122"
+      ],
+      "evidence": [
+        "logs/npm-test.stdout.log"
+      ]
+    },
+    {
+      "id": "R5-003",
+      "severity": "HIGH",
+      "disposition": "FIXED",
+      "title": "Git trust boundary",
+      "sources": [
+        "src/store.mjs:20-22",
+        "src/store.mjs:156-218"
+      ],
+      "evidence": [
+        "logs/probe-r6-p0.log",
+        "logs/npm-test.stdout.log"
+      ],
+      "residual": "Real Git commit content/remote P0 NOT_VERIFIED."
+    }
+  ],
+  "mandatory_unverified": [
+    "Real operator identity and private-key custody outside Controller/Paseo",
+    "External immutable evidence anchor",
+    "Paseo server-signed reviewer/tester/P0 evidence and true OS independence",
+    "Real remote P0 HMAC over SSH on 5bao/9bao/rusty and third-seat 600s",
+    "Windows SID/ACL/Job Object/TEST_ONLY isolation",
+    "Exact Paseo providerOptions payload live execution (sandbox_mode/approval_policy/opencode permission map)",
+    "Paseo SDK reconnect/restart reconciliation and daemon status reliability",
+    "Soul V2.1 migration and legal deliverable mapping"
+  ],
+  "paseo_sdk": {
+    "status": "PARTIAL",
+    "app_version": "0.15.3",
+    "daemon_version": "0.15.3",
+    "cli_version": "0.15.3",
+    "declared_sdk": "0.15.2",
+    "bundled_sdk": "0.15.3",
+    "daemon_host": "127.0.0.1:6767",
+    "daemon_pid": 9844,
+    "home": "D:\\Paseo-data\\home",
+    "connect_url": "ws://127.0.0.1:6767/ws",
+    "live_agents": [
+      {
+        "provider": "codex",
+        "model": "codex/group/qwen-3.8-flash",
+        "agentId": "ec3595a0-3442-48d9-b430-2b5c4e08edf5",
+        "status": "idle",
+        "lastMessage": "{\"verdict\": \"PASS\", \"summary\": \"sdk smoke ok\", \"findings\": []}",
+        "inputTokens": 15973,
+        "outputTokens": 42
+      },
+      {
+        "provider": "opencode",
+        "model": "opencode/magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+        "agentId": "d715c192-9cb4-483e-a9c0-6443f8cff442",
+        "status": "idle",
+        "lastMessage": "{\"verdict\":\"PASS\",\"summary\":\"sdk smoke ok\",\"findings\":[]}",
+        "inputTokens": 10816,
+        "outputTokens": 76
+      }
+    ],
+    "observations": [
+      "0.15.2 and 0.15.3 both connect with /ws; 0.15.2 basic create/wait works against daemon 0.15.3",
+      "bare ws://127.0.0.1:6767 (without /ws) hangs >20s; PaseoAgentRuntime passes URL verbatim",
+      "agents.list({}) excludes background agents; includeBackground:true returns entries nested under entry.agent",
+      "CLI ls also empty for background agents; agents.ref(id).refresh() retrieves them, current() is null before refresh",
+      "waitForFinish returns status idle and lastMessage; usage is null, lastUsage is available via refresh",
+      "daemon status --json returns DAEMON_REQUEST_TIMEOUT at 1500ms despite reachable daemon",
+      "exact providerOptions payload live execution not attempted to avoid a second paid call per provider"
+    ]
+  },
+  "summary": {
+    "r6_total": 5,
+    "r6_dispositions": {
+      "FIXED": 2,
+      "PARTIAL": 3,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    },
+    "r7_total": 3,
+    "r7_severities": {
+      "BLOCKER": 1,
+      "HIGH": 1,
+      "MEDIUM": 1
+    },
+    "r5_total": 3,
+    "r5_dispositions": {
+      "FIXED": 1,
+      "PARTIAL": 2,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    },
+    "r4_total": 7,
+    "r4_dispositions": {
+      "FIXED": 5,
+      "PARTIAL": 2,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    },
+    "original_total": 10,
+    "original_dispositions": {
+      "FIXED": 2,
+      "PARTIAL": 3,
+      "MITIGATED_FAIL_CLOSED": 3,
+      "NOT_FIXED": 1,
+      "NOT_VERIFIED": 1
+    },
+    "r2_total": 10,
+    "r2_dispositions": {
+      "FIXED": 7,
+      "PARTIAL": 3,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    },
+    "r3_total": 8,
+    "r3_dispositions": {
+      "FIXED": 6,
+      "PARTIAL": 2,
+      "NOT_FIXED": 0,
+      "NOT_VERIFIED": 0
+    }
+  }
+}

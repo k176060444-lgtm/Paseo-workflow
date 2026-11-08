@@ -1,0 +1,29 @@
+{
+  "provider": "codex",
+  "model": "codex/group/qwen-3.8-flash",
+  "title": "p1-sdk-smoke-codex",
+  "created": true,
+  "agentId": "ec3595a0-3442-48d9-b430-2b5c4e08edf5",
+  "ack": true,
+  "status": "idle",
+  "lastMessage": "{\"verdict\": \"PASS\", \"summary\": \"sdk smoke ok\", \"findings\": []}",
+  "usage": null,
+  "listAfter": [],
+  "error": null,
+  "elapsedMs": 6324
+}
+{
+  "provider": "opencode",
+  "model": "opencode/magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+  "title": "p1-sdk-smoke-opencode",
+  "created": true,
+  "agentId": "d715c192-9cb4-483e-a9c0-6443f8cff442",
+  "ack": true,
+  "status": "idle",
+  "lastMessage": "{\"verdict\":\"PASS\",\"summary\":\"sdk smoke ok\",\"findings\":[]}",
+  "usage": null,
+  "listAfter": [],
+  "error": null,
+  "elapsedMs": 10873
+}
+DONE 2

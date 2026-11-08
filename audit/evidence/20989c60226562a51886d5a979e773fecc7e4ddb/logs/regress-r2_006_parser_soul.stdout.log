@@ -1,0 +1,27 @@
+LOCAL-INDENTED=ACCEPTED
+LOCAL-TRAILING=REJECTED: spec_reviewer: final JSON verdict must be terminal; manual reconciliation required
+SOUL-PROVENANCE-ROWS=11
+SOUL-LEGACY-TOKENS=["arbitrator.md","blind_a.md","blind_b.md","blind_c.md","quality_reviewer.md","spec_reviewer.md"]
+R2-006-DELIVERABLE-MAPPING=ABSENT
+✔ R2-006 local Markdown plus bare JSON is accepted (2.0635ms)
+✔ R2-006 local fenced JSON is accepted (0.2005ms)
+✔ R2-006 local report without a final envelope is rejected (0.442ms)
+✔ R2-006 local legacy verdict aliases normalize (0.2021ms)
+✔ R2-006 local PASS with any finding is rejected (0.5562ms)
+✔ R2-006 local APPROVE_WITH_COMMENTS severity gate (0.3565ms)
+✔ R2-006 local invalid verdict/summary/findings are rejected (0.2407ms)
+✔ R2-006 local JSON indentation after Markdown is recorded as a parser edge (0.6872ms)
+✔ R2-006 local trailing prose after JSON is recorded as a parser edge (0.256ms)
+✔ R2-006 local CRLF Markdown plus JSON is accepted (0.3544ms)
+✔ R2-006 blocking-finding detector only matches line-leading severity markers (0.22ms)
+✔ R2-006 Soul files remain byte-identical to provenance claims and unmodified (269.6872ms)
+✔ R2-006 historical Soul migration gap is still explicitly pending (44.7256ms)
+✔ R2-006 no Markdown legal-deliverable mapping exists in Controller output (1.2968ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 420.9927

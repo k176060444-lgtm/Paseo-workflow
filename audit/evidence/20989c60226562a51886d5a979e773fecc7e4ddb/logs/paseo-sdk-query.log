@@ -1,0 +1,3654 @@
+{
+  "codex": {
+    "provider": "codex",
+    "models": [
+      {
+        "provider": "codex",
+        "id": "group/glm-5.3",
+        "label": "GLM-5.3 · routing group",
+        "description": "GLM-5.3 · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "low",
+            "label": "low",
+            "isDefault": false
+          },
+          {
+            "id": "high",
+            "label": "high",
+            "isDefault": true
+          }
+        ],
+        "defaultThinkingOptionId": "high",
+        "metadata": {
+          "model": "group/glm-5.3",
+          "defaultReasoningEffort": "high",
+          "supportedReasoningEfforts": [
+            {
+              "reasoningEffort": "low",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "high",
+              "description": ""
+            }
+          ]
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/deepseek-v4.1-flash",
+        "label": "DeepSeek V4.1 Flash · routing group",
+        "description": "DeepSeek V4.1 Flash · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "low",
+            "label": "low",
+            "isDefault": false
+          },
+          {
+            "id": "high",
+            "label": "high",
+            "isDefault": true
+          },
+          {
+            "id": "max",
+            "label": "max",
+            "isDefault": false
+          }
+        ],
+        "defaultThinkingOptionId": "high",
+        "metadata": {
+          "model": "group/deepseek-v4.1-flash",
+          "defaultReasoningEffort": "high",
+          "supportedReasoningEfforts": [
+            {
+              "reasoningEffort": "low",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "high",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "max",
+              "description": ""
+            }
+          ]
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/minimax-m3.1-flash",
+        "label": "MiniMax-M3.1-Flash · routing group",
+        "description": "MiniMax-M3.1-Flash · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "low",
+            "label": "low",
+            "isDefault": false
+          },
+          {
+            "id": "medium",
+            "label": "medium",
+            "isDefault": true
+          },
+          {
+            "id": "high",
+            "label": "high",
+            "isDefault": false
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh",
+            "isDefault": false
+          },
+          {
+            "id": "max",
+            "label": "max",
+            "isDefault": false
+          }
+        ],
+        "defaultThinkingOptionId": "medium",
+        "metadata": {
+          "model": "group/minimax-m3.1-flash",
+          "defaultReasoningEffort": "medium",
+          "supportedReasoningEfforts": [
+            {
+              "reasoningEffort": "low",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "medium",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "high",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "xhigh",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "max",
+              "description": ""
+            }
+          ]
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/glm-5.3-flash",
+        "label": "GLM-5.3 Flash · routing group",
+        "description": "GLM-5.3 Flash · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "high",
+            "label": "high",
+            "isDefault": true
+          }
+        ],
+        "defaultThinkingOptionId": "high",
+        "metadata": {
+          "model": "group/glm-5.3-flash",
+          "defaultReasoningEffort": "high",
+          "supportedReasoningEfforts": [
+            {
+              "reasoningEffort": "high",
+              "description": ""
+            }
+          ]
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/mimo-v2.6-flash",
+        "label": "MiMo V2.6 Flash · routing group",
+        "description": "MiMo V2.6 Flash · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "none",
+            "label": "none",
+            "description": "Model default reasoning effort",
+            "isDefault": true
+          }
+        ],
+        "defaultThinkingOptionId": "none",
+        "metadata": {
+          "model": "group/mimo-v2.6-flash",
+          "defaultReasoningEffort": "none",
+          "supportedReasoningEfforts": []
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/deepseek-v4-pro",
+        "label": "DeepSeek V4 Pro · routing group",
+        "description": "DeepSeek V4 Pro · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "high",
+            "label": "high",
+            "isDefault": true
+          }
+        ],
+        "defaultThinkingOptionId": "high",
+        "metadata": {
+          "model": "group/deepseek-v4-pro",
+          "defaultReasoningEffort": "high",
+          "supportedReasoningEfforts": [
+            {
+              "reasoningEffort": "high",
+              "description": ""
+            }
+          ]
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/gpt-6-luna",
+        "label": "GPT-6-Luna · routing group",
+        "description": "GPT-6-Luna · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "low",
+            "label": "low",
+            "isDefault": false
+          },
+          {
+            "id": "medium",
+            "label": "medium",
+            "isDefault": true
+          },
+          {
+            "id": "high",
+            "label": "high",
+            "isDefault": false
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh",
+            "isDefault": false
+          },
+          {
+            "id": "max",
+            "label": "max",
+            "isDefault": false
+          }
+        ],
+        "defaultThinkingOptionId": "medium",
+        "metadata": {
+          "model": "group/gpt-6-luna",
+          "defaultReasoningEffort": "medium",
+          "supportedReasoningEfforts": [
+            {
+              "reasoningEffort": "low",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "medium",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "high",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "xhigh",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "max",
+              "description": ""
+            }
+          ]
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/mimo-v2.6-pro",
+        "label": "Xiaomi MiMo-V2.6-Pro · routing group",
+        "description": "Xiaomi MiMo-V2.6-Pro · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "low",
+            "label": "low",
+            "isDefault": false
+          },
+          {
+            "id": "high",
+            "label": "high",
+            "isDefault": true
+          },
+          {
+            "id": "max",
+            "label": "max",
+            "isDefault": false
+          }
+        ],
+        "defaultThinkingOptionId": "high",
+        "metadata": {
+          "model": "group/mimo-v2.6-pro",
+          "defaultReasoningEffort": "high",
+          "supportedReasoningEfforts": [
+            {
+              "reasoningEffort": "low",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "high",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "max",
+              "description": ""
+            }
+          ]
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/qwen-3.8-flash",
+        "label": "Qwen 3.8 Flash · routing group",
+        "description": "Qwen 3.8 Flash · routing group via magpie",
+        "isDefault": true,
+        "thinkingOptions": [
+          {
+            "id": "none",
+            "label": "none",
+            "description": "Model default reasoning effort",
+            "isDefault": true
+          }
+        ],
+        "defaultThinkingOptionId": "none",
+        "metadata": {
+          "model": "group/qwen-3.8-flash",
+          "defaultReasoningEffort": "none",
+          "supportedReasoningEfforts": []
+        }
+      },
+      {
+        "provider": "codex",
+        "id": "group/grok-4.7",
+        "label": "Grok 4.7 · routing group",
+        "description": "Grok 4.7 · routing group via magpie",
+        "isDefault": false,
+        "thinkingOptions": [
+          {
+            "id": "low",
+            "label": "low",
+            "isDefault": false
+          },
+          {
+            "id": "medium",
+            "label": "medium",
+            "isDefault": true
+          },
+          {
+            "id": "high",
+            "label": "high",
+            "isDefault": false
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh",
+            "isDefault": false
+          }
+        ],
+        "defaultThinkingOptionId": "medium",
+        "metadata": {
+          "model": "group/grok-4.7",
+          "defaultReasoningEffort": "medium",
+          "supportedReasoningEfforts": [
+            {
+              "reasoningEffort": "low",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "medium",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "high",
+              "description": ""
+            },
+            {
+              "reasoningEffort": "xhigh",
+              "description": ""
+            }
+          ]
+        }
+      }
+    ],
+    "error": null,
+    "fetchedAt": "2026-11-08T05:53:18.126Z",
+    "requestId": "8cbff6cf-4a56-4478-9a16-ba64df08c617"
+  },
+  "opencode": {
+    "provider": "opencode",
+    "models": [
+      {
+        "provider": "opencode",
+        "id": "minimax/MiniMax-M3",
+        "label": "MiniMax M3",
+        "description": "MiniMax (minimax.io) - minimax",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "thinking",
+            "label": "thinking"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "minimax",
+          "providerName": "MiniMax (minimax.io)",
+          "modelId": "MiniMax-M3",
+          "family": "minimax",
+          "releaseDate": "2026-06-01",
+          "cost": {
+            "input": 0.3,
+            "output": 1.2,
+            "cache": {
+              "read": 0.06,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 524288
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "minimax/MiniMax-M3.1-Flash",
+        "label": "MiniMax-M3.1-Flash",
+        "description": "MiniMax (minimax.io) - minimax",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "minimax",
+          "providerName": "MiniMax (minimax.io)",
+          "modelId": "MiniMax-M3.1-Flash",
+          "family": "minimax",
+          "releaseDate": "2026-10-19",
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cache": {
+              "read": 0.015,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 524288
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "minimax/MiniMax-M3.1-Flash-Preview",
+        "label": "MiniMax M3.1 Flash",
+        "description": "MiniMax (minimax.io) -",
+        "metadata": {
+          "providerId": "minimax",
+          "providerName": "MiniMax (minimax.io)",
+          "modelId": "MiniMax-M3.1-Flash-Preview",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "limit": {
+            "context": 0,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/gemini-3.8-flash",
+        "label": "group/gemini-3.8-flash",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/gemini-3.8-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "limit": {
+            "context": 0,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/glm-5.3",
+        "label": "GLM-5.3 · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/glm-5.3",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/glm-5.3-flash",
+        "label": "GLM-5.3 Flash · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "high",
+            "label": "high"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/glm-5.3-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/deepseek-v4.1-flash",
+        "label": "DeepSeek V4.1 Flash · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/deepseek-v4.1-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 384000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/deepseek-v4-pro",
+        "label": "DeepSeek V4 Pro · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "high",
+            "label": "high"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/deepseek-v4-pro",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.66,
+            "output": 1.98,
+            "cache": {
+              "read": 0.022,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 384000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/minimax-m3.1-flash",
+        "label": "MiniMax-M3.1-Flash · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "thinking",
+            "label": "thinking"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/minimax-m3.1-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cache": {
+              "read": 0.015,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 524288
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/mimo-v2.6-flash",
+        "label": "MiMo V2.6 Flash · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/mimo-v2.6-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 200000,
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/mimo-v2.6-pro",
+        "label": "Xiaomi MiMo-V2.6-Pro · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/mimo-v2.6-pro",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.435,
+            "output": 0.87,
+            "cache": {
+              "read": 0.0036,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/qwen-3.8-flash",
+        "label": "Qwen 3.8 Flash · routing group",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/qwen-3.8-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/gpt-6-luna",
+        "label": "GPT-6-Luna · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/gpt-6-luna",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.1,
+            "output": 0.5,
+            "cache": {
+              "read": 0.01,
+              "write": 0.125
+            }
+          },
+          "contextWindowMaxTokens": 272000,
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/grok/grok-4.7",
+        "label": "Grok 4.7 · Grok",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "grok/grok-4.7",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 2,
+            "output": 6,
+            "cache": {
+              "read": 0.5,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 256000,
+          "limit": {
+            "context": 256000,
+            "output": 256000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/antigravity/gemini-4-argon",
+        "label": "antigravity/gemini-4-argon",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "antigravity/gemini-4-argon",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "limit": {
+            "context": 0,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/grok-4.7",
+        "label": "Grok 4.7 · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/grok-4.7",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 2,
+            "output": 6,
+            "cache": {
+              "read": 0.5,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 500000,
+          "limit": {
+            "context": 500000,
+            "output": 500000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/gpt-6.1-sol",
+        "label": "gpt-sol · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          },
+          {
+            "id": "ultra",
+            "label": "ultra"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/gpt-6.1-sol",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 2,
+            "output": 10,
+            "cache": {
+              "read": 0.1,
+              "write": 2.5
+            }
+          },
+          "contextWindowMaxTokens": 500000,
+          "limit": {
+            "context": 500000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/gpt-6-astra",
+        "label": "gpt-astra · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          },
+          {
+            "id": "ultra",
+            "label": "ultra"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/gpt-6-astra",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 10,
+            "output": 50,
+            "cache": {
+              "read": 1,
+              "write": 12.5
+            }
+          },
+          "contextWindowMaxTokens": 272000,
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/gpt-6.1-terra",
+        "label": "gpt-terra · routing group",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          },
+          {
+            "id": "ultra",
+            "label": "ultra"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/gpt-6.1-terra",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 1,
+            "output": 5,
+            "cache": {
+              "read": 0.05,
+              "write": 1.25
+            }
+          },
+          "contextWindowMaxTokens": 500000,
+          "limit": {
+            "context": 500000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/group/qwen-3.8-max",
+        "label": "qwen-3.8-max · routing group",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "group/qwen-3.8-max",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 131072
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/deepseek/deepseek-flash",
+        "label": "DeepSeek-V4.1-Flash · deepseek",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "deepseek/deepseek-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cache": {
+              "read": 0.003,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 393216
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/deepseek/deepseek-v4-pro",
+        "label": "DeepSeek-V4-Pro · deepseek",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "deepseek/deepseek-v4-pro",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.66,
+            "output": 1.98,
+            "cache": {
+              "read": 0.022,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 393216
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/tokenfuture-si/cn:deepseek-v4.1-flash",
+        "label": "cn:deepseek-v4.1-flash · tokenfuture.si",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "tokenfuture-si/cn:deepseek-v4.1-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "limit": {
+            "context": 0,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/openrouter/stealth/crouton-alpha",
+        "label": "Crouton Alpha · OpenRouter",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "minimal",
+            "label": "minimal"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "openrouter/stealth/crouton-alpha",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 943718
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/bivia/bivia",
+        "label": "bivia · bivia",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "bivia/bivia",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "limit": {
+            "context": 0,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/codex/gpt-6.1-sol",
+        "label": "GPT-6.1-Sol · Codex",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          },
+          {
+            "id": "ultra",
+            "label": "ultra"
+          },
+          {
+            "id": "low-fast",
+            "label": "low-fast"
+          },
+          {
+            "id": "medium-fast",
+            "label": "medium-fast"
+          },
+          {
+            "id": "high-fast",
+            "label": "high-fast"
+          },
+          {
+            "id": "xhigh-fast",
+            "label": "xhigh-fast"
+          },
+          {
+            "id": "max-fast",
+            "label": "max-fast"
+          },
+          {
+            "id": "ultra-fast",
+            "label": "ultra-fast"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "codex/gpt-6.1-sol",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 2,
+            "output": 10,
+            "cache": {
+              "read": 0.1,
+              "write": 2.5
+            }
+          },
+          "contextWindowMaxTokens": 500000,
+          "limit": {
+            "context": 500000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/codex/gpt-6-astra",
+        "label": "GPT-6-Astra · Codex",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          },
+          {
+            "id": "ultra",
+            "label": "ultra"
+          },
+          {
+            "id": "low-fast",
+            "label": "low-fast"
+          },
+          {
+            "id": "medium-fast",
+            "label": "medium-fast"
+          },
+          {
+            "id": "high-fast",
+            "label": "high-fast"
+          },
+          {
+            "id": "xhigh-fast",
+            "label": "xhigh-fast"
+          },
+          {
+            "id": "max-fast",
+            "label": "max-fast"
+          },
+          {
+            "id": "ultra-fast",
+            "label": "ultra-fast"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "codex/gpt-6-astra",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 10,
+            "output": 50,
+            "cache": {
+              "read": 1,
+              "write": 12.5
+            }
+          },
+          "contextWindowMaxTokens": 272000,
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/codex/gpt-6.1-terra",
+        "label": "GPT-6.1 Terra · Codex",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          },
+          {
+            "id": "ultra",
+            "label": "ultra"
+          },
+          {
+            "id": "low-fast",
+            "label": "low-fast"
+          },
+          {
+            "id": "medium-fast",
+            "label": "medium-fast"
+          },
+          {
+            "id": "high-fast",
+            "label": "high-fast"
+          },
+          {
+            "id": "xhigh-fast",
+            "label": "xhigh-fast"
+          },
+          {
+            "id": "max-fast",
+            "label": "max-fast"
+          },
+          {
+            "id": "ultra-fast",
+            "label": "ultra-fast"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "codex/gpt-6.1-terra",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 1,
+            "output": 5,
+            "cache": {
+              "read": 0.05,
+              "write": 1.25
+            }
+          },
+          "contextWindowMaxTokens": 500000,
+          "limit": {
+            "context": 500000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/codex/gpt-6-luna",
+        "label": "GPT-6-Luna · Codex",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          },
+          {
+            "id": "low-fast",
+            "label": "low-fast"
+          },
+          {
+            "id": "medium-fast",
+            "label": "medium-fast"
+          },
+          {
+            "id": "high-fast",
+            "label": "high-fast"
+          },
+          {
+            "id": "xhigh-fast",
+            "label": "xhigh-fast"
+          },
+          {
+            "id": "max-fast",
+            "label": "max-fast"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "codex/gpt-6-luna",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.1,
+            "output": 0.5,
+            "cache": {
+              "read": 0.01,
+              "write": 0.125
+            }
+          },
+          "contextWindowMaxTokens": 272000,
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/grok/grok-4.7@500k",
+        "label": "Grok 4.7 @ 500k · Grok",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "grok/grok-4.7@500k",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 2,
+            "output": 6,
+            "cache": {
+              "read": 0.5,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 500000,
+          "limit": {
+            "context": 500000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/zcode/GLM-5.3-Flash",
+        "label": "GLM-5.3-Flash · ZCode",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "zcode/GLM-5.3-Flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.11952,
+            "output": 0.41831,
+            "cache": {
+              "read": 0.03436,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy/deepseek-v4.1-flash",
+        "label": "DeepSeek-V4.1-Flash · WorkBuddy",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy/deepseek-v4.1-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy/glm-5.3",
+        "label": "GLM-5.3 · WorkBuddy",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy/glm-5.3",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 1.19516,
+            "output": 4.18306,
+            "cache": {
+              "read": 0.29879,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 64000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy/glm-5.3-flash",
+        "label": "GLM-5.3-Flash · WorkBuddy",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy/glm-5.3-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.11952,
+            "output": 0.41831,
+            "cache": {
+              "read": 0.03436,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 131072
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy/minimax-m3.1-flash",
+        "label": "MiniMax-M3.1-Flash · WorkBuddy",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "thinking",
+            "label": "thinking"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy/minimax-m3.1-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cache": {
+              "read": 0.015,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy/deepseek-v4-pro",
+        "label": "DeepSeek-V4-Pro · WorkBuddy",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy/deepseek-v4-pro",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.66,
+            "output": 1.98,
+            "cache": {
+              "read": 0.022,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy/mimo-v2.6-pro",
+        "label": "Xiaomi MiMo-V2.6-Pro · WorkBuddy",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy/mimo-v2.6-pro",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.435,
+            "output": 0.87,
+            "cache": {
+              "read": 0.0036,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy-ai/glm-5.3",
+        "label": "GLM-5.3 · WorkBuddy AI",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy-ai/glm-5.3",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 1.19516,
+            "output": 4.18306,
+            "cache": {
+              "read": 0.29879,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 48000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy-ai/deepseek-v4.1-flash-sg",
+        "label": "Deepseek-V4.1-Flash · WorkBuddy AI",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy-ai/deepseek-v4.1-flash-sg",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy-ai/glm-5.3-flash",
+        "label": "GLM-5.3-Flash · WorkBuddy AI",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy-ai/glm-5.3-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.11952,
+            "output": 0.41831,
+            "cache": {
+              "read": 0.03436,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 32000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/workbuddy-ai/minimax-m3.1-flash",
+        "label": "MiniMax-M3.1-Flash · WorkBuddy AI",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "thinking",
+            "label": "thinking"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "workbuddy-ai/minimax-m3.1-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cache": {
+              "read": 0.015,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 128000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qoder/lmodel",
+        "label": "QoDuck · Qoder",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qoder/lmodel",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qoder-cn/qfmodel",
+        "label": "Qwen3.8-Flash · Qoder CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qoder-cn/qfmodel",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qoder-cn/dmodel",
+        "label": "DeepSeek-V4-Pro · Qoder CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qoder-cn/dmodel",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qoder-cn/dfmodel",
+        "label": "DeepSeek-Flash · Qoder CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qoder-cn/dfmodel",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qoder-cn/gmodel",
+        "label": "GLM-5.3 · Qoder CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qoder-cn/gmodel",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qoder-cn/gfmodel",
+        "label": "GLM-5.3-Flash · Qoder CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qoder-cn/gfmodel",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qoder-cn/mmodel",
+        "label": "MiniMax-M3.1-Flash · Qoder CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qoder-cn/mmodel",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/codearts/glm-5.3",
+        "label": "GLM-5.3 · CodeArts",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "codearts/glm-5.3",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 1.19516,
+            "output": 4.18306,
+            "cache": {
+              "read": 0.29879,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/codearts/glm-5.3-flash",
+        "label": "GLM-5.3-Flash · CodeArts",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "codearts/glm-5.3-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.11952,
+            "output": 0.41831,
+            "cache": {
+              "read": 0.03436,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/codearts/deepseek-v4.1-flash-1017",
+        "label": "DeepSeek-V4.1-Flash-1017 · CodeArts",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "codearts/deepseek-v4.1-flash-1017",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cache": {
+              "read": 0.003,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/minimax-code/MiniMax-M3.1-Flash-Preview",
+        "label": "MiniMax-M3.1-Flash-Preview · MiniMax Code",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "thinking",
+            "label": "thinking"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "minimax-code/MiniMax-M3.1-Flash-Preview",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 512000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/minimax-code/MiniMax-M3.1-Flash",
+        "label": "M3.1-Flash · MiniMax Code",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "none",
+            "label": "none"
+          },
+          {
+            "id": "thinking",
+            "label": "thinking"
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "minimax-code/MiniMax-M3.1-Flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cache": {
+              "read": 0.015,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1048576,
+          "limit": {
+            "context": 1048576,
+            "output": 524288
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/trae-cn/glm-5.3-flash",
+        "label": "GLM-5.3-Flash · Trae CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "trae-cn/glm-5.3-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.11952,
+            "output": 0.41831,
+            "cache": {
+              "read": 0.03436,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 116000,
+          "limit": {
+            "context": 116000,
+            "output": 16000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/trae-cn/glm-5.3",
+        "label": "GLM-5.3 · Trae CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "trae-cn/glm-5.3",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 1.19516,
+            "output": 4.18306,
+            "cache": {
+              "read": 0.29879,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 116000,
+          "limit": {
+            "context": 116000,
+            "output": 16000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/trae-cn/DeepSeek-V4-Pro",
+        "label": "DeepSeek-V4-Pro · Trae CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "trae-cn/DeepSeek-V4-Pro",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.66,
+            "output": 1.98,
+            "cache": {
+              "read": 0.022,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 116000,
+          "limit": {
+            "context": 116000,
+            "output": 16000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/trae-cn/mimo-v2.6-flash",
+        "label": "MiMo-V2.6-Flash · Trae CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "trae-cn/mimo-v2.6-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.14,
+            "output": 0.28,
+            "cache": {
+              "read": 0.0028,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 200000,
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/trae-cn/mimo-v2.6-pro",
+        "label": "MiMo-V2.6-Pro · Trae CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "trae-cn/mimo-v2.6-pro",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.435,
+            "output": 0.87,
+            "cache": {
+              "read": 0.0036,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 200000,
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/trae-cn/minimax-m3.1-flash",
+        "label": "MiniMax-M3.1-Flash · Trae CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "trae-cn/minimax-m3.1-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cache": {
+              "read": 0.015,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 116000,
+          "limit": {
+            "context": 116000,
+            "output": 16000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/trae-cn/qwen3.8-flash",
+        "label": "Qwen3.8-Flash · Trae CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "trae-cn/qwen3.8-flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0.15,
+            "output": 0.47,
+            "cache": {
+              "read": 0.016,
+              "write": 0.2
+            }
+          },
+          "contextWindowMaxTokens": 200000,
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/trae-cn/deepseek-v4.1-flash-max",
+        "label": "DeepSeek-V4.1-Flash (Max) · Trae CN",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "xhigh",
+            "label": "xhigh"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "trae-cn/deepseek-v4.1-flash-max",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 64000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qwenwork/flash",
+        "label": "标准 · QwenWork",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qwenwork/flash",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 0
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/qwenwork/qwen3.8-max-preview",
+        "label": "Qwen3.8-Max · QwenWork",
+        "description": "magpie -",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "qwenwork/qwen3.8-max-preview",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 1000000,
+          "limit": {
+            "context": 1000000,
+            "output": 131072
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/opencode-zen-free/deepseek-v4.1-flash-free",
+        "label": "DeepSeek V4.1 Flash Free · OpenCode Zen Free",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "opencode-zen-free/deepseek-v4.1-flash-free",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 258624,
+          "limit": {
+            "context": 258624,
+            "output": 32000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/opencode-zen-free/glm-5.3-flash-free",
+        "label": "GLM-5.3-Flash Free · OpenCode Zen Free",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          },
+          {
+            "id": "max",
+            "label": "max"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "opencode-zen-free/glm-5.3-flash-free",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 200000,
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        }
+      },
+      {
+        "provider": "opencode",
+        "id": "magpie/opencode-zen-free/mimo-v2.6-flash-free",
+        "label": "MiMo-V2.6-Flash Free · OpenCode Zen Free",
+        "description": "magpie -",
+        "thinkingOptions": [
+          {
+            "id": "default",
+            "label": "Default",
+            "isDefault": true
+          },
+          {
+            "id": "low",
+            "label": "low"
+          },
+          {
+            "id": "medium",
+            "label": "medium"
+          },
+          {
+            "id": "high",
+            "label": "high"
+          }
+        ],
+        "defaultThinkingOptionId": "default",
+        "metadata": {
+          "providerId": "magpie",
+          "providerName": "magpie",
+          "modelId": "opencode-zen-free/mimo-v2.6-flash-free",
+          "family": "",
+          "releaseDate": "",
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          },
+          "contextWindowMaxTokens": 200000,
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          }
+        }
+      }
+    ],
+    "error": null,
+    "fetchedAt": "2026-11-08T05:53:21.371Z",
+    "requestId": "46b7585a-40e5-4c19-9a83-1fddf199bc7d"
+  },
+  "config": {
+    "requestId": "9580c70c-f847-4d4a-a7c9-fd0cae5b2882",
+    "config": {
+      "relay": {
+        "enabled": false,
+        "requireProtectedSecurity": false
+      },
+      "mcp": {
+        "enabled": true,
+        "injectIntoAgents": false
+      },
+      "hostnames": [],
+      "cors": {
+        "allowedOrigins": [
+          "https://app.paseo.sh"
+        ]
+      },
+      "trustedProxies": [
+        "loopback"
+      ],
+      "git": {
+        "maxProcessesPerSecond": 64,
+        "maxProcessConcurrency": 8
+      },
+      "app": {
+        "baseUrl": "https://app.paseo.sh"
+      },
+      "usage": {
+        "enabled": true
+      },
+      "browserTools": {
+        "enabled": false
+      },
+      "providers": {},
+      "metadataGeneration": {
+        "providers": []
+      },
+      "autoArchiveAfterMerge": false,
+      "enableTerminalAgentHooks": false,
+      "idleRuntimeCleanup": true,
+      "resumeOnStartup": false,
+      "resumePrompt": "Resume working.",
+      "appendSystemPrompt": "",
+      "skills": {},
+      "pluginsEnabled": false,
+      "plugins": {},
+      "features": {
+        "dictation": {
+          "enabled": false,
+          "stt": {
+            "provider": "local"
+          }
+        },
+        "voiceMode": {
+          "enabled": false,
+          "stt": {
+            "provider": "local"
+          },
+          "tts": {
+            "provider": "local"
+          }
+        }
+      },
+      "envOverrides": {}
+    }
+  },
+  "workspaces": {
+    "requestId": "43541bb9-52ad-4ebf-b67f-7e093b554b36",
+    "entries": [
+      {
+        "id": "wks_46295f9facffe0b2",
+        "projectId": "prj_1d18a4341c06243c",
+        "projectDisplayName": "test-workspace",
+        "projectCustomName": null,
+        "projectCustomIconRevision": null,
+        "projectRootPath": "D:\\Paseo-data\\test-workspace",
+        "workspaceDirectory": "D:\\Paseo-data\\test-workspace",
+        "setupStatus": null,
+        "projectKind": "non_git",
+        "workspaceKind": "directory",
+        "name": "test-workspace",
+        "title": null,
+        "pinnedAt": null,
+        "background": false,
+        "archivingAt": null,
+        "status": "done",
+        "statusEnteredAt": "2026-11-08T01:14:04.447Z",
+        "activityAt": null,
+        "createdAt": "2026-11-08T01:14:04.447Z",
+        "diffStat": null,
+        "scripts": [],
+        "project": {
+          "projectKey": "prj_1d18a4341c06243c",
+          "projectName": "test-workspace",
+          "workspaceName": "test-workspace",
+          "checkout": {
+            "cwd": "D:\\Paseo-data\\test-workspace",
+            "isGit": false,
+            "currentBranch": null,
+            "remoteUrl": null,
+            "worktreeRoot": null,
+            "isPaseoOwnedWorktree": false,
+            "mainRepoRoot": null
+          }
+        },
+        "lastUserMessageAt": null
+      }
+    ],
+    "emptyProjects": [],
+    "pageInfo": {
+      "nextCursor": null,
+      "prevCursor": null,
+      "hasMore": false
+    }
+  }
+}

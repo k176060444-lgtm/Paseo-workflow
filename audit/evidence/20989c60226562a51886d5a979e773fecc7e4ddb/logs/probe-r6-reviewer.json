@@ -1,0 +1,22 @@
+[
+  {
+    "name": "R6-002 A_REVIEW_PASS without evidence rejected",
+    "result": "CONFIRMED",
+    "detail": "two independent Reviewer seats required for exact Commit"
+  },
+  {
+    "name": "R6-002 fabricated dispatch+artifacts pass A_REVIEW_PASS",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R6-002 duplicate agentId rejected",
+    "result": "CONFIRMED",
+    "detail": "Reviewer agent identity missing or reused"
+  },
+  {
+    "name": "R6-002 fabricated dispatch+artifacts pass B_REVIEW_PASS",
+    "result": "CONFIRMED",
+    "detail": ""
+  }
+]

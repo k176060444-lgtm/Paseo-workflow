@@ -1,0 +1,82 @@
+[
+  {
+    "name": "R4-005 remote final_json FAIL then PASS returns None",
+    "result": "CONFIRMED",
+    "detail": "None"
+  },
+  {
+    "name": "R4-005 remote final_json PASS then FAIL returns None",
+    "result": "CONFIRMED",
+    "detail": "None"
+  },
+  {
+    "name": "R4-005 remote final_json two fenced verdicts returns None",
+    "result": "CONFIRMED",
+    "detail": "None"
+  },
+  {
+    "name": "R4-005 remote final_json single bare FAIL accepted",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'FAIL', 'summary': 'real blocker', 'findings': ['BLOCKER: breaks gate']}"
+  },
+  {
+    "name": "R4-005 remote final_json single fenced FAIL accepted",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'FAIL', 'summary': 'real blocker', 'findings': ['BLOCKER: breaks gate']}"
+  },
+  {
+    "name": "R4-005 remote final_json trailing prose returns None",
+    "result": "CONFIRMED",
+    "detail": "None"
+  },
+  {
+    "name": "R4-005 remote final_json truncated returns None",
+    "result": "CONFIRMED",
+    "detail": "None"
+  },
+  {
+    "name": "R4-005 remote parse_output JSONL FAIL then PASS -> QUESTION (not PASS)",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'QUESTION', 'summary': 'Unverified OpenCode final JSON output', 'findings': ['Cannot parse structured final report from raw event stream; human reconciliation required."
+  },
+  {
+    "name": "R4-005 remote parse_output two JSONL parts FAIL/PASS -> QUESTION",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'QUESTION', 'summary': 'Unverified OpenCode final JSON output', 'findings': ['Cannot parse structured final report from raw event stream; human reconciliation required."
+  },
+  {
+    "name": "R4-005 remote parse_output JSONL single fenced FAIL -> FAIL",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'FAIL', 'summary': 'real blocker', 'findings': ['BLOCKER: breaks gate']}"
+  },
+  {
+    "name": "R4-005 remote parse_output JSONL indented/pretty FAIL -> FAIL",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'FAIL', 'summary': 'real blocker', 'findings': ['BLOCKER: breaks gate']}"
+  },
+  {
+    "name": "R4-005 remote parse_output JSONL trailing prose -> QUESTION",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'QUESTION', 'summary': 'Unverified OpenCode final JSON output', 'findings': ['Cannot parse structured final report from raw event stream; human reconciliation required."
+  },
+  {
+    "name": "R4-005 remote parse_output JSONL truncated -> QUESTION",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'QUESTION', 'summary': 'Unverified OpenCode final JSON output', 'findings': ['Cannot parse structured final report from raw event stream; human reconciliation required."
+  },
+  {
+    "name": "R4-005 remote parse_output PASS+BLOCKER -> FAIL",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'FAIL', 'summary': 'x', 'findings': ['BLOCKER: x']}"
+  },
+  {
+    "name": "R4-005 remote parse_output APPROVE_WITH_COMMENTS+LOW accepted",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'APPROVE_WITH_COMMENTS', 'summary': 'x', 'findings': ['LOW: nit']}"
+  },
+  {
+    "name": "R4-005 remote parse_output APPROVE_WITH_COMMENTS+HIGH -> FAIL",
+    "result": "CONFIRMED",
+    "detail": "{'verdict': 'FAIL', 'summary': 'x', 'findings': ['HIGH: x']}"
+  }
+]

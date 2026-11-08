@@ -1,0 +1,77 @@
+[
+  {
+    "name": "R6-003 valid Ed25519 proof accepted",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R6-003 rejects wrong task",
+    "result": "CONFIRMED",
+    "detail": "human approval signed statement mismatch"
+  },
+  {
+    "name": "R6-003 rejects wrong gate",
+    "result": "CONFIRMED",
+    "detail": "human approval signed statement mismatch"
+  },
+  {
+    "name": "R6-003 rejects wrong digest",
+    "result": "CONFIRMED",
+    "detail": "human approval signed statement mismatch"
+  },
+  {
+    "name": "R6-003 rejects wrong actor",
+    "result": "CONFIRMED",
+    "detail": "human approval signed statement mismatch"
+  },
+  {
+    "name": "R6-003 rejects wrong receipt",
+    "result": "CONFIRMED",
+    "detail": "human approval signed statement mismatch"
+  },
+  {
+    "name": "R6-003 rejects tampered signature",
+    "result": "CONFIRMED",
+    "detail": "invalid independent human approval signature"
+  },
+  {
+    "name": "R6-003 rejects stale 40-minute proof",
+    "result": "CONFIRMED",
+    "detail": "human approval signature stale or from the future"
+  },
+  {
+    "name": "R6-003 rejects future 5-minute proof",
+    "result": "CONFIRMED",
+    "detail": "human approval signature stale or from the future"
+  },
+  {
+    "name": "R6-003 rejects trust-root SHA mismatch at Store construction",
+    "result": "CONFIRMED",
+    "detail": "trust roots manifest digest mismatch"
+  },
+  {
+    "name": "R6-003 verifier accepts same nonce twice (no nonce ledger)",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R6-001 unsigned self-consistent approval cannot pass Gate 0.1",
+    "result": "CONFIRMED",
+    "detail": "human approval signature envelope missing"
+  },
+  {
+    "name": "R6-003 Controller.approve with valid Ed25519 proof advances Gate 0.1",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R6-003 Gate 5.9 proof binds final-compliance SHA",
+    "result": "CONFIRMED",
+    "detail": ""
+  },
+  {
+    "name": "R6-003 Gate 5.9 proof rejects substituted evidence SHA",
+    "result": "CONFIRMED",
+    "detail": "Gate 5.9 signature must bind final compliance evidence SHA-256"
+  }
+]

@@ -1,0 +1,59 @@
+Paseo-workflow S0-R6 第七轮独立审计 — 测试结果
+被审 Commit: 20989c60226562a51886d5a979e773fecc7e4ddb
+基线 Commit: be0bc89dc4813cf1152399128a3caa34a12f4d70
+实际父提交: b20e113c595f4dacc4ce042d76c226d714396c60
+Tree: 5475fe904e2e5d6a71e45db8b8663215e7c7a372
+
+环境: Windows 10 (21bao); Node v26.6.0; npm 11.18.0; Python 3.11.15; Git 2.54.0.windows.1; Codex 0.166.0; OpenCode 1.19.3; Paseo App/Daemon/CLI 0.15.3; SDK 0.15.2 (bundled 0.15.3)
+注意: 探针 CONFIRMED 表示断言成立；缺陷复现探针的 CONFIRMED 不代表产品通过。
+
+批次                                  用例  PASS  FAIL  ERR  SKIP  exit
+npm-check                            0     0     0    0     0     0
+npm-test                            70    69     0    0     1     0
+python-full                         11    11     0    0     0     0
+probe-r6-reviewer                    4     4     0    0     0     0
+probe-r6-auth                       15    15     0    0     0     0
+probe-r6-p0                         15    15     0    0     0     0
+probe-r5-parser-local               11    11     0    0     0     0
+probe-r5-parser-remote              16    16     0    0     0     0
+probe-r5-git-paths                  25    25     0    0     0     0
+regress-r2-009                      50    50     0    0     0     0
+regress-r3-004-005                   5     5     0    0     0     0
+regress-r2-006-soul                 14    14     0    0     0     0
+paseo-sdk-live                       2     2     0    0     0     0
+合计                                 238   237     0    0     1
+
+说明：paseo-sdk-live 是 2 次真实本机 Paseo Agent 调用（codex/opencode 各 1 次短 Prompt），只证明 SDK/Agent 接口可用，不代表真实 P1 流程放行。
+
+逐批命令、cwd、日志：
+- npm-check: npm run check | cwd=offline-copy | exit=0 | log=logs/npm-check.stdout.log
+- npm-test: npm test (node --test tests/*.test.mjs) | cwd=offline-copy | exit=0 | log=logs/npm-test.stdout.log
+- python-full: python -B -m unittest discover -s remote/tests -p 'test*.py' -v | cwd=offline-copy | exit=0 | log=logs/python-full.stderr.log
+- probe-r6-reviewer: node probes/r6_reviewer_fake2.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r6-reviewer.json
+- probe-r6-auth: node probes/r6_auth_probe.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r6-auth.json
+- probe-r6-p0: node probes/r6_p0_verify.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r6-p0.json
+- probe-r5-parser-local: node probes/r5_parser.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-parser-local.json
+- probe-r5-parser-remote: python probes/r5_parser_remote.py | cwd=offline-copy | exit=0 | log=logs/probe-r5-parser-remote.json
+- probe-r5-git-paths: node probes/r5_git_paths.mjs | cwd=offline-copy | exit=0 | log=logs/probe-r5-git-paths.json
+- regress-r2-009: node --test probes/r2_009_paths.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_009_paths.stdout.log
+- regress-r3-004-005: node --test probes/r3_004_005_env.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r3_004_005_env.stdout.log
+- regress-r2-006-soul: node --test probes/r2_006_parser_soul.test.mjs | cwd=offline-copy | exit=0 | log=logs/regress-r2_006_parser_soul.stdout.log
+- paseo-sdk-live: node paseo/sdk/live_smoke.mjs | cwd=paseo/sdk | exit=0 | log=logs/paseo-live-smoke.log
+
+Python 原始套件 stderr（完整）：
+test_explicit_env_allowlist_only_passes_whitelisted_names (test_r2_runner.R2RemoteRunnerTests.test_explicit_env_allowlist_only_passes_whitelisted_names) ... ok
+test_legacy_verdict_and_markdown_final_envelope (test_r2_runner.R2RemoteRunnerTests.test_legacy_verdict_and_markdown_final_envelope) ... ok
+test_remote_git_helper_excludes_unrelated_secret_environment (test_r2_runner.R2RemoteRunnerTests.test_remote_git_helper_excludes_unrelated_secret_environment) ... ok
+test_indented_final_json_and_no_false_terminal_verdict (test_r3_runner.R3RemoteRunnerTests.test_indented_final_json_and_no_false_terminal_verdict) ... ok
+test_low_comments_match_local_advisory_verdict_contract (test_r3_runner.R3RemoteRunnerTests.test_low_comments_match_local_advisory_verdict_contract) ... ok
+test_submit_process_env_does_not_inherit_gateway_secret (test_r3_runner.R3RemoteRunnerTests.test_submit_process_env_does_not_inherit_gateway_secret) ... ok
+test_fail_then_pass_not_accepted (test_r4_parser.R4RemoteParserTests.test_fail_then_pass_not_accepted) ... ok
+test_multiple_fenced_verdicts_fail_closed (test_r4_parser.R4RemoteParserTests.test_multiple_fenced_verdicts_fail_closed) ... ok
+test_regular_jsonl_with_one_extracted_report (test_r4_parser.R4RemoteParserTests.test_regular_jsonl_with_one_extracted_report) ... ok
+test_single_pretty_or_indented_final_verdict (test_r4_parser.R4RemoteParserTests.test_single_pretty_or_indented_final_verdict) ... ok
+test_native_harness_durable_job_and_hmac (test_runner.RemoteRunnerTests.test_native_harness_durable_job_and_hmac) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.855s
+
+OK

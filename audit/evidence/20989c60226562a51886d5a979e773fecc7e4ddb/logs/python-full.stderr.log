@@ -1,0 +1,16 @@
+test_explicit_env_allowlist_only_passes_whitelisted_names (test_r2_runner.R2RemoteRunnerTests.test_explicit_env_allowlist_only_passes_whitelisted_names) ... ok
+test_legacy_verdict_and_markdown_final_envelope (test_r2_runner.R2RemoteRunnerTests.test_legacy_verdict_and_markdown_final_envelope) ... ok
+test_remote_git_helper_excludes_unrelated_secret_environment (test_r2_runner.R2RemoteRunnerTests.test_remote_git_helper_excludes_unrelated_secret_environment) ... ok
+test_indented_final_json_and_no_false_terminal_verdict (test_r3_runner.R3RemoteRunnerTests.test_indented_final_json_and_no_false_terminal_verdict) ... ok
+test_low_comments_match_local_advisory_verdict_contract (test_r3_runner.R3RemoteRunnerTests.test_low_comments_match_local_advisory_verdict_contract) ... ok
+test_submit_process_env_does_not_inherit_gateway_secret (test_r3_runner.R3RemoteRunnerTests.test_submit_process_env_does_not_inherit_gateway_secret) ... ok
+test_fail_then_pass_not_accepted (test_r4_parser.R4RemoteParserTests.test_fail_then_pass_not_accepted) ... ok
+test_multiple_fenced_verdicts_fail_closed (test_r4_parser.R4RemoteParserTests.test_multiple_fenced_verdicts_fail_closed) ... ok
+test_regular_jsonl_with_one_extracted_report (test_r4_parser.R4RemoteParserTests.test_regular_jsonl_with_one_extracted_report) ... ok
+test_single_pretty_or_indented_final_verdict (test_r4_parser.R4RemoteParserTests.test_single_pretty_or_indented_final_verdict) ... ok
+test_native_harness_durable_job_and_hmac (test_runner.RemoteRunnerTests.test_native_harness_durable_job_and_hmac) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.855s
+
+OK

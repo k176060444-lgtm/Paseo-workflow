@@ -1,0 +1,16 @@
+CONFIRMED R6-004 P0 valid HMAC/job/commit/physicalId/model passes 
+CONFIRMED R6-004 P0 tampered MAC rejected invalid node attestation MAC
+CONFIRMED R6-004 P0 rejects wrong jobId P0 job/node/commit mismatch
+CONFIRMED R6-004 P0 rejects wrong commit P0 job/node/commit mismatch
+CONFIRMED R6-004 P0 rejects wrong physicalId P0 signed physical inventory mismatch
+CONFIRMED R6-004 P0 rejects wrong model P0 provider/model mismatch
+CONFIRMED R6-004 P0 rejects wrong harness P0 provider/model mismatch
+CONFIRMED R6-004 P0 rejects exitCode remote harness failed or changed read-only worktree
+CONFIRMED R6-004 P0 rejects dirty worktree remote harness failed or changed read-only worktree
+CONFIRMED R6-004 P0 rejects missing stdout hash missing remote original log hash
+CONFIRMED R6-004 P0 rejects PASS with findings P0 contradictory PASS/findings
+CONFIRMED R6-004 P0 rejects APPROVE_WITH_COMMENTS HIGH P0 comments have blocking or unclassified severity
+CONFIRMED R6-004 P0 distinct inventory accepted 
+CONFIRMED R6-004 P0 duplicate physicalId rejected P0 nodes have duplicate physical IDs
+CONFIRMED R6-004 P0 duplicate key content rejected duplicate P0 attestation key content
+TOTAL 15 CONFIRMED 15
