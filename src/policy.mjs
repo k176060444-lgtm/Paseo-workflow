@@ -65,7 +65,7 @@ export function freezeConfig(configFile, intentFile) {
   assert(intent.trim().length > 10, 'empty task intent');
   const frozen = { schema: 1, intent, intentSha256:sha256(intent), roles:resolvedRoles, souls,
     tests: config.tests, project: {repo:path.resolve(root, config.project.repo), baseRef:config.project.baseRef ?? 'HEAD'},
-    p0: config.p0 ?? {}, policy: {maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS},
+    p0: {transport:config.p0?.transport??'paseo',...(config.p0??{})}, policy: {maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS},
     runtime: {paseoUrl:config.runtime?.paseoUrl ?? 'ws://127.0.0.1:6767/ws'},
     source: { configFile:configPath }};
   frozen.digest = sha256(frozen);

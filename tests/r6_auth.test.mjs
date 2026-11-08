@@ -52,12 +52,13 @@ test('R6-003 unsigned self-consistent approval artifact cannot approve Gate 0.1'
   try{
     w.store.init(w.boot);
     const actor='fake-human',receipt='Fabricated authorization string without a real signature';
-    const ev=w.store.artifact(w.id,'approval-0-1.json',
+    const approvalFile='approval-0-1-'+randomUUID()+'.json';
+    const ev=w.store.artifact(w.id,approvalFile,
       {gate:'0.1',digest:w.boot.frozen.digest,actor,receipt});
     const task=w.store.get(w.id);
     task.stage='PLANNER';task.status='READY';
     assert.throws(()=>w.store.save(task,'GATE_0.1_APPROVED',
-      {actor,digest:w.boot.frozen.digest,approvalSha256:ev.sha256}),/not independently provisioned|trust roots changed/);
+      {actor,digest:w.boot.frozen.digest,approvalSha256:ev.sha256,approvalFile}),/not independently provisioned|trust roots changed/);
     assert.equal(w.store.get(w.id).stage,'WAIT_GATE_01');
   }finally{w.close();}
 });
@@ -80,13 +81,14 @@ test('R6-003 Ed25519 human signature binds task, gate, digest, actor and receipt
     assert.throws(()=>w.store.verifyHumanProof(tampered,
       {taskId:w.id,gate:'0.1',digest:w.boot.frozen.digest,actor:'human',receipt:tampered.statement.receipt}),
       /invalid independent human approval signature/);
-    const ev=w.store.artifact(w.id,'approval-0-1.json',
+    const approvalFile='approval-0-1-'+approval.statement.nonce+'.json';
+    const ev=w.store.artifact(w.id,approvalFile,
       {gate:'0.1',digest:w.boot.frozen.digest,actor:'human',receipt,proof:approval});
     const task=w.store.get(w.id);
     task.stage='PLANNER';task.status='READY';
     w.store.save(task,'GATE_0.1_APPROVED',{
       actor:'human',digest:w.boot.frozen.digest,
-      approvalSha256:ev.sha256,approvalNonce:approval.statement.nonce});
+      approvalSha256:ev.sha256,approvalNonce:approval.statement.nonce,approvalFile});
     assert.equal(w.store.get(w.id).stage,'PLANNER');
     w.store.verify(w.id);
   }finally{w.close();}

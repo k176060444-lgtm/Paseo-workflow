@@ -1,27 +1,123 @@
 {
   "schema": 1,
-  "project": {"repo": "../target-repository", "baseRef": "HEAD"},
-  "runtime": {"paseoUrl": "ws://127.0.0.1:6767/ws"},
-  "tests": {"commands": [["node", "--test"], ["git", "diff", "--check"]]},
+  "project": {
+    "repo": "../target-repository",
+    "baseRef": "HEAD"
+  },
+  "runtime": {
+    "paseoUrl": "ws://127.0.0.1:6767/ws"
+  },
+  "tests": {
+    "commands": [
+      [
+        "node",
+        "--test"
+      ],
+      [
+        "git",
+        "diff",
+        "--check"
+      ]
+    ]
+  },
   "roles": {
-    "planner": {"harness": "codex", "model": "codex/gpt-5.5", "soul": "../souls/planner.md"},
-    "worker": {"harness": "opencode", "model": "opencode/opencode/gpt-5.5", "soul": "../souls/worker.md"},
-    "spec_reviewer": {"harness": "opencode", "model": "opencode/opencode/gpt-5.5", "soul": "../souls/spec_reviewer.md"},
-    "quality_reviewer": {"harness": "codex", "model": "codex/gpt-5.5", "soul": "../souls/quality_reviewer.md"},
-    "tester_gate_a": {"harness": "codex", "model": "codex/gpt-5.5", "soul": "../souls/tester_gate_a.md"},
-    "worker_remediation": {"harness": "opencode", "model": "opencode/opencode/gpt-5.5", "soul": "../souls/worker_remediation.md"},
-    "tester_gate_b": {"harness": "opencode", "model": "opencode/opencode/gpt-5.5", "soul": "../souls/tester_gate_b.md"},
-    "arbitrator": {"harness": "codex", "model": "codex/gpt-5.5", "soul": "../souls/arbitrator.md"},
-    "blind_a": {"soul": "../souls/blind_a.md"},
-    "blind_b": {"soul": "../souls/blind_b.md"},
-    "blind_c": {"soul": "../souls/blind_c.md"}
+    "planner": {
+      "harness": "codex",
+      "model": "codex/gpt-5.5",
+      "soul": "../souls/planner.md"
+    },
+    "worker": {
+      "harness": "opencode",
+      "model": "opencode/opencode/gpt-5.5",
+      "soul": "../souls/worker.md"
+    },
+    "spec_reviewer": {
+      "harness": "opencode",
+      "model": "opencode/opencode/gpt-5.5",
+      "soul": "../souls/spec_reviewer.md"
+    },
+    "quality_reviewer": {
+      "harness": "codex",
+      "model": "codex/gpt-5.5",
+      "soul": "../souls/quality_reviewer.md"
+    },
+    "tester_gate_a": {
+      "harness": "codex",
+      "model": "codex/gpt-5.5",
+      "soul": "../souls/tester_gate_a.md"
+    },
+    "worker_remediation": {
+      "harness": "opencode",
+      "model": "opencode/opencode/gpt-5.5",
+      "soul": "../souls/worker_remediation.md"
+    },
+    "tester_gate_b": {
+      "harness": "opencode",
+      "model": "opencode/opencode/gpt-5.5",
+      "soul": "../souls/tester_gate_b.md"
+    },
+    "arbitrator": {
+      "harness": "codex",
+      "model": "codex/gpt-5.5",
+      "soul": "../souls/arbitrator.md"
+    },
+    "blind_a": {
+      "soul": "../souls/blind_a.md"
+    },
+    "blind_b": {
+      "soul": "../souls/blind_b.md"
+    },
+    "blind_c": {
+      "soul": "../souls/blind_c.md"
+    }
   },
   "p0": {
+    "transport": "paseo",
     "nodes": [
-      {"id":"5bao", "physicalId":"physical-5bao", "enabled":true, "sshAlias":"5bao", "runner":"/opt/p1/remote/p0_runner.py", "config":"/etc/p1/runner.json", "hmacKeyPath":"/local-secrets/p1-5bao.hmac", "role":"blind_a", "harness":"opencode", "model":"opencode/opencode/gpt-5.5"},
-      {"id":"9bao", "physicalId":"physical-9bao", "enabled":true, "sshAlias":"9bao", "runner":"/opt/p1/remote/p0_runner.py", "config":"/etc/p1/runner.json", "hmacKeyPath":"/local-secrets/p1-9bao.hmac", "role":"blind_b", "harness":"opencode", "model":"opencode/opencode/gpt-5.5"},
-      {"id":"rusty", "physicalId":"physical-rusty", "enabled":false, "sshAlias":"rusty", "runner":"/opt/p1/remote/p0_runner.py", "config":"/etc/p1/runner.json", "hmacKeyPath":"/local-secrets/p1-rusty.hmac", "role":"blind_c", "harness":"rusty", "model":"rusty/local-review"}
+      {
+        "id": "5bao",
+        "physicalId": "physical-5bao",
+        "enabled": true,
+        "transport": "direct",
+        "serverId": "srv_5bao_PINNED",
+        "registrationId": "hst_5bao_PINNED",
+        "workspaceId": "workspace_5bao_READONLY",
+        "cwd": "/srv/p1/blind-task-checkout",
+        "role": "blind_a",
+        "harness": "opencode",
+        "model": "opencode/approved-model"
+      },
+      {
+        "id": "9bao",
+        "physicalId": "physical-9bao",
+        "enabled": true,
+        "transport": "direct",
+        "serverId": "srv_9bao_PINNED",
+        "registrationId": "hst_9bao_PINNED",
+        "workspaceId": "workspace_9bao_READONLY",
+        "cwd": "/srv/p1/blind-task-checkout",
+        "role": "blind_b",
+        "harness": "opencode",
+        "model": "opencode/approved-model"
+      },
+      {
+        "id": "rusty",
+        "physicalId": "physical-rusty",
+        "enabled": false,
+        "transport": "direct",
+        "serverId": "srv_rusty_PINNED",
+        "registrationId": "hst_rusty_PINNED",
+        "workspaceId": "workspace_rusty_READONLY",
+        "cwd": "/srv/p1/blind-task-checkout",
+        "role": "blind_c",
+        "harness": "opencode",
+        "model": "opencode/approved-model"
+      }
     ],
-    "timing":{"pollMs":60000,"extraThirdMs":600000,"deadlineMs":7200000}
+    "timing": {
+      "pollMs": 60000,
+      "extraThirdMs": 600000,
+      "deadlineMs": 7200000
+    }
   }
 }

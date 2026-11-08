@@ -3,7 +3,7 @@ import {AGENT_SCHEMA,assert,parseAgentOutput,providerOptions} from './policy.mjs
 
 // Never import the SDK in simulation or contract tests: a missing daemon is not a test failure.
 export class PaseoAgentRuntime {
-  constructor(url) {this.url=url;this.client=null;}
+  constructor(url,{attestor=null}={}) {this.url=url;this.client=null;this.attestor=attestor;}
   async open(){
     // 21bao live observation: daemon 0.15.3 accepts /ws; a bare host:port
     // can hang silently. Never try to connect to an unapproved remote target.
@@ -50,7 +50,15 @@ export class PaseoAgentRuntime {
     const result=await agent.waitForFinish(60*60*1000);
     assert(result.status==='idle',`Paseo role ${role} not terminal idle: ${result.status}; inspect Agent ${agent.id}`);
     const data=parseAgentOutput(result.lastMessage,role);
+    const bare={role,phase,agentId:agent.id,dispatchId,verdict:data.verdict,
+      summary:data.summary,findings:data.findings,taskSpec:data.taskSpec??null,raw:result.lastMessage};
+    assert(this.attestor,'independent Paseo execution attestor not installed; BLOCKED');
+    // No model or Controller key can sign this receipt. The IPC attestor must
+    // independently observe the daemon and its final raw session.
+    const attestation=await this.attestor.attestPaseo({
+      task,role,phase,commit:task.currentSha??null,agentId:agent.id,dispatchId,raw:bare
+    });
     store.recordTerminal(dispatchId);
-    return {role,phase,agentId:agent.id,dispatchId,verdict:data.verdict,summary:data.summary,findings:data.findings,taskSpec:data.taskSpec??null,raw:result.lastMessage};
+    return {...bare,attestation};
   }
 }

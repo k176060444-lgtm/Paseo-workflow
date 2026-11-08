@@ -83,11 +83,12 @@ test('R7-003 identical nonce is rejected across distinct tasks and valid signatu
         digest:frozen.digest,actor,receipt,nonce,issuedAt:new Date().toISOString()};
       const proof={schema:1,keyId:'nonce-auditor',statement,
         signature:sign(null,Buffer.from(canonical(statement)),privateKey).toString('base64')};
-      const ev=store.artifact(id,'approval-0-1.json',{gate:'0.1',
+      const approvalFile='approval-0-1-'+nonce+'.json';
+      const ev=store.artifact(id,approvalFile,{gate:'0.1',
         digest:frozen.digest,actor,receipt,proof});
       const next=store.get(id);next.stage='PLANNER';next.status='READY';
       const save=()=>store.save(next,'GATE_0.1_APPROVED',{
-        digest:frozen.digest,actor,approvalSha256:ev.sha256,approvalNonce:nonce});
+        digest:frozen.digest,actor,approvalSha256:ev.sha256,approvalNonce:nonce,approvalFile});
       if(i===0)assert.doesNotThrow(save);
       else assert.throws(save,/signed human approval nonce already consumed/);
       assert.equal(store.get(id).stage,i===0?'PLANNER':'WAIT_GATE_01');

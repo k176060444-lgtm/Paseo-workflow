@@ -62,7 +62,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       runner:'/runner',config:'/config'};
   });
   const matrix=path.join(tmp,'matrix.json');const intent=path.join(tmp,'intent.md');
-  fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']]},roles,p0:{nodes}}));
+  fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']]},roles,p0:{transport:'legacy-hmac',nodes}}));
   fs.writeFileSync(intent,'Implement a precise and approved programming feature with fully independent review.');
   const store=new Store(path.join(tmp,'state'));
   let workerCount=0,remCount=0,reportCount=0,modelCalls=[];
@@ -254,7 +254,8 @@ test('R6-004 direct Store final close independently checks real worktree HEAD',a
    assert.equal(final.stage,'WAIT_GATE_59');
    const message='Human signs this exact final commit and compliance evidence';
    const proof=x.proof('5.9',final.currentSha,message);
-   const artifact=x.store.artifact('TASK1234','approval-5-9.json',
+   const approvalFile='approval-5-9-'+proof.statement.nonce+'.json';
+   const artifact=x.store.artifact('TASK1234',approvalFile,
      {gate:'5.9',digest:final.currentSha,actor:'user',receipt:message,proof,
        at:new Date().toISOString()});
    const t=x.c.required('TASK1234');
@@ -262,7 +263,7 @@ test('R6-004 direct Store final close independently checks real worktree HEAD',a
    t.stage='CLOSED';t.status='APPROVED_FOR_SEPARATE_RELEASE_REVIEW';
    assert.throws(()=>x.store.save(t,'GATE_5.9_APPROVED',{
      digest:final.currentSha,actor:'user',approvalSha256:artifact.sha256,
-     approvalNonce:proof.statement.nonce}),/worktree HEAD|unverified/);
+     approvalNonce:proof.statement.nonce,approvalFile}),/worktree HEAD|unverified/);
    assert.equal(x.c.required('TASK1234').stage,'WAIT_GATE_59');
    x.store.verify('TASK1234');
  }finally{finish(x);}

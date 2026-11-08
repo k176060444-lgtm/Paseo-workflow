@@ -4,7 +4,9 @@ import path from 'node:path';
 import {Store} from './store.mjs';
 import {WorkflowController} from './controller.mjs';
 import {PaseoAgentRuntime} from './agents.mjs';
-import {SshP0Adapter} from './p0.mjs';
+import {IndependentExecutionAttestor} from './attestor.mjs';
+import {PaseoP0Adapter} from './p0_paseo.mjs';
+
 
 function argsOf(argv){
   const a={_:[]};
@@ -33,6 +35,10 @@ Signed human gates require P1_TRUST_ROOTS_FILE plus independently pinned P1_TRUS
 Never store human private signing keys in the Controller state or Paseo profile.
 Never run live until local independent review and node-specific test have passed.`;
 
+function assertPaseoMode(task){
+  if(task.frozen.p0?.transport!=='paseo')
+    throw new Error('P0 must use Paseo Connected Hosts; SSH is manual-only disaster recovery');
+}
 async function main(){
   const a=argsOf(process.argv.slice(2));const cmd=a._[0];
   if(!cmd||cmd==='help'){console.log(usage);return;}
@@ -48,12 +54,16 @@ async function main(){
     else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a)}));
     else if(cmd==='run'){
       const task=controller.required(need(a,'id'));
-      if(process.env.P1_LIVE_ALLOWED==='YES'&&process.env.P1_HOST_ISOLATION_ATTESTED==='YES') {
-        runtime=new PaseoAgentRuntime(task.frozen.runtime.paseoUrl);
+      if(process.env.P1_LIVE_ALLOWED==='YES'&&process.env.P1_HOST_ISOLATION_ATTESTED==='YES'){
+        const witness=new IndependentExecutionAttestor();
+        runtime=new PaseoAgentRuntime(task.frozen.runtime.paseoUrl,{attestor:witness});
         await runtime.open();
+        controller.attestor=witness;
+        assertPaseoMode(task);
+        controller.p0=new PaseoP0Adapter(task.frozen.p0.nodes??[],{
+          client:runtime.client,attestor:witness,...(task.frozen.p0.timing??{})});
       }
       controller.runtime=runtime;
-      controller.p0=new SshP0Adapter(task.frozen.p0.nodes??[],task.frozen.p0.timing??{});
       result=await controller.run(task.id);
     }else throw new Error(`unknown command ${cmd}`);
     console.log(JSON.stringify(result,null,2));

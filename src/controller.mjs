@@ -7,7 +7,7 @@ import {assert,checkedId,freezeConfig,MAX_A,MAX_B,sha256,PASS,PAUSE,hasBlockingF
 const ROLE_PROMPT = `Obey the frozen Soul, approved TASK_SPEC, stage constraints and exact SHA. Do NOT claim tests passed without evidence. End with one JSON object matching {"verdict":"PASS|FAIL|QUESTION|NEEDS_SPECIALIST|APPROVE_WITH_COMMENTS","summary":"...","findings":["..."]}. Planner must also include taskSpec string.`;
 
 export class WorkflowController {
-  constructor({store,runtime,p0,gitOps=git}) {this.store=store;this.runtime=runtime;this.p0=p0;this.git=gitOps;}
+  constructor({store,runtime,p0,gitOps=git,attestor=null}) {this.store=store;this.runtime=runtime;this.p0=p0;this.git=gitOps;this.attestor=attestor;}
   create({id,configFile,intentFile}){
     checkedId(id);
     const frozen=freezeConfig(configFile,intentFile);
@@ -46,13 +46,16 @@ export class WorkflowController {
     });
     assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
       'approval trust root is not pinned');
-    const approval=this.store.artifact(id,`approval-${gate.replace('.','-')}.json`,
+    assert(!this.store.approvalNonceUsed(proof.keyId,proof.statement.nonce),
+      'human approval nonce already consumed');
+    const approvalFile=`approval-${gate.replace('.','-')}-${proof.statement.nonce}.json`;
+    const approval=this.store.artifact(id,approvalFile,
       {gate,digest,actor,receipt,proof,at:new Date().toISOString()});
     if(gate==='0.1'){t.stage='PLANNER';t.status='READY';}
     else if(gate==='0.2'){t.stage='PREPARE';t.status='READY';}
     else {t.stage='CLOSED';t.status='APPROVED_FOR_SEPARATE_RELEASE_REVIEW';}
     this.store.save(t,`GATE_${gate}_APPROVED`,
-      {digest,actor,approvalSha256:approval.sha256,approvalNonce:proof.statement.nonce});
+      {digest,actor,approvalSha256:approval.sha256,approvalNonce:proof.statement.nonce,approvalFile});
     return {id,stage:t.stage,approvalSha256:approval.sha256};
   }
   required(id){const t=this.store.get(id);assert(t,`unknown task ${id}`);return t;}
@@ -144,15 +147,31 @@ export class WorkflowController {
     await this.git.assertUnchanged(t.worktree,sha);
     const spec=successful.get('spec_reviewer'),quality=successful.get('quality_reviewer');
     t.inflight=null;t.status='READY';this.store.save(t,'REVIEW_PAIR_TERMINAL',{sha,spec:spec.verdict,quality:quality.verdict});
-    return {spec,quality,pass:PASS(spec.verdict)&&PASS(quality.verdict)&&!hasBlockingFinding(spec.findings)&&!hasBlockingFinding(quality.findings)&&
-      (spec.verdict!=='PASS'||spec.findings.length===0)&&(quality.verdict!=='PASS'||quality.findings.length===0),
-      pause:PAUSE(spec.verdict)||PAUSE(quality.verdict),findings:[...spec.findings,...quality.findings]};
+    // Local reviews are TWO independent, source-attested assessments, not
+    // external blind P0 seats. Never collapse their opinions into one PASS.
+    const individual=Object.fromEntries([['spec_reviewer',spec],['quality_reviewer',quality]]
+      .map(([role,r])=>[role,{
+        agentId:r.agentId,verdict:r.verdict,findings:r.findings,
+        pass:PASS(r.verdict)&&!hasBlockingFinding(r.findings)&&
+          (r.verdict!=='PASS'||r.findings.length===0)
+      }]));
+    assert(individual.spec_reviewer.agentId!==individual.quality_reviewer.agentId,
+      'local reviewer agents are not independent');
+    return {spec,quality,assessments:individual,
+      pass:individual.spec_reviewer.pass&&individual.quality_reviewer.pass,
+      pause:PAUSE(spec.verdict)||PAUSE(quality.verdict),
+      findings:[...spec.findings,...quality.findings]};
   }
   async test(t,role,phase,sha){
     const testdir=path.join(this.store.dir(t.id),`test-${phase}`);
     const dir=await this.git.makeTestCheckout(t.frozen.project.repo,sha,testdir);
     const agent=await this.invoke(t,role,phase,`TASK_SPEC:\n${t.taskSpec}\nInspect exact commit ${sha} in disposable test checkout. Do not modify product source. Controller will independently execute the frozen test commands.`,dir);
     const tests=await this.git.testRun(dir,t.frozen.tests.commands,this.store,t.id,phase);
+    if(!tests.attestation){
+      assert(this.attestor,'independent OS Tester witness not configured; BLOCKED');
+      tests.attestation=await this.attestor.attestTests({task:t,phase,commit:sha,
+        sha,tests,cwd:dir});
+    }
     const evidence=this.store.artifact(t.id,`${phase}-test-receipts.json`,{sha,tests});
     t.history.push({role:'test_executor',phase,sha,pass:tests.pass,evidenceSha256:evidence.sha256});
     this.store.save(t,'TEST_RECEIPTS',{sha,pass:tests.pass,evidenceSha256:evidence.sha256});
