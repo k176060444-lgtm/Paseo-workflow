@@ -31,7 +31,7 @@ export class WorkflowController {
         'trusted synchronous Git verification unavailable');
       this.git.verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
     }
-    assert(typeof actor='string'&&actor.trim().length>1,'approval actor required');
+    assert(typeof actor==='string'&&actor.trim().length>1,'approval actor required');
     assert(typeof receipt==='string'&&receipt.trim().length>15,'human approval receipt required');
     assert(gate==='0.1'||gate==='0.2'||gate==='5.9','unsupported gate');
     const allowed={'0.1':'WAIT_GATE_01','0.2':'WAIT_GATE_02','5.9':'WAIT_GATE_59'};
