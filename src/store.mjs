@@ -351,6 +351,13 @@ export class Store {
     }
     if(oldTask.baseSha===null&&nextTask.baseSha!==null&&nextTask.baseSha!==undefined)
       assert(type==='WORKTREE_PREPARED','baseSha may only be established by worktree preparation');
+    if(oldTask.worktree!==null&&oldTask.worktree!==undefined)
+      assert(nextTask.worktree===oldTask.worktree,'worktree path is immutable after preparation');
+    if((oldTask.worktree===null||oldTask.worktree===undefined)&&nextTask.worktree){
+      assert(type==='WORKTREE_PREPARED','worktree path may only be established at preparation');
+      assert(path.resolve(nextTask.worktree)===path.resolve(this.dir(nextTask.id),'worktree'),
+        'worktree must use the task-isolated approved directory');
+    }
     if(oldTask.currentSha!==undefined&&oldTask.currentSha!==nextTask.currentSha)
       assert(['WORKTREE_PREPARED','A_COMMIT_FROZEN','B_COMMIT_FROZEN'].includes(type),
         'currentSha may only change when freezing a worktree or commit');

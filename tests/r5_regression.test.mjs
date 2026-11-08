@@ -146,7 +146,8 @@ test('R5-003 real Git base and child commits freeze through Store with ancestry+
     fs.writeFileSync(path.join(repo,'file.txt'),'base');
     git(repo,'add','.');git(repo,'-c','user.name=Test','-c','user.email=test@localhost','commit','-qm','base');
     const base=git(repo,'rev-parse','HEAD');
-    const wt=path.join(w.root,'wt');
+    const wt=path.join(w.store.dir(w.id),'worktree');
+    fs.mkdirSync(path.dirname(wt),{recursive:true});
     git(repo,'worktree','add','--detach',wt,base);
     seedSyntheticTask(w.store,{...w.honest,stage:'PREPARE',status:'READY',
       frozen:{...w.honest.frozen,project:{repo}}});
