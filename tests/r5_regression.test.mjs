@@ -132,7 +132,7 @@ test('R5-003 public Store.save cannot record non-existent Git SHA even with vali
     const t=w.store.get(w.id);
     t.stage='A_WORKER';t.status='READY';
     t.baseSha='f'.repeat(40);t.currentSha=t.baseSha;
-    t.worktree=path.join(w.root,'worktree');
+    t.worktree=path.join(w.store.dir(w.id),'worktree');
     assert.throws(()=>w.store.save(t,'WORKTREE_PREPARED'),/Git repository missing|unverified/);
     assert.deepEqual(w.store.verify(w.id),before);
     assert.equal(w.store.get(w.id).baseSha,null);
