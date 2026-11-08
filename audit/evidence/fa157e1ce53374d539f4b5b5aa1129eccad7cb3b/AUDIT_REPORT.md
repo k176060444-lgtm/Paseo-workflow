@@ -219,7 +219,7 @@
 - 未修改被审仓库源码；未修改 main、PR #1/#2/#3、修复分支或历史证据分支；仅向新建 `audit/s0-fa157e1-evidence` 分支新增 `audit/evidence/` 文件。
 - 未启动、停止、更新、配置、接管 Paseo App/Daemon；只读探测到 3 个 Paseo.exe 进程及 updater installer。
 - 未 SSH 到 5bao/9bao/rusty；未做远端 P0/A2A；未分发密钥。
-- 未调用真实 SDK/Harness/付费模型完成审计结论；OpenCode 仅用于独立静态审查，Codex 因配额失败。
+- 未调用真实 Paseo SDK/Harness 做联调；OpenCode 仅作独立静态审查（模型/命令/退出码已保留），Codex 因配额失败；二者均未参与真实工作流执行。
 - 未修改 Hermes、Codex、OpenCode、Magpie/代理、系统 PATH、服务或用户工作目录；未读写真实密钥值。
 - 未部署、未合并、未自动清理生产状态。
 
