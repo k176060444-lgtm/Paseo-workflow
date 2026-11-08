@@ -17,7 +17,7 @@ export class IndependentExecutionAttestor {
     this.socketPath=socketPath;
   }
   async #ask(request){
-    const data=Buffer.from(canonical(request));
+    const data=Buffer.from(JSON.stringify(request)); // JSON wire format omits optional undefined fields
     assert(data.length<65536,'witness request too large');
     return await new Promise((resolve,reject)=>{
       const req=http.request({socketPath:this.socketPath,path:'/v1/observe-and-attest',

@@ -2,7 +2,8 @@ import {verify} from 'node:crypto';
 import {assert,canonical,sha256,parseAgentOutput,PASS,providerOptions} from './policy.mjs';
 
 function signed(roots,node,proof,expected){
-  assert(roots?.p0?.get(node.id),'P0 independently pinned public key missing');
+  const key=roots instanceof Map?roots.get(node.id):roots?.p0?.get(node.id);
+  assert(key,'P0 independently pinned public key missing');
   assert(proof?.schema===1&&proof.keyId===node.id&&proof.statement,
     'P0 signed remote witness required');
   for(const [k,v] of Object.entries(expected))
@@ -12,7 +13,7 @@ function signed(roots,node,proof,expected){
   const age=Date.now()-Date.parse(s.issuedAt);
   assert(Number.isFinite(age)&&age>=-120000&&age<=30*60000,'P0 witness stale/future');
   const sig=Buffer.from(proof.signature??'','base64');
-  assert(sig.length===64&&verify(null,Buffer.from(canonical(s)),roots.p0.get(node.id),sig),
+  assert(sig.length===64&&verify(null,Buffer.from(canonical(s)),key,sig),
     'P0 independent Ed25519 signature invalid');
 }
 export function verifyPaseoP0Preflight(roots,node,proof,taskId,commit){

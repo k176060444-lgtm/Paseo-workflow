@@ -52,13 +52,13 @@ test('R6-003 unsigned self-consistent approval artifact cannot approve Gate 0.1'
   try{
     w.store.init(w.boot);
     const actor='fake-human',receipt='Fabricated authorization string without a real signature';
-    const approvalFile='approval-0-1-'+randomUUID()+'.json';
+    const nonce=randomUUID(),approvalFile='approval-0-1-'+nonce+'.json';
     const ev=w.store.artifact(w.id,approvalFile,
       {gate:'0.1',digest:w.boot.frozen.digest,actor,receipt});
     const task=w.store.get(w.id);
     task.stage='PLANNER';task.status='READY';
     assert.throws(()=>w.store.save(task,'GATE_0.1_APPROVED',
-      {actor,digest:w.boot.frozen.digest,approvalSha256:ev.sha256,approvalFile}),/not independently provisioned|trust roots changed/);
+      {actor,digest:w.boot.frozen.digest,approvalSha256:ev.sha256,approvalNonce:nonce,approvalFile}),/not independently provisioned|trust roots changed/);
     assert.equal(w.store.get(w.id).stage,'WAIT_GATE_01');
   }finally{w.close();}
 });

@@ -126,7 +126,7 @@ test('R2-010 successful reviewer report survives peer failure',async()=>{
         agentId,dispatchId,base)};
     }},p0:null,gitOps:{assertUnchanged:async()=>{}}});
     const t=w.store.get(w.id);t.stage='A_REVIEW';t.status='READY';
-    t.worktree=w.dir;t.currentSha='a'.repeat(40);
+    t.worktree=w.dir;t.currentSha='a'.repeat(40);t.aRound=1;
     resealSyntheticState(w.store,t);
     await assert.rejects(()=>c.invokePair(t,'A1-review','a'.repeat(40)),/reconcile/);
     const after=w.store.get(w.id);

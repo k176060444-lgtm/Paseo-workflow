@@ -121,7 +121,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       const jobId=sha256(task.id+':'+cycle+':'+commit+':'+node.id).slice(0,40);
       store.recordIntent(task.id,'P0:'+cycle+':'+node.id,jobId);
       store.recordAck(jobId,node.id+':'+jobId);
-      const verdict=conflicting&&node.id==='5bao'?'FAIL':'PASS';
+      const verdict=(conflicting&&node.id==='5bao')||issue.length?'FAIL':'PASS';
       const findings=verdict==='FAIL'?['HIGH: reviewer disagreed']:issue;
       const body={jobId,nodeId:node.id,physicalId:node.physicalId,commit,
         harness:node.harness,model:node.model,exitCode:0,clean:true,

@@ -14,7 +14,7 @@ function work(){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'p1-regression-')
   const authority=syntheticHumanAuthority(dir,'TASK1234');
   const store=new Store(dir);
   seedSyntheticTask(store,{id:'TASK1234',stage:'A_REVIEW',status:'READY',frozen:{digest:'x'.repeat(64)},
-    history:[],worktree:'/synthetic',currentSha:'a'.repeat(40)});
+    history:[],worktree:'/synthetic',currentSha:'a'.repeat(40),aRound:1});
   return {dir,store,attest:authority.attest,close(){store.close();authority.restore();fs.rmSync(dir,{recursive:true,force:true});}};}
 
 test('F1: legacy verdict normalization and PASS with BLOCKER finding fail closed',()=>{
@@ -80,7 +80,7 @@ test('F10: read-only store refuses to create missing state directory or database
 test('F4: exact SDK waitForFinish API receives numeric timeout',async()=>{
   const w=work();try{
     let timeout;
-    const runtime=new PaseoAgentRuntime('ws://localhost/ws');
+    const runtime=new PaseoAgentRuntime('ws://localhost/ws',{attestor:{attestPaseo:async()=>({schema:1,signature:'synthetic-only'})}});
     runtime.client={agents:{create:async()=>({id:'agent-id',waitForFinish:async arg=>{
       timeout=arg;return{status:'idle',lastMessage:JSON.stringify({verdict:'PASS',summary:'ok',findings:[],taskSpec:'Workable plan with tests'})};
     }})}};
