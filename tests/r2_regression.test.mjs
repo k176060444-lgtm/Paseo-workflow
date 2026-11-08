@@ -59,7 +59,7 @@ test('R2-003 readSnapshot uses one SQLite version despite concurrent writer',()=
   try{
     w.store.readSnapshot(()=>{
       const before=w.store.get(w.id);
-      const updated=other.get(w.id);updated.aRound=1;other.save(updated,'UPDATE');
+      const updated=other.get(w.id);updated.aRound=1;other.save(updated,'GATE_A_ROUND_START');
       assert.equal(w.store.get(w.id).aRound,before.aRound);
       w.store.verify(w.id);
     });

@@ -138,27 +138,25 @@ def process_alive(pid):
         return False
 
 def final_json(text):
-    data=text.strip()
-    choices=[data]
-    fence=chr(96)*3
-    fenced_pattern=(r'(?:^|\r?\n)[ \t]*'+re.escape(fence)+
-                    r'(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*'+
-                    re.escape(fence)+r'[ \t]*$')
-    fenced=re.search(fenced_pattern,data,re.IGNORECASE)
-    if fenced:
-        choices.append(fenced.group(1))
-    # A bare JSON envelope must occupy the entire final suffix. Support
-    # indentation/pretty JSON, but never consume arbitrary trailing prose.
-    for match in re.finditer(r'(?:^|\r?\n)[ \t]*(?=\{)',data):
-        choices.append(data[match.start():])
-    for candidate in choices:
+    # Exactly one independent, standalone verdict object may be accepted.
+    # A later PASS must NEVER override an earlier standalone FAIL.
+    decoder=json.JSONDecoder()
+    found=[]
+    for match in re.finditer(r'(?:^|\r?\n)[ \t]*(?=\{)',text):
+        start=match.end()
         try:
-            obj=json.loads(candidate.strip())
-            if isinstance(obj,dict) and isinstance(obj.get('verdict'),str):
-                return obj
+            obj,consumed=decoder.raw_decode(text[start:])
         except (ValueError,TypeError):
-            pass
-    return None
+            continue
+        if isinstance(obj,dict) and isinstance(obj.get('verdict'),str):
+            found.append((obj,start+consumed))
+    if len(found)!=1:
+        return None
+    obj,end=found[0]
+    suffix=text[end:].strip()
+    if suffix and suffix!=chr(96)*3:
+        return None
+    return obj
 
 def response(obj):
     print(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), flush=True)

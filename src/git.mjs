@@ -49,6 +49,7 @@ export async function prepare(repo,base,worktree){
   fs.mkdirSync(path.dirname(worktree),{recursive:true,mode:0o700});
   await git(repo,'worktree','add','--detach',worktree,baseSha);
   assert(await head(worktree)===baseSha,'worktree base mismatch');
+  await validateStaged(worktree); // Reject unsafe symlinks/gitlinks inherited from base.
   return baseSha;
 }
 const SENSITIVE_PATH=/(^|[\\/])(\.env(?:[.\w-]*)|\.ssh|\.aws|.*\.(?:pem|key|p12|pfx)|id_rsa|id_ed25519)([\\/]|$)/i;
@@ -79,7 +80,7 @@ function safeChange(dir,p){
     assert(part.length>0&&part!=='.'&&part!=='..','unsafe git path component');
     assert(part===part.trim()&&!/[. ]$/.test(part),
       `ambiguous whitespace or trailing-dot Git path: ${p}`);
-    assert(!/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/u.test(part),
+    assert(!/[\p{Cc}\p{Cf}\p{Default_Ignorable_Code_Point}\u2800\u3164\uffa0]/u.test(part),
       `unsafe control/format character in Git path: ${p}`);
   }
   const comparable=parts.map(part=>part.normalize('NFKC')).join('/');
@@ -95,8 +96,9 @@ async function validateStaged(dir){
   for(const item of entries.split('\0').filter(Boolean)){
     const match=/^(\d{6}) [0-9a-f]{40,64} [0-3]\t([\s\S]*)$/.exec(item);
     assert(match,'malformed git index record');
-    if(match[1]==='120000'||match[1]==='160000')
-      assert(!diff.split('\0').includes(match[2]),`symlink/gitlink staged: ${match[2]}`);
+    safeChange(dir,match[2]);
+    assert(match[1]!=='120000'&&match[1]!=='160000',
+      `symlink/gitlink in index (including inherited base): ${match[2]}`);
   }
 }
 export async function commitWorktree(dir,tag) {
@@ -111,6 +113,7 @@ export async function commitWorktree(dir,tag) {
     await validateStaged(dir);
     await must('git',['-c','user.name=P1 Controller','-c','user.email=p1@localhost','commit','-m',`P1 ${tag}`],{cwd:dir});
   }
+  await validateStaged(dir); // Includes clean worktrees with unsafe inherited index.
   assert(await isClean(dir),'worktree remains dirty after freeze');
   return head(dir);
 }

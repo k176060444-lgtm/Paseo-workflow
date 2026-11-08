@@ -61,12 +61,14 @@ test('R3-002: valid ledger containing tampered frozen config cannot be used as r
   try {
     const t=w.store.get(w.id),basis=t.frozen.digest;
     t.frozen.intent='MALICIOUS CHANGE';
-    w.store.save(t,'CHANGED_FROZEN'); // audit chain remains self-consistent
+    assert.throws(()=>w.store.save(t,'CHANGED_FROZEN'),/frozen config is immutable/);
     w.store.verify(w.id);
+    // Even direct SQL tampering cannot become a valid recovery basis.
+    w.store.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(JSON.stringify(t),w.id);
     const c=new WorkflowController({store:w.store,runtime:null,p0:null});
     assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'reviewer',
       receipt:'Approved recovery with a deliberately forged configuration',
-      expectedBasis:basis}),/frozen config digest mismatch/);
+      expectedBasis:basis}),/state differs/);
     assert.equal(w.store.get(w.id).stage,'BLOCKED');
   } finally {w.close();}
 });

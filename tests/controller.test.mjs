@@ -98,10 +98,10 @@ test('post-dispatch ambiguous result blocks without silent redispatch',async()=>
 });
 
 test('config SHA/role permissions and SQL ledger resist casual drift',async()=>{
- const x=setup();try{const t=x.c.required('TASK1234');t.frozen.policy.permissions.planner='WORKSPACE_WRITE';x.store.save(t,'TAMPER');
- await assert.rejects(()=>x.c.run('TASK1234'),/frozen config digest mismatch/);
+ const x=setup();try{const t=x.c.required('TASK1234');t.frozen.policy.permissions.planner='WORKSPACE_WRITE';
+ assert.throws(()=>x.store.save(t,'TAMPER'),/frozen config is immutable/);
  const raw=x.store.db.prepare('SELECT data FROM tasks WHERE id=?').get('TASK1234').data;
- x.store.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(raw.replace('WORKSPACE_WRITE','SUPERUSER'),'TASK1234');
+ x.store.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(raw.replace('READ_ONLY','SUPERUSER'),'TASK1234');
  assert.throws(()=>x.store.verify('TASK1234'),/state differs/);
  }finally{finish(x);}
 });

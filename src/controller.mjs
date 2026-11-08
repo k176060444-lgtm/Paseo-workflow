@@ -41,8 +41,14 @@ export class WorkflowController {
     assert(t.frozen&&typeof t.frozen.digest==='string','frozen config missing');
     const {digest,...snapshot}=t.frozen;
     assert(digest===sha256(snapshot),'frozen config digest mismatch');
-    if(t.taskSpecSha&&t.taskSpec)
-      assert(t.taskSpecSha===sha256(t.taskSpec),'TASK_SPEC immutable digest mismatch');
+    const hasSpec=t.taskSpec!==null&&t.taskSpec!==undefined;
+    const hasDigest=t.taskSpecSha!==null&&t.taskSpecSha!==undefined;
+    assert(hasSpec===hasDigest,'TASK_SPEC and digest must both be present or absent');
+    if(hasSpec){
+      assert(typeof t.taskSpec==='string'&&t.taskSpec.length>20,'TASK_SPEC is empty or invalid');
+      assert(typeof t.taskSpecSha==='string'&&t.taskSpecSha===sha256(t.taskSpec),
+        'TASK_SPEC immutable digest mismatch');
+    }
   }
   async livePreflight(t){
     assert(process.env.P1_LIVE_ALLOWED==='YES','live dispatch disabled; set P1_LIVE_ALLOWED=YES after audit');

@@ -41,21 +41,37 @@ export class Store {
   }
   artifact(id,name,content) {
     assert(!this.readOnly,'store opened read-only');
-    this.verify(id); // Never re-anchor a corrupted ledger through artifact registration.
     assert(/^[a-zA-Z0-9._-]{1,100}$/.test(name),'unsafe artifact filename');
-    assert(this.get(id),'cannot write artifact before task exists');
-    const base=path.join(this.dir(id),'evidence');
-    fs.mkdirSync(base,{recursive:true,mode:0o700});
-    const file=path.join(base,name);
     const data=typeof content==='string'?content:canonical(content);
-    const fd=fs.openSync(file,'wx',0o600);
-    try{fs.writeFileSync(fd,data,'utf8');fs.fsyncSync(fd);} finally{fs.closeSync(fd);}
     const digest=sha256(data);
-    this.transaction(()=>{
+    // BEGIN IMMEDIATE spans verification, disk write/fsync and registration:
+    // no other SQLite writer can slip between the verified anchor and append.
+    // A file left by a failed registration is intentionally an orphan that
+    // requires manual reconciliation; never delete potentially useful evidence.
+    return this.transaction(()=>{
+      this.verify(id);
+      const anchor={
+        state:sha256(this.get(id)),
+        dispatch:this.dispatchHash(id),
+        artifacts:this.artifactHash(id),
+        head:this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest,
+      };
+      const base=path.join(this.dir(id),'evidence');
+      fs.mkdirSync(base,{recursive:true,mode:0o700});
+      const file=path.join(base,name);
+      const fd=fs.openSync(file,'wx',0o600);
+      try{fs.writeFileSync(fd,data,'utf8');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
+      // Recheck even under BEGIN IMMEDIATE: same-connection/monkeypatched
+      // synchronous callbacks must not re-anchor an altered state.
+      assert(anchor.state===sha256(this.get(id)),'task state changed during evidence fsync');
+      assert(anchor.dispatch===this.dispatchHash(id),'dispatch changed during evidence fsync');
+      assert(anchor.artifacts===this.artifactHash(id),'manifest changed during evidence fsync');
+      assert(anchor.head===this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest,
+        'ledger changed during evidence fsync');
       this.db.prepare('INSERT INTO artifacts(task_id,name,digest) VALUES(?,?,?)').run(id,name,digest);
       this.#appendVerifiedMutation(id,'ARTIFACT_REGISTERED',{name,digest});
+      return {path:file,sha256:digest};
     });
-    return {path:file,sha256:digest};
   }
   init(task) {
     assert(!this.get(task.id),'task already exists');
@@ -69,9 +85,60 @@ export class Store {
     const row=this.db.prepare('SELECT data FROM tasks WHERE id=?').get(checkedId(id));
     return row?JSON.parse(row.data):null;
   }
+  #validateTaskTransition(oldTask,nextTask,type){
+    assert(oldTask&&nextTask&&oldTask.id===nextTask.id,'task identity changed');
+    assert(canonical(nextTask.frozen)===canonical(oldTask.frozen),
+      'frozen config is immutable after task creation');
+    for(const [key,limit] of [['aRound',10],['bRound',10]]){
+      const prev=oldTask[key],curr=nextTask[key];
+      if(prev===undefined&&curr===undefined)continue; // synthetic legacy fixtures
+      assert(Number.isInteger(prev)&&prev>=0&&prev<=limit,
+        `invalid persisted ${key} round counter`);
+      assert(Number.isInteger(curr)&&curr>=prev&&curr<=limit&&curr-prev<=1,
+        `${key} budget cannot reset, decrease, skip rounds or exceed limit`);
+      if(curr!==prev)
+        assert(type===(key==='aRound'?'GATE_A_ROUND_START':'GATE_B_ROUND_START'),
+          `${key} may only advance in its round-start transition`);
+    }
+    const pair=(t)=>{
+      const spec=t.taskSpec,hash=t.taskSpecSha;
+      const present=spec!==null&&spec!==undefined;
+      assert(present===(hash!==null&&hash!==undefined),
+        'TASK_SPEC and digest must both be present or absent');
+      if(!present)return null;
+      assert(typeof spec==='string'&&spec.length>20&&typeof hash==='string'&&hash===sha256(spec),
+        'TASK_SPEC digest mismatch');
+      return {spec,hash};
+    };
+    const before=pair(oldTask),after=pair(nextTask);
+    if(before){
+      assert(after&&after.spec===before.spec&&after.hash===before.hash,
+        'approved TASK_SPEC is immutable');
+    }else if(after){
+      assert(type==='TASK_SPEC_CANDIDATE',
+        'TASK_SPEC may only be frozen at the Planner candidate transition');
+    }
+    for(const key of ['created','baseSha']){
+      if(oldTask[key]!==undefined&&oldTask[key]!==null)
+        assert(nextTask[key]===oldTask[key],`${key} cannot be replaced`);
+    }
+    if(oldTask.baseSha===null&&nextTask.baseSha!==null&&nextTask.baseSha!==undefined)
+      assert(type==='WORKTREE_PREPARED','baseSha may only be established by worktree preparation');
+    if(oldTask.currentSha!==undefined&&oldTask.currentSha!==nextTask.currentSha)
+      assert(['WORKTREE_PREPARED','A_COMMIT_FROZEN','B_COMMIT_FROZEN'].includes(type),
+        'currentSha may only change when freezing a worktree or commit');
+    if(Array.isArray(oldTask.history)){
+      assert(Array.isArray(nextTask.history)&&nextTask.history.length>=oldTask.history.length,
+        'history cannot be truncated');
+      assert(canonical(nextTask.history.slice(0,oldTask.history.length))===canonical(oldTask.history),
+        'history is append-only');
+    }
+  }
   save(t,type,payload={}) {
     this.transaction(()=>{
-      this.verify(t.id); // Verify persisted state BEFORE updating it (R2-001).
+      this.verify(t.id);
+      const oldTask=this.get(t.id);
+      this.#validateTaskTransition(oldTask,t,type);
       this.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(canonical(t),t.id);
       this.#appendVerifiedMutation(t.id,type,{stage:t.stage,status:t.status,...payload});
     });
