@@ -19,7 +19,7 @@ function sandbox(){
   frozen.digest=sha256(frozen);
   seedSyntheticTask(store,{id,stage:'BLOCKED',status:'BLOCKED',frozen,
     aRound:0,bRound:9,currentSha:null,taskSpecSha:null,history:[],inflight:null});
-  return {dir,store,id,proof:authority.proof,dispose(){store.close();authority.restore();fs.rmSync(dir,{recursive:true,force:true});}};
+  return {dir,store,id,proof:authority.proof,attest:authority.attest,dispose(){store.close();authority.restore();fs.rmSync(dir,{recursive:true,force:true});}};
 }
 function git(dir,...args){return execFileSync('git',['-C',dir,...args],{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();}
 function repo(){
@@ -114,11 +114,19 @@ test('R2-009 staged rename to .env.production cannot be committed',async()=>{
 test('R2-010 successful reviewer report survives peer failure',async()=>{
   const w=sandbox();
   try{
-    const c=new WorkflowController({store:w.store,runtime:{execute:async ({role})=>{
+    const c=new WorkflowController({store:w.store,runtime:{execute:async ({role,phase,store})=>{
       if(role==='quality_reviewer')throw Error('simulated provider loss');
-      return {role,agentId:'spec-agent-id',verdict:'PASS',findings:[],summary:'Verified simulation'};
+      const agentId='spec-agent-id',dispatchId='signed-spec-dispatch';
+      store.recordIntent(w.id,phase,dispatchId);
+      store.recordAck(dispatchId,agentId);
+      store.recordTerminal(dispatchId);
+      const base={role,phase,agentId,dispatchId,verdict:'PASS',
+        findings:[],summary:'Independently signed synthetic seat',taskSpec:null};
+      return {...base,attestation:w.attest(role,phase,'a'.repeat(40),
+        agentId,dispatchId,base)};
     }},p0:null,gitOps:{assertUnchanged:async()=>{}}});
-    const t=w.store.get(w.id);t.stage='A_REVIEW';t.status='READY';t.worktree=w.dir;
+    const t=w.store.get(w.id);t.stage='A_REVIEW';t.status='READY';
+    t.worktree=w.dir;t.currentSha='a'.repeat(40);
     resealSyntheticState(w.store,t);
     await assert.rejects(()=>c.invokePair(t,'A1-review','a'.repeat(40)),/reconcile/);
     const after=w.store.get(w.id);

@@ -4,20 +4,19 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from '../src/store.mjs';
-import {seedSyntheticTask} from './fixtures.mjs';
+import {seedSyntheticTask,syntheticHumanAuthority} from './fixtures.mjs';
 import {sha256,MAX_A,MAX_B,ROLE_PERMISSIONS} from '../src/policy.mjs';
 function fixture(stage){
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'p1-r7-'));
-  delete process.env.P1_TRUST_ROOTS_FILE;
-  delete process.env.P1_TRUST_ROOTS_SHA256;
-  const store=new Store(path.join(root,'state')),id='TASKR700';
+  const id='TASKR700',authority=syntheticHumanAuthority(root,id);
+  const store=new Store(path.join(root,'state'));
   const frozen={schema:1,intent:'Synthetic independent witness regression only',
     policy:{maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
   frozen.digest=sha256(frozen);
   seedSyntheticTask(store,{id,frozen,stage,status:'INFLIGHT',
     currentSha:'d'.repeat(40),baseSha:'c'.repeat(40),
     aRound:1,bRound:1,history:[],inflight:{role:'review_pair',phase:'A1-review'}});
-  return {root,store,id,close(){store.close();fs.rmSync(root,{recursive:true,force:true});}};
+  return {root,store,id,close(){store.close();authority.restore();fs.rmSync(root,{recursive:true,force:true});}};
 }
 for(const [stage,prefix] of [['A_REVIEW','A1-review'],['B_REVIEW','B1-review']]){
   test('R7-001 '+stage+' cannot fake reviewer seats via public dispatch/artifact/save',()=>{

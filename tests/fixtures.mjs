@@ -45,12 +45,21 @@ export function syntheticHumanAuthority(dir,taskId) {
   const oldFile=process.env.P1_TRUST_ROOTS_FILE;
   const oldHash=process.env.P1_TRUST_ROOTS_SHA256;
   const pair=generateKeyPairSync('ed25519');
+  const witness=generateKeyPairSync('ed25519');
   const file=path.join(dir,'synthetic-human-public.json');
   fs.writeFileSync(file,JSON.stringify({schema:1,human:{
-    'synthetic-operator':pair.publicKey.export({format:'pem',type:'spki'})}}));
+    'synthetic-operator':pair.publicKey.export({format:'pem',type:'spki'})},
+    execution:{'synthetic-witness':witness.publicKey.export({format:'pem',type:'spki'})}}));
   process.env.P1_TRUST_ROOTS_FILE=file;
   process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(file,'utf8'));
   return {
+    attest(role,phase,commit,agentId,dispatchId,bare,taskIdOverride=taskId){
+      const statement={purpose:'P1_EXECUTION_ATTESTATION_V1',taskId:taskIdOverride,
+        role,phase,commit,agentId,dispatchId,rawSha256:sha256(bare),
+        nonce:randomUUID(),issuedAt:new Date().toISOString()};
+      return {schema:1,keyId:'synthetic-witness',statement,
+        signature:sign(null,Buffer.from(canonical(statement)),witness.privateKey).toString('base64')};
+    },
     proof(gate,digest,actor,receipt){
       const statement={purpose:'P1_HUMAN_GATE_V1',taskId,gate,digest,actor,
         receipt,nonce:randomUUID(),issuedAt:new Date().toISOString()};
