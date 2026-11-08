@@ -28,7 +28,7 @@ export function seedSyntheticTask(store,task) {
   frozen.policy={maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS};
   delete frozen.digest;
   frozen.digest=sha256(frozen);
-  const boot={...task,id,frozen,stage:'WAIT_GATE_01',status:'WAITING_HUMAN',
+  const boot={...task,id,frozen,trustRootSha256:store.trustRootDigest(),stage:'WAIT_GATE_01',status:'WAITING_HUMAN',
     aRound:0,bRound:0,taskSpec:null,taskSpecSha:null,baseSha:null,currentSha:null,
     lastA:null,lastB:null,p0Initial:null,p0Final:null,history:[],inflight:null,
     pendingHuman:null,bFindings:[],changesInB:false};

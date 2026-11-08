@@ -2,21 +2,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { verifyCommitEvidenceSync } from './git.mjs';
+import {loadTrustRoots,verifyHumanApproval} from './auth.mjs';
+import {SshP0Adapter} from './p0.mjs';
 import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS } from './policy.mjs';
 
 export class Store {
   // Only the Store's own verified, synchronous mutation methods may append
   // against an already-mutated row. No public caller can set this private flag.
   #trustedEventWrite=false;
+  #trustRoots=null;
   #appendVerifiedMutation(id,type,payload) {
     assert(!this.#trustedEventWrite,'nested trusted event append forbidden');
     this.#trustedEventWrite=true;
     try { return this.event(id,type,payload); }
     finally { this.#trustedEventWrite=false; }
   }
-  constructor(root,{readOnly=false,gitVerifier=verifyCommitEvidenceSync}={}) {
-    assert(typeof gitVerifier==='function','Git commit verifier must be available');
-    this.gitVerifier=gitVerifier;
+  constructor(root,{readOnly=false,gitVerifier}={}) {
+    assert(gitVerifier===undefined,'injectable Git verifier forbidden in production');
+    this.#trustRoots=loadTrustRoots();
     this.root=path.resolve(root);
     this.readOnly=readOnly;
     if (readOnly) {
@@ -30,6 +33,10 @@ export class Store {
       CREATE TABLE IF NOT EXISTS artifacts(task_id TEXT NOT NULL, name TEXT NOT NULL, digest TEXT NOT NULL, PRIMARY KEY(task_id,name));`);
   }
   dir(id) { return path.join(this.root,'tasks',checkedId(id)); }
+  trustRootDigest(){return this.#trustRoots?.digest??null;}
+  verifyHumanProof(envelope,fields){
+    return verifyHumanApproval(this.#trustRoots,envelope,fields);
+  }
   transaction(fn) {
     assert(!this.readOnly,'store opened read-only');
     this.db.exec('BEGIN IMMEDIATE');
@@ -78,6 +85,8 @@ export class Store {
   }
   #validateCreation(t){
     checkedId(t?.id);
+    assert(t.trustRootSha256===this.trustRootDigest(),
+      'new task trust roots are not pinned to approved deployment');
     assert(t.stage==='WAIT_GATE_01'&&t.status==='WAITING_HUMAN',
       'new tasks must start at human Gate 0.1');
     assert(t.aRound===0&&t.bRound===0,'new task round budgets must start at zero');
@@ -121,6 +130,14 @@ export class Store {
     assert(typeof receipt.actor==='string'&&receipt.actor.length>1&&
       typeof receipt.receipt==='string'&&receipt.receipt.length>15&&
       payload.actor===receipt.actor,'human Gate receipt missing or inconsistent');
+    assert(oldTask.trustRootSha256!==null&&
+      oldTask.trustRootSha256===this.trustRootDigest(),
+      'approval trust roots changed or were not independently provisioned');
+    this.verifyHumanProof(receipt.proof,{
+      taskId:oldTask.id,gate,digest,actor:receipt.actor,receipt:receipt.receipt,
+    });
+    assert(receipt.proof.statement.nonce===payload.approvalNonce,
+      'approval signature nonce does not match persisted transition');
     if(gate==='0.2'){
       assert(oldTask.taskSpecSha&&oldTask.taskSpec,'Gate 0.2 needs frozen TASK_SPEC');
       this.#requireArtifact(oldTask.id,'TASK_SPEC.md',oldTask.taskSpecSha);
@@ -147,6 +164,8 @@ export class Store {
         Array.isArray(r.findings)&&r.findings.length===0),
       'Gate 5.9 P0 physical quorum/commit/findings invalid');
     assert(!t.bFindings?.length,'Gate 5.9 unresolved findings');
+    verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
+    this.#verifyP0Nodes(t,p0);
     const record=this.db.prepare("SELECT name,digest FROM artifacts WHERE task_id=? AND name='final-compliance.json'").get(t.id);
     const artifact=JSON.parse(this.#requireArtifact(t.id,'final-compliance.json',record?.digest));
     assert(artifact.pass===true&&artifact.finalSha===t.currentSha&&
@@ -158,6 +177,60 @@ export class Store {
     assert(t.history.some(h=>h.role==='P0'&&h.sha===t.currentSha&&h.passed===true&&
       this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?').get(t.id,h.evidenceSha256)),
       'Gate 5.9 needs persisted P0 evidence');
+  }
+  #verifyP0Nodes(t,summary){
+    const inventory=(t.frozen.p0?.nodes??[]).filter(n=>n.enabled===true);
+    assert(inventory.length>=2,'no trusted independent P0 node inventory');
+    const adapter=new SshP0Adapter(inventory);
+    adapter.validateInventory();
+    const distinct=new Set();
+    for(const report of summary.reports){
+      const node=inventory.find(n=>n.id===report.nodeId);
+      assert(node,'P0 report node not present in approved physical inventory');
+      assert(!distinct.has(node.physicalId),'duplicate P0 physical node');
+      const cycle=summary.cycle;
+      assert(typeof cycle==='string'&&/^(initial-A|final-B)\d+$/.test(cycle),
+        'invalid signed P0 cycle');
+      const jobId=sha256(`${t.id}:${cycle}:${t.currentSha}:${node.id}`).slice(0,40);
+      const name=`p0-${cycle}-${node.id}-result.json`;
+      assert(report.evidence?.sha256,'P0 node raw evidence digest missing');
+      const raw=this.#requireArtifact(t.id,name,report.evidence.sha256);
+      const verified=adapter.verify(node,JSON.parse(raw),jobId,t.currentSha);
+      assert(verified.physicalId===report.physicalId&&verified.verdict===report.verdict&&
+        canonical(verified.findings)===canonical(report.findings),
+        'P0 summary does not match authenticated raw node report');
+      const dispatch=this.db.prepare('SELECT state,agent_id,phase FROM dispatches WHERE id=? AND task_id=?')
+        .get(jobId,t.id);
+      assert(dispatch?.state==='TERMINAL'&&dispatch.phase===`P0:${cycle}:${node.id}`,
+        'P0 report has no completed, recorded remote dispatch');
+      distinct.add(node.physicalId);
+    }
+    assert(distinct.size>=2,'P0 authenticated physical quorum incomplete');
+  }
+  #verifyReviewerPair(t){
+    const prefix=t.stage==='A_REVIEW'? 'A'+t.aRound:'B'+t.bRound;
+    const phase=`${prefix}-review`, roles=['spec_reviewer','quality_reviewer'];
+    const seen=new Set();
+    for(const role of roles){
+      const matches=t.history.filter(h=>h.role===role&&h.phase===phase&&h.sha===t.currentSha);
+      assert(matches.length===1,'two independent Reviewer seats required for exact Commit');
+      const h=matches[0];
+      assert(typeof h.agentId==='string'&&h.agentId&&!seen.has(h.agentId),
+        'Reviewer agent identity missing or reused');
+      seen.add(h.agentId);
+      const artifact=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+        .get(t.id,h.evidenceSha256);
+      assert(artifact,'missing Reviewer registered result');
+      const raw=JSON.parse(this.#requireArtifact(t.id,artifact.name,h.evidenceSha256));
+      assert(raw.agentId===h.agentId&&raw.role===role&&raw.verdict===h.verdict&&
+        raw.phase===phase+'-'+role&&PASS(raw.verdict)&&
+        Array.isArray(raw.findings)&&raw.findings.length===0,
+        'Reviewer result missing or not clean PASS');
+      const dispatch=this.db.prepare('SELECT state,agent_id FROM dispatches WHERE task_id=? AND phase=?')
+        .all(t.id,phase+'-'+role);
+      assert(dispatch.some(d=>d.state==='TERMINAL'&&d.agent_id===h.agentId),
+        'Reviewer has no completed Paseo dispatch/ACK');
+    }
   }
   #validateStageTransition(oldTask,t,type,payload){
     const moves={
@@ -256,6 +329,8 @@ export class Store {
         t.baseSha&&t.currentSha!==oldTask.currentSha,
         'commit freeze requires changed full Git SHA and frozen base');
     }
+    if(type==='A_REVIEW_PASS'||type==='B_REVIEW_PASS')
+      this.#verifyReviewerPair(oldTask);
     if(type==='GATE_A_PASS'){
       assert(t.lastA?.pass===true&&t.lastA?.tests?.pass===true&&
         t.lastA.commit===t.currentSha,'Gate A pass requires successful Tester A evidence');
@@ -367,7 +442,7 @@ export class Store {
         'Git trust root can only change at verified freeze events');
       // This check intentionally runs inside the existing immediate SQL
       // transaction: bogus SHA cannot be persisted even transiently.
-      this.gitVerifier(nextTask.frozen?.project?.repo,nextTask.baseSha,
+      verifyCommitEvidenceSync(nextTask.frozen?.project?.repo,nextTask.baseSha,
         nextTask.currentSha,nextTask.worktree,oldTask.currentSha??null);
     }
     if(Array.isArray(oldTask.history)){

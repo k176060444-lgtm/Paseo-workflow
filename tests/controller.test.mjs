@@ -3,12 +3,35 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {generateKeyPairSync,sign,createHmac,randomUUID} from 'node:crypto';
 import {Store} from '../src/store.mjs';
 import {WorkflowController} from '../src/controller.mjs';
-import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256} from '../src/policy.mjs';
+import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical} from '../src/policy.mjs';
+import {verifyCommitEvidenceSync} from '../src/git.mjs';
 
 function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false}={}) {
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-case-'));
+  const g=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
+  const repo=path.join(tmp,'repo');fs.mkdirSync(repo);
+  g(repo,'init','-q');
+  fs.writeFileSync(path.join(repo,'source.txt'),'synthetic baseline');
+  g(repo,'add','.');
+  g(repo,'-c','user.name=Test','-c','user.email=test@localhost','commit','-qm','baseline');
+  const keys=generateKeyPairSync('ed25519');
+  const manifest=path.join(tmp,'public-trust.json');
+  fs.writeFileSync(manifest,JSON.stringify({schema:1,human:{
+    'offline-auditor':keys.publicKey.export({format:'pem',type:'spki'})}}));
+  const prevTrustFile=process.env.P1_TRUST_ROOTS_FILE;
+  const prevTrustHash=process.env.P1_TRUST_ROOTS_SHA256;
+  process.env.P1_TRUST_ROOTS_FILE=manifest;
+  process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(manifest,'utf8'));
+  function proof(gate,digest,receipt,actor='user'){
+    const statement={purpose:'P1_HUMAN_GATE_V1',taskId:'TASK1234',gate,digest,
+      actor,receipt,nonce:randomUUID(),issuedAt:new Date().toISOString()};
+    return {schema:1,keyId:'offline-auditor',statement,
+      signature:sign(null,Buffer.from(canonical(statement)),keys.privateKey).toString('base64')};
+  }
   const roles={};const soulDir=path.join(tmp,'souls');fs.mkdirSync(soulDir);
   for(const [role] of Object.entries(ROLE_PERMISSIONS)){
     const text=`# ${role}\nThis role must follow the approved specification, review exact commits, and obey permissions. All results must carry factual evidence.\n`;
@@ -17,62 +40,113 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       model:(role.includes('worker')||role==='spec_reviewer'||role==='tester_gate_b'?'opencode':'codex')+'/model-id',soul:'souls/'+role+'.md'};
     else roles[role]={soul:'souls/'+role+'.md'};
   }
+  const nodes=['5bao','9bao'].map((id,i)=>{
+    const file=path.join(tmp,'p0-'+id+'.hmac');
+    fs.writeFileSync(file,Buffer.alloc(48,0x43+i));
+    return {id,physicalId:'physical-'+id,sshAlias:id,harness:'opencode',
+      model:'opencode/model',hmacKeyPath:file,enabled:true,role:i===0?'blind_a':'blind_b',
+      runner:'/runner',config:'/config'};
+  });
   const matrix=path.join(tmp,'matrix.json');const intent=path.join(tmp,'intent.md');
-  fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']]},roles}));
+  fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']]},roles,p0:{nodes}}));
   fs.writeFileSync(intent,'Implement a precise and approved programming feature with fully independent review.');
-  // Only this fake-runtime test suite injects a fake Git verifier.
-  // Production Store defaults to real Git object/ancestry/HEAD validation.
-  const store=new Store(path.join(tmp,'state'),{gitVerifier:(repo,base,sha,worktree,previous)=>{
-    assert.match(base,/^[0-9a-f]{40}$/);assert.match(sha,/^[0-9a-f]{40}$/);
-    if(previous)assert.match(previous,/^[0-9a-f]{40}$/);
-    assert.equal(typeof worktree,'string');
-    return {base,sha};
-  }});
+  const store=new Store(path.join(tmp,'state'));
   let workerCount=0,remCount=0,reportCount=0,modelCalls=[];
   const runtime={execute:async x=>{
     modelCalls.push(x.role);
+    const number=modelCalls.length,dispatchId='mock-'+number,agentId='fake-agent-'+number;
+    x.store.recordIntent(x.task.id,x.phase,dispatchId);
     if(ambiguous&&x.role==='planner')throw Error('provider lost connection after request');
-    const verdict=x.role==='worker'&&workerFails?'FAIL':x.role==='worker_remediation'&&remediationFails?'FAIL':'PASS';
-    return {role:x.role,phase:x.phase,agentId:`fake-agent-${modelCalls.length}`,dispatchId:'fake',verdict,summary:'fake simulation only',findings:verdict==='FAIL'?['needs fixing']:[],taskSpec:x.role==='planner'?'Build a tested feature using the approved specification and TDD.':null};
+    x.store.recordAck(dispatchId,agentId);
+    const verdict=x.role==='worker'&&workerFails?'FAIL':
+      x.role==='worker_remediation'&&remediationFails?'FAIL':'PASS';
+    x.store.recordTerminal(dispatchId);
+    return {role:x.role,phase:x.phase,agentId,dispatchId,verdict,
+      summary:'synthetic test runtime only',findings:verdict==='FAIL'?['needs fixing']:[],
+      taskSpec:x.role==='planner'?'Build a tested feature using the approved specification and TDD.':null};
   }};
   let commitCount=0;
   const gitOps={
-    head:async()=>('a'.repeat(40)),
-    prepare:async()=>('a'.repeat(40)),
-    commitWorktree:async()=>String(++commitCount).padStart(40,'b'),
-    assertUnchanged:async()=>{},
-    makeTestCheckout:async(repo,sha,dir)=>dir,
-    verifyCommitEvidenceSync:(repo,base,sha,worktree)=>{ assert.match(base,/^[0-9a-f]{40}$/);assert.match(sha,/^[0-9a-f]{40}$/);assert.equal(typeof worktree,'string');return {baseSha:base,commitSha:sha}; },
+    head:async dir=>g(dir,'rev-parse','HEAD'),
+    prepare:async (source,base,dir)=>{
+      const sha=g(source,'rev-parse',base+'^{commit}');
+      fs.mkdirSync(path.dirname(dir),{recursive:true});
+      g(source,'worktree','add','--detach',dir,sha);
+      return sha;
+    },
+    commitWorktree:async dir=>{
+      fs.writeFileSync(path.join(dir,'source.txt'),'synthetic edit '+(++commitCount));
+      g(dir,'add','.');
+      g(dir,'-c','user.name=Test','-c','user.email=test@localhost',
+        'commit','-qm','synthetic worker commit '+commitCount);
+      return g(dir,'rev-parse','HEAD');
+    },
+    assertUnchanged:async (dir,sha)=>{assert.equal(g(dir,'rev-parse','HEAD'),sha);},
+    makeTestCheckout:async (source,sha,dir)=>{
+      fs.mkdirSync(path.dirname(dir),{recursive:true});
+      g(source,'worktree','add','--detach',dir,sha);return dir;
+    },
+    verifyCommitEvidenceSync,
     testRun:async()=>({pass:true,receipts:[{code:0,ok:true,argv:['node','--test'],logSha256:'0'.repeat(64)}]})
   };
-  const p0={review:async({commit,cycle})=>{
+  const p0={review:async({task,commit,cycle,store})=>{
     reportCount++;
     const isInitial=cycle.startsWith('initial');
-    const issue=(p0HasFindings&&isInitial)?['fix this defect']:[];
-    return {commit,cycle,passed:issue.length===0&&!conflicting,dispute:conflicting,findings:issue,
-      reports:[{nodeId:'5bao',physicalId:'physical-A',commit,verdict:conflicting?'FAIL':'PASS',findings:issue},
-        {nodeId:'9bao',physicalId:'physical-B',commit,verdict:'PASS',findings:[]}]};
+    const issue=p0HasFindings&&isInitial?['fix this defect']:[];
+    const reports=[];
+    for(const node of nodes){
+      const jobId=sha256(task.id+':'+cycle+':'+commit+':'+node.id).slice(0,40);
+      store.recordIntent(task.id,'P0:'+cycle+':'+node.id,jobId);
+      store.recordAck(jobId,node.id+':'+jobId);
+      const verdict=conflicting&&node.id==='5bao'?'FAIL':'PASS';
+      const findings=verdict==='FAIL'?['HIGH: reviewer disagreed']:issue;
+      const body={jobId,nodeId:node.id,physicalId:node.physicalId,commit,
+        harness:node.harness,model:node.model,exitCode:0,clean:true,
+        stdoutSha256:'f'.repeat(64),verdict,summary:'synthetic P0 signed result',
+        findings};
+      const mac=createHmac('sha256',fs.readFileSync(node.hmacKeyPath))
+        .update(canonical(body)).digest('hex');
+      const evidence=store.artifact(task.id,'p0-'+cycle+'-'+node.id+'-result.json',{body,mac});
+      store.recordTerminal(jobId);
+      reports.push({...body,evidence});
+    }
+    const findings=reports.flatMap(r=>r.findings);
+    return {commit,cycle,reports,findings,passed:findings.length===0&&!conflicting,
+      dispute:conflicting,skipped:[],cancelled:[]};
   }};
   const c=new WorkflowController({store,runtime,p0,gitOps});
   const create=c.create({id:'TASK1234',configFile:matrix,intentFile:intent});
-  c.approve({id:'TASK1234',gate:'0.1',digest:create.digest,actor:'user',receipt:'Explicit user approval of goal and role-matrix digest.'});
+  const receipt01='Explicit user approval of goal and role-matrix digest.';
+  c.approve({id:'TASK1234',gate:'0.1',digest:create.digest,actor:'user',
+    receipt:receipt01,proof:proof('0.1',create.digest,receipt01)});
   process.env.P1_LIVE_ALLOWED='YES';process.env.P1_HOST_ISOLATION_ATTESTED='YES';
-  return {tmp,c,store,modelCalls,getP0Calls:()=>reportCount,gitOps};
+  return {tmp,c,store,modelCalls,getP0Calls:()=>reportCount,gitOps,proof,prevTrustFile,prevTrustHash};
 }
 async function movePastPlanning(x){
   const plan=await x.c.run('TASK1234');
   assert.equal(plan.stage,'WAIT_GATE_02');
   const t=x.c.required('TASK1234');
-  x.c.approve({id:t.id,gate:'0.2',digest:t.taskSpecSha,actor:'user',receipt:'Approved the exact proposed TASK_SPEC SHA for implementation.'});
+  const msg='Approved the exact proposed TASK_SPEC SHA for implementation.';
+  x.c.approve({id:t.id,gate:'0.2',digest:t.taskSpecSha,actor:'user',
+    receipt:msg,proof:x.proof('0.2',t.taskSpecSha,msg)});
 }
-function finish(x){x.store.close();fs.rmSync(x.tmp,{recursive:true,force:true});}
+function finish(x){
+  x.store.close();
+  if(x.prevTrustFile===undefined)delete process.env.P1_TRUST_ROOTS_FILE;
+  else process.env.P1_TRUST_ROOTS_FILE=x.prevTrustFile;
+  if(x.prevTrustHash===undefined)delete process.env.P1_TRUST_ROOTS_SHA256;
+  else process.env.P1_TRUST_ROOTS_SHA256=x.prevTrustHash;
+  fs.rmSync(x.tmp,{recursive:true,force:true});
+}
 
 test('happy path uses exactly one Gate A and Gate B round, skips remediation and arbitration',async()=>{
  const x=setup();try{await movePastPlanning(x);const result=await x.c.run('TASK1234');
  assert.equal(result.stage,'WAIT_GATE_59');assert.equal(result.aRound,1);assert.equal(result.bRound,1);
  assert.equal(x.getP0Calls(),1);assert(!x.modelCalls.includes('worker_remediation'));assert(!x.modelCalls.includes('arbitrator'));
  const ledger=x.store.verify('TASK1234');assert(ledger.events>10);
- x.c.approve({id:'TASK1234',gate:'5.9',digest:result.currentSha,actor:'user',receipt:'User authorizes closing P1; separate deployment remains out of scope.'});
+ const msg='User authorizes closing P1; separate deployment remains out of scope.';
+ x.c.approve({id:'TASK1234',gate:'5.9',digest:result.currentSha,actor:'user',
+   receipt:msg,proof:x.proof('5.9',result.currentSha,msg)});
  assert.equal(x.c.required('TASK1234').stage,'CLOSED');}finally{finish(x);}
 });
 

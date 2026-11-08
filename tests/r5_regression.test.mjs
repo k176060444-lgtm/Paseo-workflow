@@ -15,7 +15,7 @@ function fixture(){
   const frozen={schema:1,intent:'Synthetic approved purpose for R5 regression',policy:{
     maxA:MAX_A,maxB:MAX_B,permissions:ROLE_PERMISSIONS}};
   frozen.digest=sha256(frozen);
-  const honest={id,stage:'WAIT_GATE_01',status:'WAITING_HUMAN',aRound:0,bRound:0,
+  const honest={id,trustRootSha256:store.trustRootDigest(),stage:'WAIT_GATE_01',status:'WAITING_HUMAN',aRound:0,bRound:0,
     frozen,taskSpec:null,taskSpecSha:null,baseSha:null,currentSha:null,
     lastA:null,lastB:null,p0Initial:null,p0Final:null,history:[],pendingHuman:null};
   return {root,store,id,honest,close(){store.close();fs.rmSync(root,{recursive:true,force:true});}};

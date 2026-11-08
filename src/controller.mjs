@@ -11,7 +11,7 @@ export class WorkflowController {
   create({id,configFile,intentFile}){
     checkedId(id);
     const frozen=freezeConfig(configFile,intentFile);
-    const t={id,frozen,stage:'WAIT_GATE_01',status:'WAITING_HUMAN',aRound:0,bRound:0,
+    const t={id,frozen,trustRootSha256:this.store.trustRootDigest(),stage:'WAIT_GATE_01',status:'WAITING_HUMAN',aRound:0,bRound:0,
       baseSha:null,currentSha:null,taskSpec:null,taskSpecSha:null,
       lastA:null,lastB:null,p0Initial:null,p0Final:null,changesInB:false,
       bFindings:[],pendingHuman:null,history:[],created:new Date().toISOString()};
@@ -20,7 +20,7 @@ export class WorkflowController {
     this.store.event(id,'CONFIG_FROZEN',{sha256:frozen.digest,artifactSha256:snapshot.sha256});
     return {id,digest:frozen.digest,stage:t.stage};
   }
-  approve({id,gate,digest,actor,receipt}){
+  approve({id,gate,digest,actor,receipt,proof=null}){
     const t=this.required(id);
     this.store.verify(id);
     this.assertFrozenIntegrity(t);
@@ -38,11 +38,18 @@ export class WorkflowController {
     assert(t.stage===allowed[gate],'gate not awaiting human approval');
     const expected=gate==='0.1'?t.frozen.digest:gate==='0.2'?t.taskSpecSha:t.currentSha;
     assert(expected&&digest===expected,'approval does not match frozen digest');
-    const approval=this.store.artifact(id,`approval-${gate.replace('.','-')}.json`,{gate,digest,actor,receipt,at:new Date().toISOString()});
+    // Verify BEFORE writing the irreversible approval artifact. No signature
+    // means this gate cannot pass, even when all task fields look consistent.
+    this.store.verifyHumanProof(proof,{taskId:id,gate,digest,actor,receipt});
+    assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
+      'approval trust root is not pinned');
+    const approval=this.store.artifact(id,`approval-${gate.replace('.','-')}.json`,
+      {gate,digest,actor,receipt,proof,at:new Date().toISOString()});
     if(gate==='0.1'){t.stage='PLANNER';t.status='READY';}
     else if(gate==='0.2'){t.stage='PREPARE';t.status='READY';}
     else {t.stage='CLOSED';t.status='APPROVED_FOR_SEPARATE_RELEASE_REVIEW';}
-    this.store.save(t,`GATE_${gate}_APPROVED`,{digest,actor,approvalSha256:approval.sha256});
+    this.store.save(t,`GATE_${gate}_APPROVED`,
+      {digest,actor,approvalSha256:approval.sha256,approvalNonce:proof.statement.nonce});
     return {id,stage:t.stage,approvalSha256:approval.sha256};
   }
   required(id){const t=this.store.get(id);assert(t,`unknown task ${id}`);return t;}

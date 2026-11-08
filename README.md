@@ -18,7 +18,7 @@
 ## 运行环境与技术选择
 
 - Controller：Node.js **22+**（建议 24 LTS，Node 22 内置 `node:sqlite` 仍可能显示实验性警告）、SQLite 持久状态账本、原生 `git` 命令、Paseo TypeScript/JS SDK `@getpaseo/client@0.15.2`。
-- 21bao：已安装 Codex 与 OpenCode，但**尚未安装 Paseo**。本项目不自动安装、修改原有 Harness、切换模型或调用收费 Provider。
+- 21bao：Paseo Windows App 已可手动调用 Codex 与 OpenCode（用户 2026-11-08 确认）；**本 Controller 尚未完成 SDK/OS/身份实测**。本项目不自动安装、接管 App、修改已有 Harness 或调用收费 Provider。
 - 5bao/9bao：已安装 OpenCode，**无需安装 Paseo**。提供独立 `remote/p0_runner.py`，通过已有 SSH 连接进行持久 Job 执行与查询。
 - rusty：可选候选；远端执行器允许通过 `command`（argv + stdin JSON 请求/JSON 输出约定）运行 rusty 本身的 Native Harness，不强制 rusty 参加。未验证的命令不能填入后直接启用。
 - 角色 Soul：`souls/*.md` 取自用户现有 [Hermes-Coding-Role-Souls](https://github.com/k176060444-lgtm/Hermes-Coding-Role-Souls) 和原 P1 Blind 文件。版本来源见 [SOUL_PROVENANCE](docs/SOUL_PROVENANCE.md)，旧 Soul 对 Pro-Audit/常驻 Arbitrator 的历史用语，必须在独立审计时与 V2.1 优先规则协调。
@@ -47,7 +47,9 @@ node src/cli.mjs verify --id TASK1234
 
 `init` 会创建本地 `.p1-state/`；不调用任何模型。查看它输出的冻结配置 SHA。
 
-正式 `approve` 需要人工可审的完整审批收据文件、`--actor` 和**一致的 SHA**。没有用户确认禁止由 Hermes/Agent 模拟用户审批。
+正式 `approve` 需要独立的 Ed25519 签名凭据（`--approval-proof SIGNED_JSON`），以及 `--actor`、`--receipt`、准确 `--digest`。必须由独立于 Controller/Paseo 的密钥持有者签发。公开密钥清单通过 `P1_TRUST_ROOTS_FILE` 加载，并由从受保护配置提供的 `P1_TRUST_ROOTS_SHA256` 固定；没有合法签名**不能通过任何人工 Gate**。测试用私钥只能在离线临时测试中生成，不能作为生产身份。
+ 
+本轮 R6 的完整信任设计、现阶段未完成事项及本机 Paseo SDK 测试分界见 [R6 信任边界说明](docs/R6_AUTHENTICATED_EVIDENCE_20261108.md)。
 
 **`run` 默认硬阻断**：只有完成独立本地审计、OS 隔离与角色权限验收、Paseo/模型真实联调、P0 身份和双机验收，并且人为提供 `P1_LIVE_ALLOWED=YES` 与 `P1_HOST_ISOLATION_ATTESTED=YES` 后才可能启动。环境变量仅是操作员确认，不是安全沙箱本身。不要为了使测试通过而打开它们。
 
