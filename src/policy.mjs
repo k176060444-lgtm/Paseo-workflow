@@ -109,12 +109,13 @@ export function verifyGateBTests(t){
 }
 function approvedTestBash(commands=[]){
   const allowed={'*':'deny','git status':'allow','git diff':'allow'};
-  const binaries=new Set(['node','npm','pnpm','yarn','python','python3','pytest',
+  const binaries=new Set(['git','node','npm','pnpm','yarn','python','python3','pytest',
     'cargo','go','dotnet','mvn','gradle']);
   for(const argv of commands){
     if(!Array.isArray(argv)||argv.length<1||!binaries.has(argv[0])||
       !argv.every(s=>typeof s==='string'&&/^[A-Za-z0-9_.:/@+=-]+$/.test(s)))
       continue; // No shell metacharacters or interpreter -c/-e injections.
+    if(argv[0]==='git'&&argv.join(' ')!=='git diff --check')continue;
     if(argv.some((s,i)=>i>0&&['-c','-e','--eval','--require','-r'].includes(s)))continue;
     allowed[argv.join(' ')]='allow';
   }
