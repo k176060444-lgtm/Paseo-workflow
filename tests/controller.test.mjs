@@ -157,12 +157,12 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     return {commit,cycle,reports,findings,passed:findings.length===0&&!conflicting,
       dispute:conflicting,skipped:[],cancelled:[]};
   }};
-  const witness={attestTests:async({task,phase,sha,tests})=>{
+  const testCommandWitness={attestTests:async({task,phase,sha,tests})=>{
     const {attestation,...bare}=tests;
     return attest({taskId:task.id,role:'test_executor',phase,commit:sha,
       agentId:'',dispatchId:'',rawSha256:sha256({sha,tests:bare})});
   }};
-  const c=new WorkflowController({store,runtime,p0,gitOps,attestor:witness});
+  const c=new WorkflowController({store,runtime,p0,gitOps,attestor:testCommandWitness});
   const create=c.create({id:'TASK1234',configFile:matrix,intentFile:intent});
   const receipt01='Explicit user approval of goal and role-matrix digest.';
   c.approve({id:'TASK1234',gate:'0.1',digest:create.digest,actor:'user',
