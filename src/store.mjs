@@ -212,6 +212,11 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         Array.isArray(r.findings)&&r.findings.length===0),
       'Gate 5.9 P0 physical quorum/commit/findings invalid');
     assert(!t.bFindings?.length,'Gate 5.9 unresolved findings');
+    assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
+      'Gate 5.9 requires final Arbitrator acceptance of original user intent and code completeness');
+    assert(t.history.some(h=>h.role==='arbitrator'&&h.sha===t.currentSha&&
+      h.agentId===t.finalArbitration.agentId&&PASS(h.verdict)),
+      'Gate 5.9 missing authenticated final Arbitrator execution');
     verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
     this.#verifyP0Nodes(t,p0);
     const record=this.db.prepare("SELECT name,digest FROM artifacts WHERE task_id=? AND name='final-compliance.json'").get(t.id);
@@ -227,7 +232,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?').get(t.id,h.evidenceSha256)),
       'Gate 5.9 needs persisted P0 evidence');
     for(const h of t.history)
-      if(['spec_reviewer','quality_reviewer','test_executor','tester_gate_a','tester_gate_b'].includes(h.role))
+      if(['spec_reviewer','quality_reviewer','test_executor','tester_gate_a','tester_gate_b','arbitrator','pro_audit'].includes(h.role))
         this.#verifyHistoryExecution(t,h);
   }
   #verifyP0Nodes(t,summary){
@@ -368,7 +373,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
   #validateStageTransition(oldTask,t,type,payload){
     const moves={
       'GATE_0.1_APPROVED':['WAIT_GATE_01','PLANNER'],
-      'GATE_0.2_APPROVED':['WAIT_GATE_02','PREPARE'],
+      'GATE_0.2_APPROVED':['WAIT_GATE_02','PLAN_DETAIL'],
+      'PLAN_DETAIL_COMPLETE':['PLAN_DETAIL','PREPARE'],
       'GATE_5.9_APPROVED':['WAIT_GATE_59','CLOSED'],
       'TASK_SPEC_CANDIDATE':['PLANNER','WAIT_GATE_02'],
       'WORKTREE_PREPARED':['PREPARE','A_WORKER'],
@@ -390,11 +396,12 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'NEED_FINAL_COMMIT_P0':['B_TEST','P0_FINAL'],
       'ARBITRATOR_TRIGGERED':['B_TEST','ARBITRATOR'],
       'P0_FINDINGS_OUTSTANDING':['B_TEST','B_ENTER'],
-      'GATE_B_TEST_PASS':['B_TEST','READY_FINAL'],
+      'GATE_B_TEST_PASS':['B_TEST','ARBITRATOR'],
       'P0_CONFLICT_NEEDS_ARBITRATION':['P0_FINAL','ARBITRATOR'],
       'P0_FINAL_REQUIRES_REMEDIATION':['P0_FINAL','B_ENTER'],
-      'P0_FINAL_PASS':['P0_FINAL','READY_FINAL'],
-      'ARBITRATION_RECORDED':['ARBITRATOR','READY_FINAL'],
+      'P0_FINAL_PASS':['P0_FINAL','ARBITRATOR'],
+      'ARBITRATION_FINALIZED':['ARBITRATOR','READY_FINAL'],
+      'ARBITRATION_NEEDS_REMEDIATION':['ARBITRATOR','B_ENTER'],
       'WAITING_HUMAN_GATE_5_9':['READY_FINAL','WAIT_GATE_59'],
     };
     const same=new Set(['INFLIGHT','EXECUTION_UNCERTAIN','ROLE_TERMINAL','REVIEW_PAIR_STARTED',
@@ -489,6 +496,18 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         'P0 transition missing persisted review evidence');
       this.#verifyP0Nodes(t,p0);
     }
+    if(type==='PLAN_DETAIL_COMPLETE'){
+      assert(typeof t.workPlan==='string'&&t.workPlanSha===sha256(t.workPlan),
+        'detailed plan must be frozen after Gate 0.2');
+      this.#requireArtifact(t.id,'WORK_PLAN.md',t.workPlanSha);
+    }
+    if(type==='ARBITRATION_FINALIZED'){
+      assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
+        'final Arbitrator must bind current commit');
+      assert(t.history.some(h=>h.role==='arbitrator'&&h.sha===t.currentSha&&
+        h.agentId===t.finalArbitration.agentId&&PASS(h.verdict)),
+        'final Arbitrator execution receipt missing');
+    }
     if(type==='TASK_SPEC_CANDIDATE'){
       assert(t.taskSpecSha===payload.sha256,'Planner TASK_SPEC digest missing from transition');
       this.#requireArtifact(t.id,'TASK_SPEC.md',t.taskSpecSha);
@@ -561,6 +580,17 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     }
     if(oldTask.baseSha===null&&nextTask.baseSha!==null&&nextTask.baseSha!==undefined)
       assert(type==='WORKTREE_PREPARED','baseSha may only be established by worktree preparation');
+    if(oldTask.workPlan!==undefined&&oldTask.workPlan!==null)
+      assert(nextTask.workPlan===oldTask.workPlan&&nextTask.workPlanSha===oldTask.workPlanSha,
+        'approved detailed plan is immutable');
+    else if(nextTask.workPlan!==undefined&&nextTask.workPlan!==null)
+      assert(type==='PLAN_DETAIL_COMPLETE'&&nextTask.workPlanSha===sha256(nextTask.workPlan),
+        'detailed work plan may only be frozen after Gate 0.2');
+    if(oldTask.finalArbitration!==undefined&&oldTask.finalArbitration!==null)
+      assert(canonical(oldTask.finalArbitration)===canonical(nextTask.finalArbitration),
+        'final Arbitrator conclusion cannot be replaced or erased');
+    else if(nextTask.finalArbitration!==undefined&&nextTask.finalArbitration!==null)
+      assert(type==='ARBITRATION_FINALIZED','final Arbitrator may only be set at authenticated completion');
     if(oldTask.worktree!==null&&oldTask.worktree!==undefined)
       assert(nextTask.worktree===oldTask.worktree,'worktree path is immutable after preparation');
     if((oldTask.worktree===null||oldTask.worktree===undefined)&&nextTask.worktree){
