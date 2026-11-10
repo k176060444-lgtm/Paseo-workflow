@@ -6,11 +6,11 @@ export const ROLE_PERMISSIONS = Object.freeze({
   planner: 'READ_ONLY', worker: 'WORKSPACE_WRITE',
   spec_reviewer: 'READ_ONLY', quality_reviewer: 'READ_ONLY',
   tester_gate_a: 'TEST_ONLY', worker_remediation: 'WORKSPACE_WRITE',
-  tester_gate_b: 'TEST_ONLY', arbitrator: 'READ_ONLY',
+  tester_gate_b: 'TEST_ONLY', arbitrator: 'READ_ONLY', pro_audit: 'READ_ONLY',
   blind_a: 'READ_ONLY', blind_b: 'READ_ONLY', blind_c: 'READ_ONLY',
 });
 export const LOCAL_ROLES = Object.freeze(['planner', 'worker', 'spec_reviewer', 'quality_reviewer',
-  'tester_gate_a', 'worker_remediation', 'tester_gate_b', 'arbitrator']);
+  'tester_gate_a', 'worker_remediation', 'tester_gate_b', 'arbitrator', 'pro_audit']);
 export const MAX_A = 10;
 export const MAX_B = 10;
 export const TERMINAL = new Set(['WAIT_GATE_01', 'WAIT_GATE_02', 'WAIT_GATE_59', 'WAIT_HUMAN',
