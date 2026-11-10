@@ -12,12 +12,14 @@ import {seedSyntheticTask} from './fixtures.mjs';
 function fixture(withAuthority=false){
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'p1-r6-'));
   const previous={file:process.env.P1_TRUST_ROOTS_FILE,hash:process.env.P1_TRUST_ROOTS_SHA256};
-  let pair=null;
+  let pair=null,procedure=null;
   if(withAuthority){
     pair=generateKeyPairSync('ed25519');
+    procedure=generateKeyPairSync('ed25519');
     const file=path.join(root,'trust.json');
     fs.writeFileSync(file,JSON.stringify({schema:1,human:{'local-test-key':
-      pair.publicKey.export({format:'pem',type:'spki'})}}));
+      pair.publicKey.export({format:'pem',type:'spki'})},
+      procedure:{'local-procedure-key':procedure.publicKey.export({format:'pem',type:'spki'})}}));
     process.env.P1_TRUST_ROOTS_FILE=file;
     process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(file,'utf8'));
   }else{
@@ -33,10 +35,19 @@ function fixture(withAuthority=false){
     taskSpec:null,taskSpecSha:null,baseSha:null,currentSha:null,
     lastA:null,lastB:null,p0Initial:null,p0Final:null,history:[],pendingHuman:null};
   function proof(gate,digest,actor='human',receipt='Human approves the exact task digest at this gate.'){
+    const pStatement={purpose:'P1_PROCESS_GATE_V1',taskId:id,gate,digest,actor,
+      receiptSha256:sha256(receipt),stateSha256:sha256(store.get(id)),
+      evidenceRoot:store.evidenceRoot(id),scope:'PROCESS_ONLY',verdict:'COMPLIANT',
+      checks:['GATE_BASIS','HUMAN_AUTHORITY','PROCESS_EVIDENCE'],
+      nonce:randomUUID(),issuedAt:new Date().toISOString()};
+    const processProof={schema:1,keyId:'local-procedure-key',statement:pStatement,
+      signature:sign(null,Buffer.from(canonical(pStatement)),procedure.privateKey).toString('base64')};
     const statement={purpose:'P1_HUMAN_GATE_V1',taskId:id,gate,digest,actor,receipt,
+      processProofSha256:sha256(processProof),
       nonce:randomUUID(),issuedAt:new Date().toISOString()};
     return {schema:1,keyId:'local-test-key',statement,
-      signature:sign(null,Buffer.from(canonical(statement)),pair.privateKey).toString('base64')};
+      signature:sign(null,Buffer.from(canonical(statement)),pair.privateKey).toString('base64'),
+      processProof};
   }
   return {root,store,id,boot,proof,close(){
     store.close();
@@ -58,7 +69,7 @@ test('R6-003 unsigned self-consistent approval artifact cannot approve Gate 0.1'
     const task=w.store.get(w.id);
     task.stage='PLANNER';task.status='READY';
     assert.throws(()=>w.store.save(task,'GATE_0.1_APPROVED',
-      {actor,digest:w.boot.frozen.digest,approvalSha256:ev.sha256,approvalNonce:nonce,approvalFile}),/not independently provisioned|trust roots changed/);
+      {actor,digest:w.boot.frozen.digest,approvalSha256:ev.sha256,approvalNonce:nonce,approvalFile}),/not independently provisioned|trust roots changed|Gate requires independently signed process/);
     assert.equal(w.store.get(w.id).stage,'WAIT_GATE_01');
   }finally{w.close();}
 });
@@ -83,12 +94,15 @@ test('R6-003 Ed25519 human signature binds task, gate, digest, actor and receipt
       /invalid independent human approval signature/);
     const approvalFile='approval-0-1-'+approval.statement.nonce+'.json';
     const ev=w.store.artifact(w.id,approvalFile,
-      {gate:'0.1',digest:w.boot.frozen.digest,actor:'human',receipt,proof:approval});
+      {gate:'0.1',digest:w.boot.frozen.digest,actor:'human',receipt,proof:approval,
+       processProof:approval.processProof});
     const task=w.store.get(w.id);
     task.stage='PLANNER';task.status='READY';
     w.store.save(task,'GATE_0.1_APPROVED',{
       actor:'human',digest:w.boot.frozen.digest,
-      approvalSha256:ev.sha256,approvalNonce:approval.statement.nonce,approvalFile});
+      approvalSha256:ev.sha256,approvalNonce:approval.statement.nonce,approvalFile,
+      processNonce:approval.processProof.statement.nonce,
+      processProofSha256:sha256(approval.processProof)});
     assert.equal(w.store.get(w.id).stage,'PLANNER');
     w.store.verify(w.id);
   }finally{w.close();}
