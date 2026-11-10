@@ -72,18 +72,33 @@ export function freezeConfig(configFile, intentFile) {
   return frozen;
 }
 
-export function providerOptions(role, harness) {
+function approvedTestBash(commands=[]){
+  const allowed={'*':'deny','git status':'allow','git diff':'allow'};
+  const binaries=new Set(['node','npm','pnpm','yarn','python','python3','pytest',
+    'cargo','go','dotnet','mvn','gradle']);
+  for(const argv of commands){
+    if(!Array.isArray(argv)||argv.length<1||!binaries.has(argv[0])||
+      !argv.every(s=>typeof s==='string'&&/^[A-Za-z0-9_.:/@+=-]+$/.test(s)))
+      continue; // No shell metacharacters or interpreter -c/-e injections.
+    if(argv.some((s,i)=>i>0&&['-c','-e','--eval','--require','-r'].includes(s)))continue;
+    allowed[argv.join(' ')]='allow';
+  }
+  return allowed;
+}
+export function providerOptions(role, harness,approvedTestCommands=[]) {
   const permission = ROLE_PERMISSIONS[role];
   assert(permission, 'unrecognized role');
   if (harness === 'codex') {
-    if (permission === 'READ_ONLY' || permission === 'TEST_ONLY') return {sandbox_mode:'read-only',approval_policy:'never',web_search:'disabled'};
+    if (permission === 'READ_ONLY') return {sandbox_mode:'read-only',approval_policy:'never',web_search:'disabled'};
+    if (permission === 'TEST_ONLY') return {sandbox_mode:'workspace-write',approval_policy:'never',sandbox_workspace_write:{network_access:false}};
     if (permission === 'WORKSPACE_WRITE') return {sandbox_mode:'workspace-write',approval_policy:'never', sandbox_workspace_write:{network_access:false}};
     // TEST_ONLY is NOT native to Codex; the dedicated disposable test workspace is mandatory.
     return {sandbox_mode:'workspace-write',approval_policy:'never',sandbox_workspace_write:{network_access:false}};
   }
   if (harness === 'opencode') {
-    if (permission === 'READ_ONLY' || permission === 'TEST_ONLY') return {permission:{read:'allow',glob:'allow',grep:'allow',list:'allow',edit:'deny',bash:'deny',external_directory:'deny',task:'deny',webfetch:'deny',websearch:'deny'}};
-    if (permission === 'WORKSPACE_WRITE') return {permission:{read:'allow',glob:'allow',grep:'allow',list:'allow',edit:'allow',bash:{'*':'deny','git status*':'allow','git diff*':'allow'},external_directory:'deny',webfetch:'deny',websearch:'deny'}};
+    if (permission === 'READ_ONLY') return {permission:{read:'allow',glob:'allow',grep:'allow',list:'allow',edit:'deny',bash:'deny',external_directory:'deny',task:'deny',webfetch:'deny',websearch:'deny'}};
+    if (permission === 'TEST_ONLY') return {permission:{read:'allow',glob:'allow',grep:'allow',list:'allow',edit:'allow',bash:approvedTestBash(approvedTestCommands),external_directory:'deny',task:'deny',webfetch:'deny',websearch:'deny'}};
+    if (permission === 'WORKSPACE_WRITE') return {permission:{read:'allow',glob:'allow',grep:'allow',list:'allow',edit:'allow',bash:approvedTestBash(approvedTestCommands),external_directory:'deny',webfetch:'deny',websearch:'deny'}};
     return {permission:{read:'allow',glob:'allow',grep:'allow',list:'allow',edit:'allow',bash:'deny',external_directory:'deny',webfetch:'deny',websearch:'deny'}};
   }
   throw new Error(`unsupported harness ${harness}`);
