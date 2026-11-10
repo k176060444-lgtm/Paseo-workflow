@@ -27,16 +27,17 @@ function mock({badKey=false,createUnknown=false,thirdRunning=true}={}){
       purpose:'P1_P0_WORKSPACE_PREFLIGHT_V1',taskId:task.id,
       nodeId:node.id,physicalId:node.physicalId,serverId:node.serverId,
       workspaceId:node.workspaceId,cwd:node.cwd,commit,head:commit,clean:true}),
-    attestP0Result:async({node,task,cycle,commit,jobId,agentId,raw:actual})=>{
+    attestP0Result:async({node,task,cycle,commit,jobId,agentId,raw:actual,binding})=>{
       const report={taskId:task.id,cycle,jobId,commit,nodeId:node.id,
         physicalId:node.physicalId,serverId:node.serverId,
-        agentId,model:node.model,harness:node.harness,
+        agentId,model:node.model,harness:node.harness,binding,
         rawMessage:actual,stdoutSha256:sha256(actual),exitCode:0,clean:true,
         verdict:'PASS',summary:'Synthetic evidence only',findings:[]};
       return {report,proof:signed(node,{
-        purpose:'P1_P0_NODE_RESULT_V1',taskId:task.id,cycle,jobId,commit,
+        purpose:binding?'P1_P0_NODE_RESULT_V2':'P1_P0_NODE_RESULT_V1',taskId:task.id,cycle,jobId,commit,
         nodeId:node.id,physicalId:node.physicalId,serverId:node.serverId,
-        agentId,model:node.model,harness:node.harness,reportSha256:sha256(report)})};
+        agentId,model:node.model,harness:node.harness,
+        ...(binding?{bindingSha256:sha256(binding)}:{}),reportSha256:sha256(report)})};
     }
   };
   const scopes=Object.fromEntries(nodes.map(node=>[node.serverId,{
@@ -71,7 +72,7 @@ function mock({badKey=false,createUnknown=false,thirdRunning=true}={}){
     recordTerminal:id=>seen.terminal.push(id),
     event:()=>{}
   };
-  const task={id:'TASKP800',frozen:{souls:Object.fromEntries(['blind_a','blind_b','blind_c'].map(r=>[
+  const task={id:'TASKP800',frozen:{intent:'Synthetic original user request for approved independent review',souls:Object.fromEntries(['blind_a','blind_b','blind_c'].map(r=>[
     r,{text:'Read only independent audit of the frozen commit',sha256:'a'.repeat(64)}]))}};
   return {nodes,client,attestor,roots,seen,task,store};
 }
