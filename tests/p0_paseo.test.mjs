@@ -132,7 +132,7 @@ test('Paseo P0: real-layout direct SDK path authenticates each daemon without re
       return {
         ...remote,
         hosts:{list:async()=>({self:{serverId:node.serverId}})},
-        providers:{listAvailable:async()=>({opencode:true})},
+        providers:{listAvailable:async()=>({providers:[{provider:'opencode',available:true},{provider:'codex',available:false}]})},
         workspaces:{ref:id=>({refresh:async()=>({workspace:{workspaceDirectory:node.cwd,id}})})},
         close:async()=>{},
       };
@@ -164,7 +164,7 @@ test('Paseo P0: direct SDK mismatch of serverId fails closed before remote Agent
     const directClientFactory=async({node})=>{
       const remote=await x.client.hosts.client(node.serverId);
       return {...remote,hosts:{list:async()=>({self:{serverId:'wrong-id'}})},
-        providers:{listAvailable:async()=>({opencode:true})},close:async()=>{}};
+        providers:{listAvailable:async()=>({providers:[{provider:'opencode',available:true},{provider:'codex',available:false}]})},close:async()=>{}};
     };
     await assert.rejects(()=>adapter(x,{directClientFactory}).review({
       task:x.task,commit:'a'.repeat(40),taskSpec:'Synthetic',store:x.store,
@@ -174,4 +174,25 @@ test('Paseo P0: direct SDK mismatch of serverId fails closed before remote Agent
     if(old===undefined)delete process.env.PASEO_TEST_PASSWORD;
     else process.env.PASEO_TEST_PASSWORD=old;
   }
+});
+
+test('real SDK providers array rejects unavailable Harness; no Agent creation',async()=>{
+ const x=mock();x.nodes[2].enabled=false;
+ for(const n of x.nodes.slice(0,2)){n.paseoUrl='ws://192.168.5.6:6767/ws';n.passwordEnv='PASEO_TEST_PASSWORD';}
+ const prior=process.env.PASEO_TEST_PASSWORD;process.env.PASEO_TEST_PASSWORD='synthetic';
+ try{
+  const directClientFactory=async({node})=>{const remote=await x.client.hosts.client(node.serverId);
+   return {...remote,hosts:{list:async()=>({self:{serverId:node.serverId}})},
+    providers:{listAvailable:async()=>({providers:[{provider:'opencode',available:node.id==='5bao'}]})},
+    close:async()=>{}};};
+  await assert.rejects(()=>adapter(x,{directClientFactory}).review({
+   task:x.task,commit:'a'.repeat(40),taskSpec:'Synthetic',store:x.store,cycle:'initial-A1'}),
+   /P0 requires 2 authenticated/);
+  assert.equal(x.seen.created.length,0);
+ }finally{if(prior===undefined)delete process.env.PASEO_TEST_PASSWORD;
+  else process.env.PASEO_TEST_PASSWORD=prior;}
+});
+test('P0 inventory refuses Worker disguised as blind Reviewer',()=>{
+ const x=mock();x.nodes[0].role='worker';
+ assert.throws(()=>adapter(x).validateInventory(),/only permits pinned direct/);
 });
