@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { verifyCommitEvidenceSync } from './git.mjs';
-import {loadTrustRoots,verifyHumanApproval,verifyExecutionAttestation} from './auth.mjs';
+import {loadTrustRoots,verifyHumanApproval,verifyGateProcess,verifyExecutionAttestation} from './auth.mjs';
 import {SshP0Adapter} from './p0.mjs';
 import {verifyPaseoP0Envelope} from './p0_paseo.mjs';
 import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, acceptedP0Dispute, verifyGateBTests } from './policy.mjs';
@@ -61,10 +61,10 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     this.db.prepare('INSERT INTO consumed_executions(key_id,nonce,task_id,phase,statement_digest) VALUES(?,?,?,?,?)')
       .run(key,nonce,t.id,h.phase,hash);
   }
-  evidenceRoot(id){
+  evidenceRoot(id,{exclude=null}={}){
     return sha256({artifacts:this.db.prepare(
-      "SELECT name,digest FROM artifacts WHERE task_id=? AND name<>'final-compliance.json' AND name NOT LIKE 'approval-5-9-%' AND name<>'approval-5-9.json' ORDER BY name"
-    ).all(id),dispatches:this.db.prepare(
+      "SELECT name,digest FROM artifacts WHERE task_id=? AND name<>'final-compliance.json' AND name NOT LIKE 'approval-5-9-%' AND name<>'approval-5-9.json' AND (? IS NULL OR name<>?) ORDER BY name"
+    ).all(id,exclude,exclude),dispatches:this.db.prepare(
       'SELECT id,phase,agent_id,state,created FROM dispatches WHERE task_id=? ORDER BY id').all(id)});
   }
   #consumeApproval(id,gate,proof){
@@ -78,6 +78,9 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
   }
   verifyHumanProof(envelope,fields){
     return verifyHumanApproval(this.#trustRoots,envelope,fields);
+  }
+  verifyGateProcessProof(envelope,fields){
+    return verifyGateProcess(this.#trustRoots,envelope,fields);
   }
   transaction(fn) {
     assert(!this.readOnly,'store opened read-only');
@@ -193,6 +196,17 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     const raw=this.#requireArtifact(oldTask.id,file,payload.approvalSha256);
     const receipt=JSON.parse(raw);
     const digest=gate==='0.1'?oldTask.frozen.digest:gate==='0.2'?oldTask.alignmentApprovalSha:oldTask.currentSha;
+    assert(receipt.processProof?.schema===1&&
+      payload.processProofSha256===sha256(receipt.processProof)&&
+      payload.processNonce===receipt.processProof?.statement?.nonce,
+      'Gate requires independently signed process evidence linked to approval');
+    this.verifyGateProcessProof(receipt.processProof,{
+      taskId:oldTask.id,gate,digest,actor:receipt.actor,receipt:receipt.receipt,
+      stateSha256:sha256(oldTask),
+      evidenceRoot:this.evidenceRoot(oldTask.id,{exclude:file}),
+    });
+    assert(!this.approvalNonceUsed(receipt.processProof.keyId,payload.processNonce),
+      'Gate process proof nonce already consumed');
     assert(receipt.gate===gate&&receipt.digest===digest&&payload.digest===digest,
       'approval artifact does not match exact Gate basis');
     assert(typeof receipt.actor==='string'&&receipt.actor.length>1&&
@@ -205,10 +219,12 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       taskId:oldTask.id,gate,digest,actor:receipt.actor,receipt:receipt.receipt,
       evidenceSha256:gate==='5.9'?this.evidenceDigest(oldTask.id,'final-compliance.json'):null,
       evidenceRoot:gate==='5.9'?this.evidenceRoot(oldTask.id):null,
+      processProofSha256:payload.processProofSha256,
     });
     assert(receipt.proof.statement.nonce===payload.approvalNonce,
       'approval signature nonce does not match persisted transition');
     this.#consumeApproval(oldTask.id,gate,receipt.proof);
+    this.#consumeApproval(oldTask.id,'procedure-'+gate,receipt.processProof);
     if(gate==='0.2'){
       assert(oldTask.taskSpecSha&&oldTask.taskSpec,'Gate 0.2 needs frozen TASK_SPEC');
       this.#requireArtifact(oldTask.id,'TASK_SPEC.md',oldTask.taskSpecSha);
