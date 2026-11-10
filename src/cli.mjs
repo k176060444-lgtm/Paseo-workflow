@@ -21,6 +21,7 @@ function argsOf(argv){
 function need(a,name){if(!a[name])throw new Error(`required --${name}`);return a[name];}
 function receipt(a){return fs.readFileSync(need(a,'receipt'),'utf8');}
 function approvalProof(a){return JSON.parse(fs.readFileSync(need(a,'approval-proof'),'utf8'));}
+function processProof(a){return JSON.parse(fs.readFileSync(need(a,'process-proof'),'utf8'));}
 const usage=`P1 Paseo workflow controller (no deployments, no automatic real calls)
 Commands:
   init --id TASK1234 --matrix config/role-matrix.json --intent path/to/intent.md
@@ -28,13 +29,13 @@ Commands:
   verify --id TASK1234
   p0-reconcile --id TASK1234 --cycle initial-A1|final-B1  # READ ONLY, historical original commit
   agent-reconcile --id TASK1234        # READ ONLY, local original dispatch labels
-  approve --id TASK1234 --gate 0.1|0.2|5.9 --digest SHA --actor NAME --receipt FILE --approval-proof SIGNED_JSON
+  approve --id TASK1234 --gate 0.1|0.2|5.9 --digest SHA --actor NAME --receipt FILE --approval-proof SIGNED_JSON --process-proof SEPARATELY_SIGNED_JSON
   run --id TASK1234                   # requires explicit safety environment and installed Paseo
   recover --id TASK1234 --actor NAME --receipt FILE --approval-proof SIGNED_JSON --sha EXACT_COMMIT
   recover --id TASK1234 --actor NAME --receipt FILE --approval-proof SIGNED_JSON --basis FROZEN_SPEC_OR_CONFIG_SHA  # pre-commit only
 State root: --state /secure/state (default .p1-state)
 Environment required for run: P1_LIVE_ALLOWED=YES and P1_HOST_ISOLATION_ATTESTED=YES
-Signed human gates require P1_TRUST_ROOTS_FILE plus independently pinned P1_TRUST_ROOTS_SHA256.
+Signed human gates require P1_TRUST_ROOTS_FILE plus independently pinned P1_TRUST_ROOTS_SHA256, a distinct procedure signer and a human countersignature of the procedure SHA.
 Never store human private signing keys in the Controller state or Paseo profile.
 Never run live until local independent review and node-specific test have passed.`;
 
@@ -122,7 +123,7 @@ async function main(){
       result={taskId:task.id,cycle,mode:'READ_ONLY_NO_MUTATION',
         observations,manualReconciliationRequired:true};
     }
-    else if(cmd==='approve')result=await store.withLock(need(a,'id'),()=>controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a),proof:approvalProof(a)}));
+    else if(cmd==='approve')result=await store.withLock(need(a,'id'),()=>controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a),proof:approvalProof(a),processProof:processProof(a)}));
     else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a)}));
     else if(cmd==='run'){
       const task=controller.required(need(a,'id'));
