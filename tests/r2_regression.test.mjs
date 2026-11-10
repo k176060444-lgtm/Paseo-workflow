@@ -125,6 +125,8 @@ test('R2-010 successful reviewer report survives peer failure',async()=>{
       return {...base,attestation:w.attest(role,phase,'a'.repeat(40),
         agentId,dispatchId,base)};
     }},p0:null,gitOps:{assertUnchanged:async()=>{}}});
+    // Narrow reviewer fault-injection fixture: process audit behavior has separate tests.
+    c.auditRole=async()=>{};
     const t=w.store.get(w.id);t.stage='A_REVIEW';t.status='READY';
     t.worktree=w.dir;t.currentSha='a'.repeat(40);t.aRound=1;
     resealSyntheticState(w.store,t);
