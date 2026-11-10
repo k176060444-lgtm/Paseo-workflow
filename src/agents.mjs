@@ -32,6 +32,34 @@ export class PaseoAgentRuntime {
     assert(Array.isArray(entries),'unexpected Paseo background agent list shape');
     return entries.map(x=>x?.agent??x);
   }
+  async reconcileRecordedDispatches(task,rows){
+    assert(this.client&&task?.id&&Array.isArray(rows),
+      'read-only original local dispatch reconciliation requires connected Paseo and ledger rows');
+    const all=await this.listAllAgents();
+    const scoped=all.filter(a=>a?.labels?.['p1-task']===task.id);
+    const result=[];
+    for(const d of rows){
+      assert(d.task_id===task.id&&typeof d.id==='string'&&typeof d.phase==='string',
+        'dispatch does not belong to the frozen task');
+      if(d.phase.startsWith('P0:'))continue; // separate pinned remote P0 reconciliation
+      const exact=scoped.filter(a=>a.labels?.['p1-dispatch']===d.id);
+      assert(exact.length<=1,'duplicate local Paseo Agent dispatch identity; BLOCKED');
+      const ambiguous=scoped.filter(a=>a.labels?.['p1-phase']===d.phase&&
+        !a.labels?.['p1-dispatch']);
+      // Never assert "task absent" from an empty result: a missing/lost ACK
+      // cannot be distinguished from an expired, renamed or inaccessible task.
+      const found=exact[0];
+      result.push({dispatchId:d.id,phase:d.phase,ledgerState:d.state,
+        ledgerAgentId:d.agent_id??null,
+        match:found?{id:found.id,status:found.status,role:found.labels?.['p1-role'],
+          commit:found.labels?.['p1-commit']}:null,
+        ambiguousLegacyAgents:ambiguous.map(a=>({id:a.id,status:a.status})),
+        verdict:found&&d.agent_id!==null&&d.agent_id!==found.id?
+          'IDENTITY_CONFLICT':found?'IDENTIFIED_NOT_RECOVERED':'UNKNOWN_NO_REDISPATCH'});
+    }
+    return {taskId:task.id,mode:'READ_ONLY_NO_SIDE_EFFECTS',
+      observations:result,manualAttestationRequired:true};
+  }
   async close(){if(this.client) await this.client.close();}
   async execute({task,role,phase,cwd,prompt,store,auditBinding=null}){
     assert(this.client,'Paseo not connected');
@@ -44,7 +72,9 @@ export class PaseoAgentRuntime {
       config:{provider:cfg.model,systemPrompt:soul.text,options:providerOptions(role,cfg.harness,task.frozen.tests?.commands??[])},
       cwd, title:`${task.id}:${phase}:${role}`, prompt,
       outputSchema:AGENT_SCHEMA,
-      labels:{'p1-task':task.id,'p1-phase':phase,'p1-role':role,'p1-soul-sha':soul.sha256},
+      labels:{'p1-task':task.id,'p1-phase':phase,'p1-role':role,
+        'p1-dispatch':dispatchId,'p1-commit':task.currentSha??'NOT_YET_ESTABLISHED',
+        'p1-soul-sha':soul.sha256},
       background:true,
     });
     store.recordAck(dispatchId,agent.id);
