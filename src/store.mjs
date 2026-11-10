@@ -499,6 +499,38 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'execution attestation not independently consumed/anchored');
     return checked;
   }
+  incidentEvidenceDigest(id,t,{exclude=null}={}){
+    return sha256({dispatchHash:this.dispatchHash(id),
+      evidenceRoot:this.evidenceRoot(id,{exclude}),
+      blockedStage:t.blockedStage??null});
+  }
+  #verifyIncidentReceipt(oldTask,nextTask,payload){
+    assert(oldTask.stage==='NEEDS_RECONCILIATION'&&oldTask.status==='NEEDS_RECONCILIATION'&&
+      nextTask.stage==='BLOCKED'&&nextTask.status==='BLOCKED'&&nextTask.inflight===null&&
+      nextTask.blockedStage===oldTask.blockedStage,
+      'incident closure must not skip the original interrupted checkpoint');
+    const artifact=this.db.prepare(
+      'SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+      .get(oldTask.id,payload.evidenceSha256);
+    assert(artifact?.name&&/^incident-[a-f0-9-]+\.json$/.test(artifact.name),
+      'incident closure lacks registered original signed evidence');
+    const original=JSON.parse(this.#requireArtifact(oldTask.id,artifact.name,payload.evidenceSha256));
+    const basis=oldTask.currentSha??oldTask.alignmentApprovalSha??
+      oldTask.taskSpecSha??oldTask.frozen.digest;
+    assert(original.origin==='NEEDS_RECONCILIATION'&&original.target==='BLOCKED'&&
+      original.blockedStage===oldTask.blockedStage&&
+      original.actor===payload.actor&&original.basis===basis&&
+      original.incidentEvidenceSha256===this.incidentEvidenceDigest(
+        oldTask.id,oldTask,{exclude:artifact.name}),
+      'incident original evidence snapshot changed since human approval');
+    this.assertRecoverableDispatches(oldTask.id);
+    this.verifyHumanProof(original.proof,{taskId:oldTask.id,gate:'incident',
+      digest:basis,actor:original.actor,receipt:original.receipt,
+      evidenceSha256:original.incidentEvidenceSha256});
+    assert(payload.incidentNonce===original.proof?.statement?.nonce,
+      'incident proof nonce mismatch');
+    this.#consumeApproval(oldTask.id,'incident',original.proof);
+  }
   #verifyRecoveryReceipt(oldTask,nextTask,payload){
     assert(oldTask.trustRootSha256!==null&&
       oldTask.trustRootSha256===this.trustRootDigest(),
@@ -590,6 +622,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       if(type==='ROLE_TERMINAL'||type==='EXECUTION_UNCERTAIN'||type==='REVIEW_PAIR_TERMINAL'||
          type==='P0_COMPLETE'||type==='REVIEW_PAIR_UNCERTAIN')
         assert(oldTask.status==='INFLIGHT',`event ${type} requires in-flight execution`);
+    }else if(type==='INCIDENT_RECONCILED_BLOCK'){
+      this.#verifyIncidentReceipt(oldTask,t,payload);
     }else if(type==='HUMAN_CONTROLLED_RECOVERY'){
       assert(((oldTask.stage==='BLOCKED'&&['BLOCKED','WAITING_HUMAN'].includes(oldTask.status))||
         (oldTask.stage==='WAIT_HUMAN'&&oldTask.status==='WAITING_HUMAN'))&&
