@@ -214,20 +214,14 @@ export class PaseoP0Adapter{
         assert(this.clock()-start<this.deadlineMs,'P0 deadline; reconcile existing Agent');
         await this.sleep(this.pollMs);
       }
+      // Paseo archive() is a UI/archive action, NOT a verified provider-level
+      // cancellation. Never convert a still-running paid task to TERMINAL on
+      // that basis. Preserve the original job/Agent IDs for read-only lookup.
+      const pending=jobs.filter(j=>!reports.has(j.node.id));
+      assert(pending.length===0,
+        'P0 extra seat still running after review budget; archive is not cancellation. '+
+        'Keep all original dispatch IDs and reconcile before resuming; no auto-retry');
       const cancelled=[];
-      for(const job of jobs.filter(j=>!reports.has(j.node.id))){
-        const handle=job.remote.agents.ref(job.agentId);
-        const ack=await handle.archive();
-        assert(ack?.archivedAt,'P0 remote archive not confirmed');
-        const x=await handle.refresh(),state=x?.agent??x;
-        assert(state?.id===job.agentId&&state.status==='closed',
-          'P0 remote cancellation uncertain; do not release');
-        const ev=store.artifact(task.id,'p0-'+cycle+'-'+job.node.id+'-cancel.json',
-          {jobId:job.jobId,agentId:job.agentId,serverId:job.node.serverId,
-            archivedAt:ack.archivedAt,status:state.status});
-        store.recordTerminal(job.jobId);
-        cancelled.push({nodeId:job.node.id,evidenceSha256:ev.sha256});
-      }
       const result=[...reports.values()];
       assert(new Set(result.map(r=>r.physicalId)).size>=2,'P0 physical quorum invalid');
       return {transport:'paseo',commit,cycle,reports:result,skipped,cancelled,
