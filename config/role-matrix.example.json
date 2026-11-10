@@ -84,39 +84,36 @@
         "physicalId": "physical-5bao",
         "enabled": true,
         "transport": "direct",
-        "serverId": "srv_5bao_PINNED",
-        "registrationId": "hst_5bao_PINNED",
         "workspaceId": "workspace_5bao_READONLY",
         "cwd": "/srv/p1/blind-task-checkout",
         "role": "blind_a",
         "harness": "opencode",
-        "model": "opencode/approved-model"
+        "model": "opencode/approved-model",
+        "paseoUrl": "ws://192.168.5.6:6767/ws",
+        "passwordEnv": "PASEO_5BAO_PASSWORD",
+        "serverId": "srv_X18iC2z6z-sS"
       },
       {
         "id": "9bao",
         "physicalId": "physical-9bao",
         "enabled": true,
         "transport": "direct",
-        "serverId": "srv_9bao_PINNED",
-        "registrationId": "hst_9bao_PINNED",
         "workspaceId": "workspace_9bao_READONLY",
         "cwd": "/srv/p1/blind-task-checkout",
         "role": "blind_b",
         "harness": "opencode",
-        "model": "opencode/approved-model"
+        "model": "opencode/approved-model",
+        "paseoUrl": "ws://192.168.9.6:6767/ws",
+        "passwordEnv": "PASEO_9BAO_PASSWORD",
+        "serverId": "srv_TjihQm2fgp_k"
       },
       {
         "id": "rusty",
         "physicalId": "physical-rusty",
         "enabled": false,
-        "transport": "direct",
-        "serverId": "srv_rusty_PINNED",
-        "registrationId": "hst_rusty_PINNED",
-        "workspaceId": "workspace_rusty_READONLY",
-        "cwd": "/srv/p1/blind-task-checkout",
+        "transport": "a2a",
         "role": "blind_c",
-        "harness": "opencode",
-        "model": "opencode/approved-model"
+        "peerName": "rustyhand"
       }
     ],
     "timing": {
