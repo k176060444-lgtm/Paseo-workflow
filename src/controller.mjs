@@ -604,6 +604,7 @@ export class WorkflowController {
     assert(!t.inflight,'recovery requires zero in-flight operations');
     assert(this.store.dispatches(id).every(d=>d.state==='TERMINAL'),
       'outstanding dispatch must be reconciled with original provider/host receipts first');
+    this.store.assertRecoverableDispatches(id);
     if(t.currentSha!==null){
       assert(t.currentSha===expectedSha,'Git SHA not the approved recovery basis');
       assert(typeof this.git.verifyCommitEvidenceSync==='function',
