@@ -250,8 +250,8 @@ export class WorkflowController {
     return p;
   }
   next(t,stage,type,payload={}){t.stage=stage;t.status=TERMINAL.has(stage)?'WAITING_HUMAN':'READY';this.store.save(t,type,payload);}
-  paused(t,message){t.pendingHuman=message;this.next(t,'WAIT_HUMAN','AWAITING_CLARIFICATION',{message});}
-  failed(t,message){t.pendingHuman=message;this.next(t,'BLOCKED','COMPLIANCE_OR_INFRA_BLOCK',{message});}
+  paused(t,message){t.pendingHuman=message;t.blockedStage=t.stage;this.next(t,'WAIT_HUMAN','AWAITING_CLARIFICATION',{message});}
+  failed(t,message){t.pendingHuman=message;t.blockedStage=t.stage;this.next(t,'BLOCKED','COMPLIANCE_OR_INFRA_BLOCK',{message});}
   async step(t){
     if(TERMINAL.has(t.stage)||t.status==='INFLIGHT')return;
     this.compliance(t);
@@ -438,7 +438,9 @@ export class WorkflowController {
     const t=this.required(id);
     this.assertFrozenIntegrity(t);
     this.compliance(t);
-    assert(t.stage==='BLOCKED'&&t.status==='BLOCKED','recovery only for definitely blocked, non-inflight stage');
+    assert((t.stage==='BLOCKED'&&['BLOCKED','WAITING_HUMAN'].includes(t.status))||
+      (t.stage==='WAIT_HUMAN'&&t.status==='WAITING_HUMAN'),
+      'recovery requires a human-stopped or definitely blocked stage; uncertain tasks need independent reconciliation');
     assert(!t.inflight,'recovery requires zero in-flight operations');
     assert(this.store.dispatches(id).every(d=>d.state==='TERMINAL'),
       'outstanding dispatch must be reconciled with original provider/host receipts first');
@@ -456,9 +458,16 @@ export class WorkflowController {
     assert(typeof actor==='string'&&actor.trim().length>1&&
       typeof receipt==='string'&&receipt.length>15,'explicit recovery receipt required');
     const basis=t.currentSha??t.taskSpecSha??t.frozen.digest;
-    const target=t.p0Initial?'B_ENTER':
-      t.taskSpecSha&&t.baseSha?'A_WORKER':
-      t.taskSpecSha?'PREPARE':'PLANNER';
+    // An explicit human recovery returns to the *recorded failed checkpoint*, never
+    // an inferred later Gate. Old synthetic pre-commit BLOCKED fixtures retain the
+    // safe PLANNER fallback; real WAIT_HUMAN records require blockedStage.
+    const allowed=['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST',
+      'B_ENTER','B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'];
+    const target=t.blockedStage??(t.stage==='BLOCKED'&&!t.taskSpecSha?'PLANNER':null);
+    assert(allowed.includes(target),'recovery checkpoint missing/unsafe; manual reconciliation required');
+    // Do not replay parallel Reviewer phases: repeated reports on the same SHA
+    // would violate the independent reviewer-pair invariant.
+    assert(!['A_REVIEW','B_REVIEW'].includes(target),'review pair recovery requires source-aware reconciliation');
     // Recovery is also a human Gate. Merely writing actor+receipt is not auth.
     this.store.verifyHumanProof(proof,{
       taskId:id,gate:'recovery',digest:basis,actor,receipt,
