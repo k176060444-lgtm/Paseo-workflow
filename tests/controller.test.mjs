@@ -10,7 +10,7 @@ import {WorkflowController} from '../src/controller.mjs';
 import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical} from '../src/policy.mjs';
 import {verifyCommitEvidenceSync} from '../src/git.mjs';
 
-function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true}={}) {
+function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false}={}) {
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-case-'));
   const g=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
   const repo=path.join(tmp,'repo');fs.mkdirSync(repo);
@@ -73,7 +73,8 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     if(ambiguous&&x.role==='planner')throw Error('provider lost connection after request');
     x.store.recordAck(dispatchId,agentId);
     const verdict=x.role==='worker'&&workerFails?'FAIL':
-      x.role==='worker_remediation'&&remediationFails?'FAIL':'PASS';
+      x.role==='worker_remediation'&&remediationFails?'FAIL':
+      x.role==='spec_reviewer'&&x.phase==='workplan-scope-review'&&scopeDrift?'FAIL':'PASS';
     x.store.recordTerminal(dispatchId);
     const base={role:x.role,phase:x.phase,agentId,dispatchId,verdict,
       summary:'synthetic test runtime only',findings:verdict==='FAIL'?['needs fixing']:[],
@@ -396,5 +397,40 @@ test('execution receipt cannot change observed model after external witness sign
    const t=x.c.required('TASK1234');
    assert.equal(t.stage,'NEEDS_RECONCILIATION');
    x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('Gate 0.2 binds independently registered USER_ALIGNMENT and TASK_SPEC hashes',async()=>{
+ const x=setup();try{
+  const first=await x.c.run('TASK1234');
+  assert.equal(first.stage,'WAIT_GATE_02');
+  const t=x.c.required('TASK1234');
+  assert.equal(t.alignmentSha,sha256(t.userAlignment));
+  assert.equal(t.alignmentApprovalSha,sha256({alignmentSha:t.alignmentSha,taskSpecSha:t.taskSpecSha}));
+  assert.equal(x.store.evidenceDigest(t.id,'USER_ALIGNMENT.md'),t.alignmentSha);
+  assert.equal(x.store.evidenceDigest(t.id,'TASK_SPEC.md'),t.taskSpecSha);
+  assert.notEqual(t.alignmentApprovalSha,t.taskSpecSha);
+  const msg='Human explicitly approves both frozen alignment and technical acceptance scope.';
+  assert.throws(()=>x.c.approve({id:t.id,gate:'0.2',digest:t.taskSpecSha,
+    actor:'user',receipt:msg,proof:x.proof('0.2',t.taskSpecSha,msg)}),
+    /approval does not match frozen digest/);
+  const ok=x.c.approve({id:t.id,gate:'0.2',digest:t.alignmentApprovalSha,
+    actor:'user',receipt:msg,proof:x.proof('0.2',t.alignmentApprovalSha,msg)});
+  assert.equal(ok.stage,'PLAN_DETAIL');
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+
+test('unapproved WORK_PLAN drift fails independent scope review before any Worker dispatch',async()=>{
+ const x=setup({scopeDrift:true});try{
+  await movePastPlanning(x);
+  const r=await x.c.run('TASK1234');
+  assert.equal(r.stage,'BLOCKED');
+  const t=x.c.required('TASK1234');
+  assert.equal(t.blockedStage,'PLAN_DETAIL');
+  assert.equal(t.workPlan,null);
+  assert.equal(x.modelCalls.filter(x=>x==='worker').length,0);
+  assert(x.modelCalls.includes('spec_reviewer'));
+  x.store.verify('TASK1234');
  }finally{finish(x);}
 });
