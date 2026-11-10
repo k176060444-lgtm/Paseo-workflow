@@ -610,6 +610,56 @@ export class WorkflowController {
       configSha:t.frozen.digest,inflight:t.inflight,pendingHuman:t.pendingHuman,
       dispatches:this.store.dispatches(id),ledger:this.store.verify(id)};
   });}
+  // This operation does NOT resume execution, reconstruct missing Agent reports,
+  // or retry any provider call. Only an entirely evidenced, already terminal
+  // incident may become human-blocked; a second distinct signed authorization
+  // is needed to resume at the original interrupted checkpoint.
+  certifyIncident({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null}){
+    this.store.verify(id);
+    const t=this.required(id);
+    this.assertFrozenIntegrity(t);
+    this.compliance(t);
+    assert(t.stage==='NEEDS_RECONCILIATION'&&t.status==='NEEDS_RECONCILIATION',
+      'incident certificate is only available for uncertain in-flight executions');
+    assert(typeof t.blockedStage==='string'&&
+      ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST','B_ENTER',
+       'B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.blockedStage),
+      'incident cannot close an unrecorded or unsafe original checkpoint');
+    const original=this.store.dispatches(id);
+    assert(original.length>0&&original.every(d=>d.state==='TERMINAL'),
+      'incident still has unknown/active dispatch; read-only reconciliation required');
+    this.store.assertRecoverableDispatches(id);
+    if(t.currentSha){
+      assert(expectedSha===t.currentSha&&expectedBasis===null,
+        'incident must bind the exact original Git commit');
+      assert(typeof this.git.verifyCommitEvidenceSync==='function',
+        'trusted independent Git evidence verifier unavailable');
+      this.git.verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
+    }else{
+      assert(expectedSha===null&&expectedBasis===(t.alignmentApprovalSha??
+        t.taskSpecSha??t.frozen.digest),
+        'pre-commit incident must bind frozen approved scope');
+    }
+    assert(typeof actor==='string'&&actor.trim().length>1&&
+      typeof receipt==='string'&&receipt.length>15,
+      'explicit human incident certification is required');
+    const basis=t.currentSha??t.alignmentApprovalSha??t.taskSpecSha??t.frozen.digest;
+    const incidentEvidenceSha256=this.store.incidentEvidenceDigest(id,t);
+    this.store.verifyHumanProof(proof,{taskId:id,gate:'incident',digest:basis,
+      actor,receipt,evidenceSha256:incidentEvidenceSha256});
+    assert(t.trustRootSha256&&t.trustRootSha256===this.store.trustRootDigest(),
+      'incident trust roots drifted');
+    assert(!this.store.approvalNonceUsed(proof.keyId,proof.statement.nonce),
+      'incident approval nonce already consumed');
+    const artifact=this.store.artifact(id,'incident-'+randomUUID()+'.json',{
+      origin:t.stage,target:'BLOCKED',blockedStage:t.blockedStage,
+      actor,receipt,basis,incidentEvidenceSha256,proof});
+    t.stage='BLOCKED';t.status='BLOCKED';t.inflight=null;
+    t.pendingHuman='Incident independently reconciled; separate signed recovery is required.';
+    this.store.save(t,'INCIDENT_RECONCILED_BLOCK',{
+      actor,evidenceSha256:artifact.sha256,incidentNonce:proof.statement.nonce});
+    return {id,stage:t.stage,status:t.status,allowedToRedispatch:false};
+  }
   // Noncompliance recovery deliberately has no generic skip-a-gate operation.
   authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null}){
     this.store.verify(id);
