@@ -80,17 +80,23 @@ function adapter(x,options={}){
   return new PaseoP0Adapter(x.nodes,{client:x.client,attestor:x.attestor,p0Roots:x.roots,
     pollMs:0,extraThirdMs:0,deadlineMs:2000,sleep:async()=>{},...options});
 }
-test('Paseo P0: two authenticated hosts pass, third confirmed cancelled, no SSH',async()=>{
+test('Paseo P0: unfinished third reviewer is never falsely treated as cancelled/TERMINAL',async()=>{
   const x=mock();
+  await assert.rejects(()=>adapter(x).review({task:x.task,commit:'a'.repeat(40),
+    taskSpec:'Synthetic frozen spec',store:x.store,cycle:'initial-A1'}),
+    /archive is not cancellation/);
+  assert.equal(x.seen.created.length,3);
+  assert.equal(x.seen.terminal.length,2);
+  assert.equal(x.seen.created[2].serverId,'srv_rusty');
+});
+test('Paseo P0: two independently witnessed finished seats can pass without phantom third',async()=>{
+  const x=mock();x.nodes[2].enabled=false;
   const r=await adapter(x).review({task:x.task,commit:'a'.repeat(40),
     taskSpec:'Synthetic frozen spec',store:x.store,cycle:'initial-A1'});
-  assert.equal(x.seen.created.length,3);
   assert.equal(r.reports.length,2);
-  assert.equal(r.reports[0].serverId,'srv_5bao');
-  assert.equal(r.cancelled.length,1);
   assert.equal(r.passed,true);
-  assert.equal(new Set(r.reports.map(z=>z.physicalId)).size,2);
-  assert.equal(x.seen.terminal.length,3);
+  assert.equal(x.seen.created.length,2);
+  assert.equal(x.seen.terminal.length,2);
 });
 test('Paseo P0: preflight signed by wrong physical node stops before any paid Agent',async()=>{
   const x=mock({badKey:true});
