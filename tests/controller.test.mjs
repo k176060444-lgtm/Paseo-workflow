@@ -380,3 +380,20 @@ test('unique process audit sessions bind PRE and POST to exact target evidence i
   x.store.verify('TASK1234');
  }finally{finish(x);}
 });
+
+
+test('execution receipt cannot change observed model after external witness signature',async()=>{
+ const x=setup();try{
+   const previous=x.c.runtime.execute;
+   x.c.runtime.execute=async fields=>{
+     const output=await previous(fields);
+     if(fields.role==='planner')output.model='unapproved/model';
+     return output;
+   };
+   await assert.rejects(()=>x.c.run('TASK1234'),
+     /observed model\/Harness\/Soul differs/);
+   const t=x.c.required('TASK1234');
+   assert.equal(t.stage,'NEEDS_RECONCILIATION');
+   x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
