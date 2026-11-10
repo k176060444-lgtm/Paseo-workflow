@@ -33,7 +33,7 @@ export class PaseoAgentRuntime {
     return entries.map(x=>x?.agent??x);
   }
   async close(){if(this.client) await this.client.close();}
-  async execute({task,role,phase,cwd,prompt,store}){
+  async execute({task,role,phase,cwd,prompt,store,auditBinding=null}){
     assert(this.client,'Paseo not connected');
     const cfg=task.frozen.roles[role];assert(cfg,'missing role configuration');
     const soul=task.frozen.souls[role];assert(soul?.text,'missing frozen soul');
@@ -52,7 +52,8 @@ export class PaseoAgentRuntime {
     assert(result.status==='idle',`Paseo role ${role} not terminal idle: ${result.status}; inspect Agent ${agent.id}`);
     const data=parseAgentOutput(result.lastMessage,role);
     const bare={role,phase,agentId:agent.id,dispatchId,verdict:data.verdict,
-      summary:data.summary,findings:data.findings,taskSpec:data.taskSpec??null,raw:result.lastMessage};
+      summary:data.summary,findings:data.findings,taskSpec:data.taskSpec??null,
+      raw:result.lastMessage,...(auditBinding?{auditBinding}:{})};
     assert(this.attestor,'independent Paseo execution attestor not installed; BLOCKED');
     // No model or Controller key can sign this receipt. The IPC attestor must
     // independently observe the daemon and its final raw session.
