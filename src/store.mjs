@@ -270,22 +270,50 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       if(!auditedRoles.has(h.role))continue;
       const actualPhase=['spec_reviewer','quality_reviewer'].includes(h.role)?
         h.phase+'-'+h.role:h.phase;
+      // Never match by phase alone: retries and authorized recoveries must have
+      // distinct audit sessions with their own independently attested reports.
+      assert(typeof h.auditSessionId==='string'&&
+        /^[a-f0-9-]{36}$/i.test(h.auditSessionId),
+        'target role has no unique audit session identity');
       const name=checkpoint=>'audit-'+checkpoint+'-'+h.role+'-'+actualPhase;
-      const find=(checkpoint)=>t.history.findIndex((a,j)=>
+      const matching=(checkpoint)=>t.history.map((a,j)=>({a,j})).filter(({a,j})=>
         a.role==='pro_audit'&&a.phase===name(checkpoint)&&
+        a.auditSessionId===h.auditSessionId&&a.auditBinding?.checkpoint===checkpoint&&
         (checkpoint==='PRE'?j<i:j>i));
-      const pre=find('PRE'),post=find('POST');
-      assert(pre>=0&&post>=0,'missing ordered PRE/POST process compliance for '+h.role);
-      for(const idx of [pre,post]){
-        const receipt=t.history[idx];
+      const pres=matching('PRE'),posts=matching('POST');
+      assert(pres.length===1&&posts.length===1,
+        'expected exactly one PRE and POST bound to this dispatch audit session');
+      const targetRecord=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+        .get(t.id,h.evidenceSha256);
+      assert(targetRecord,'target execution original evidence missing');
+      const target=JSON.parse(this.#requireArtifact(t.id,targetRecord.name,h.evidenceSha256));
+      for(const [checkpoint,items] of [['PRE',pres],['POST',posts]]){
+        const receipt=items[0].a,binding=receipt.auditBinding;
         assert(receipt.verdict==='PASS','noncompliant process check cannot release Gate 5.9');
+        assert(binding?.schema===1&&binding.sessionId===h.auditSessionId&&
+          binding.targetRole===h.role&&binding.targetPhase===actualPhase&&
+          binding.checkpoint===checkpoint&&
+          binding.approvedHarness===(t.frozen.roles?.[h.role]?.harness??null)&&
+          binding.approvedModel===(t.frozen.roles?.[h.role]?.model??null)&&
+          binding.approvedSoulSha256===(t.frozen.souls?.[h.role]?.sha256??null),
+          'signed audit binding does not match frozen target role/matrix/Soul');
+        // POST must identify the *real evidence artifact*, not an unrelated
+        // result on the same stage/phase.
+        assert(checkpoint==='POST'?
+          binding.targetEvidenceSha256===h.evidenceSha256&&
+          binding.targetAgentId===(h.agentId??null)&&
+          binding.targetDispatchId===(target.dispatchId??null):
+          binding.targetEvidenceSha256===null&&
+          binding.targetDispatchId===null&&binding.targetAgentId===null,
+          'process compliance report cannot be linked to the exact dispatch');
         const found=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
           .get(t.id,receipt.evidenceSha256);
-        assert(found,'process audit missing authenticated original report');
+        assert(found,'process audit missing independently registered original report');
         const raw=JSON.parse(this.#requireArtifact(t.id,found.name,receipt.evidenceSha256));
-        assert(raw.role==='pro_audit'&&raw.phase===receipt.phase&&raw.verdict==='PASS'&&
+        assert(raw.role==='pro_audit'&&raw.phase===receipt.phase&&
+          canonical(raw.auditBinding)===canonical(binding)&&raw.verdict==='PASS'&&
           Array.isArray(raw.findings)&&raw.findings.length===0,
-          'process compliance result contains findings or mismatched identity');
+          'original signed process compliance report has mismatched binding or findings');
         this.#verifyHistoryExecution(t,receipt);
       }
     }
