@@ -22,10 +22,13 @@ test('R8-001 production IPC submits actual identifiers, external witness respond
     req.on('end',()=>{
       const record=JSON.parse(input);
       observed.push(record);
-      const statement={purpose:'P1_EXECUTION_ATTESTATION_V1',
+      const statement={purpose:record.source==='paseo-agent'? 'P1_EXECUTION_ATTESTATION_V2':'P1_EXECUTION_ATTESTATION_V1',
         taskId:record.taskId,role:record.role,phase:record.phase,
         commit:record.commit,agentId:record.agentId,dispatchId:record.dispatchId,
-        rawSha256:record.claimedRawSha256,nonce:randomUUID(),
+        rawSha256:record.claimedRawSha256,
+        ...(record.source==='paseo-agent'?{model:record.expectedModel,
+          harness:record.expectedHarness,soulSha256:record.expectedSoulSha256}:{}),
+        nonce:randomUUID(),
         issuedAt:new Date().toISOString()};
       res.writeHead(200,{'content-type':'application/json'});
       res.end(JSON.stringify({schema:1,keyId:'test-independent-server',statement,
@@ -38,7 +41,9 @@ test('R8-001 production IPC submits actual identifiers, external witness respond
   });
   try{
     const witness=new IndependentExecutionAttestor(socket);
-    const task={id:'TASKR801'};
+    const task={id:'TASKR801',frozen:{
+      roles:{spec_reviewer:{model:'opencode/approved',harness:'opencode'}},
+      souls:{spec_reviewer:{sha256:'a'.repeat(64)}}}};
     const bare={role:'spec_reviewer',phase:'A1-review-spec_reviewer',
       agentId:'independent-agent',dispatchId:'dispatch-1',
       verdict:'PASS',summary:'Synthetic external IPC test only',findings:[],taskSpec:null};
@@ -47,6 +52,9 @@ test('R8-001 production IPC submits actual identifiers, external witness respond
     assert.equal(proof.statement.rawSha256,sha256(bare));
     assert.equal(observed[0].source,'paseo-agent');
     assert.equal(observed[0].agentId,'independent-agent');
+    assert.equal(observed[0].requiredProtocol,'P1_EXECUTION_ATTESTATION_V2');
+    assert.equal(proof.statement.model,'opencode/approved');
+    assert.equal(proof.statement.soulSha256,'a'.repeat(64));
     const tests={pass:true,receipts:[{argv:['node','--test'],code:0,logSha256:'e'.repeat(64),ok:true}]};
     const result=await witness.attestTests({task,phase:'A1-test',commit:'a'.repeat(40),
       sha:'a'.repeat(40),cwd:folder,tests});
