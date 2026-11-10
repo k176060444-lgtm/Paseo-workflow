@@ -178,3 +178,19 @@ test('TEST_ONLY disposable checkout allows only additive test cases and detects 
   await assert.rejects(()=>assertTestWorkspace(w.dir,exact),/TEST_ONLY violation/);
  }finally{w.dispose();}
 });
+
+test('registered evidence exact-byte retry is idempotent without a new ledger event',()=>{
+ const w=sandbox();try{
+  const content={hello:'same digest',pass:false};
+  const a=w.store.artifact(w.id,'stable-proof.json',content);
+  const previous=w.store.verify(w.id),before=w.store.evidenceRoot(w.id);
+  const b=w.store.artifact(w.id,'stable-proof.json',content);
+  assert.equal(a.sha256,b.sha256);
+  assert.equal(b.reused,true);
+  assert.equal(w.store.verify(w.id).events,previous.events);
+  assert.equal(w.store.evidenceRoot(w.id),before);
+  assert.throws(()=>w.store.artifact(w.id,'stable-proof.json',{hello:'tampered'}),
+   /registered evidence conflict/);
+  w.store.verify(w.id);
+ }finally{w.dispose();}
+});
