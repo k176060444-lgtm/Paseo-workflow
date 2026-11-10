@@ -111,6 +111,18 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       const base=path.join(this.dir(id),'evidence');
       fs.mkdirSync(base,{recursive:true,mode:0o700});
       const file=path.join(base,name);
+      const registered=this.db.prepare('SELECT digest FROM artifacts WHERE task_id=? AND name=?')
+        .get(id,name);
+      if(registered){
+        // A retry with identical bytes is safe: it creates NO new ledger event.
+        // Different bytes are never silently overwritten under a fixed name.
+        assert(registered.digest===digest&&fs.existsSync(file)&&
+          fs.lstatSync(file).isFile()&&sha256(fs.readFileSync(file,'utf8'))===digest,
+          'registered evidence conflict: immutable name or bytes mismatch');
+        return {path:file,sha256:digest,reused:true};
+      }
+      assert(!fs.existsSync(file),
+        'orphan evidence file requires independently authorized reconciliation: '+name);
       const fd=fs.openSync(file,'wx',0o600);
       try{fs.writeFileSync(fd,data,'utf8');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
       // Recheck even under BEGIN IMMEDIATE: same-connection/monkeypatched
