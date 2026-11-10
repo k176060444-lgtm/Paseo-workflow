@@ -4,6 +4,7 @@ import {randomUUID} from 'node:crypto';
 import * as git from './git.mjs';
 import {assert,checkedId,freezeConfig,MAX_A,MAX_B,sha256,PASS,PAUSE,hasBlockingFinding,TERMINAL,ROLE_PERMISSIONS,acceptedP0Dispute} from './policy.mjs';
 
+const canonicalAuditBinding = value=>JSON.stringify(value,Object.keys(value??{}).sort());
 const ROLE_PROMPT = `Obey the frozen Soul, approved TASK_SPEC, stage constraints and exact SHA. Do NOT claim tests passed without evidence. End with one JSON object matching {"verdict":"PASS|FAIL|QUESTION|NEEDS_SPECIALIST|APPROVE_WITH_COMMENTS","summary":"...","findings":["..."]}. Planner must also include taskSpec string.`;
 
 export class WorkflowController {
@@ -118,7 +119,27 @@ export class WorkflowController {
   // Process compliance only. Each individual role dispatch is checked BEFORE
   // and AFTER, including both independent reviewers and the final Arbitrator.
   // The auditor itself is not recursively audited.
-  async auditRole(t,targetRole,phase,checkpoint,cwd=t.worktree,observed=null){
+  async auditRole(t,targetRole,phase,checkpoint,cwd=t.worktree,observed=null,auditSessionId=null){
+    assert(['PRE','POST'].includes(checkpoint),'invalid process audit checkpoint');
+    assert(checkpoint==='PRE'?!auditSessionId:typeof auditSessionId==='string'&&
+      /^[a-f0-9-]{36}$/i.test(auditSessionId),
+      'POST process audit must bind an existing PRE session');
+    const sessionId=auditSessionId??randomUUID();
+    const approved=t.frozen.roles?.[targetRole]??null;
+    const soul=t.frozen.souls?.[targetRole]??null;
+    const targetHistory=checkpoint==='POST'?t.history.findLast(h=>h.role===targetRole&&
+      (['spec_reviewer','quality_reviewer'].includes(targetRole)?
+        h.phase+'-'+targetRole===phase:h.phase===phase)&&
+      h.auditSessionId===sessionId):null;
+    if(checkpoint==='POST')assert(targetHistory?.evidenceSha256,
+      'POST audit requires this dispatch unique original registered evidence');
+    const binding={schema:1,sessionId,checkpoint,targetRole,targetPhase:phase,
+      targetCommit:t.currentSha??null,approvedHarness:approved?.harness??null,
+      approvedModel:approved?.model??null,approvedSoulSha256:soul?.sha256??null,
+      approvedTestsSha256:targetRole==='test_executor'?sha256(t.frozen.tests.commands):null,
+      targetDispatchId:checkpoint==='POST'?observed?.dispatchId??null:null,
+      targetAgentId:checkpoint==='POST'?observed?.agentId??null:null,
+      targetEvidenceSha256:targetHistory?.evidenceSha256??null};
     assert(targetRole!=='pro_audit','recursive process audit prohibited');
     assert(t.frozen.roles?.pro_audit&&t.frozen.souls?.pro_audit,
       'mandatory Pro-Audit role and frozen Soul missing; BLOCKED');
@@ -132,11 +153,9 @@ export class WorkflowController {
       'approvedSpecSha='+String(t.taskSpecSha??'NOT_YET_APPROVED'),
       'targetCommit='+String(t.currentSha??'NOT_YET_ESTABLISHED'),
       'approvedRoleMatrix='+JSON.stringify(t.frozen.roles[targetRole]??null),
-      'targetExecution='+JSON.stringify(observed?{
-        role:observed.role,phase:observed.phase,agentId:observed.agentId,
-        dispatchId:observed.dispatchId,verdict:observed.verdict,
-        findings:observed.findings
-      }:null),
+      'EXPECTED PROCESS BINDING (not a technical evaluation): '+JSON.stringify(binding),
+      'Untrusted target findings are excluded; independently verify signed source evidence.',
+      'targetVerdict='+JSON.stringify(checkpoint==='POST'?observed?.verdict??null:null),
       'Check approval, stage order, permission scope, inputs/outputs, model/Harness, exact version and evidence.',
       'Do not decide whether the code is good or the user requirements are implemented.'
     ].join('\n');
@@ -145,7 +164,7 @@ export class WorkflowController {
     let result;
     try{
       result=await this.runtime.execute({task:t,role:'pro_audit',phase:auditPhase,
-        cwd:cwd??t.frozen.project.repo,prompt,store:this.store});
+        cwd:cwd??t.frozen.project.repo,prompt,store:this.store,auditBinding:binding});
     }catch(e){
       t.status='NEEDS_RECONCILIATION';t.pendingHuman='Pro-Audit execution unknown: '+e.message;
       this.store.save(t,'EXECUTION_UNCERTAIN',{role:'pro_audit',phase:auditPhase,error:String(e.message)});
@@ -153,17 +172,20 @@ export class WorkflowController {
     }
     const artifact=this.store.artifact(t.id,'compliance-'+sha256(auditPhase).slice(0,20)+
       '-'+randomUUID().slice(0,8)+'.json',result);
+    assert(canonicalAuditBinding(result.auditBinding)===canonicalAuditBinding(binding),
+      'independently witnessed Pro-Audit binding mismatches requested target');
     t.history.push({role:'pro_audit',phase:auditPhase,agentId:result.agentId,
-      verdict:result.verdict,sha:t.currentSha??null,evidenceSha256:artifact.sha256});
+      verdict:result.verdict,sha:t.currentSha??null,evidenceSha256:artifact.sha256,
+      auditSessionId:sessionId,auditBinding:binding});
     t.inflight=null;t.status='READY';
     this.store.save(t,'ROLE_TERMINAL',{role:'pro_audit',phase:auditPhase,
       verdict:result.verdict,evidenceSha256:artifact.sha256});
     assert(result.verdict==='PASS'&&Array.isArray(result.findings)&&result.findings.length===0,
       'Pro-Audit '+checkpoint+' did not approve process for '+targetRole+'; BLOCKED');
-    return artifact;
+    return {...artifact,auditSessionId:sessionId};
   }
   async invoke(t,role,phase,prompt,cwd=t.worktree){
-    await this.auditRole(t,role,phase,'PRE',cwd);
+    const pre=await this.auditRole(t,role,phase,'PRE',cwd);
     // Save an in-flight marker BEFORE any external side effect. Crashes must not auto-retry.
     const expectedSha=ROLE_PERMISSIONS[role]==='READ_ONLY'?await this.git.head(cwd):null;
     t.status='INFLIGHT';t.inflight={role,phase,at:new Date().toISOString()};
@@ -182,15 +204,18 @@ export class WorkflowController {
     }
     const artifact=this.store.artifact(t.id,`${phase}-${role}-${randomUUID().slice(0,8)}.json`,result);
     t.history.push({role,phase,agentId:result.agentId,verdict:result.verdict,
-      sha:t.currentSha??null,evidenceSha256:artifact.sha256,at:new Date().toISOString()});
+      sha:t.currentSha??null,evidenceSha256:artifact.sha256,
+      auditSessionId:pre.auditSessionId,at:new Date().toISOString()});
     t.inflight=null;t.status='READY';
     this.store.save(t,'ROLE_TERMINAL',{role,phase,verdict:result.verdict,evidenceSha256:artifact.sha256});
-    await this.auditRole(t,role,phase,'POST',cwd,result);
+    await this.auditRole(t,role,phase,'POST',cwd,result,pre.auditSessionId);
     return result;
   }
   async invokePair(t,prefix,sha){
     const seats=['spec_reviewer','quality_reviewer'];
-    for(const role of seats) await this.auditRole(t,role,`${prefix}-${role}`,'PRE',t.worktree);
+    const preAudits=new Map();
+    for(const role of seats) preAudits.set(role,
+      await this.auditRole(t,role,`${prefix}-${role}`,'PRE',t.worktree));
     t.status='INFLIGHT';t.inflight={role:'review_pair',phase:prefix,sha};
     this.store.save(t,'REVIEW_PAIR_STARTED',{sha});
     const run=async(role)=>this.runtime.execute({task:t,role,phase:`${prefix}-${role}`,cwd:t.worktree,
@@ -206,7 +231,8 @@ export class WorkflowController {
         errors.push({role,error:'invalid or mismatched reviewer identity'});continue;
       }
       const artifact=this.store.artifact(t.id,`${prefix}-${role}-${randomUUID().slice(0,8)}.json`,r);
-      t.history.push({role,phase:prefix,agentId:r.agentId,verdict:r.verdict,evidenceSha256:artifact.sha256,sha});
+      t.history.push({role,phase:prefix,agentId:r.agentId,verdict:r.verdict,
+        evidenceSha256:artifact.sha256,sha,auditSessionId:preAudits.get(role).auditSessionId});
       this.store.save(t,'REVIEW_SEAT_RECORDED',{role,sha,agentId:r.agentId,evidenceSha256:artifact.sha256});
       successful.set(role,r);
     }
@@ -219,8 +245,10 @@ export class WorkflowController {
     await this.git.assertUnchanged(t.worktree,sha);
     const spec=successful.get('spec_reviewer'),quality=successful.get('quality_reviewer');
     t.inflight=null;t.status='READY';this.store.save(t,'REVIEW_PAIR_TERMINAL',{sha,spec:spec.verdict,quality:quality.verdict});
-    await this.auditRole(t,'spec_reviewer',`${prefix}-spec_reviewer`,'POST',t.worktree,spec);
-    await this.auditRole(t,'quality_reviewer',`${prefix}-quality_reviewer`,'POST',t.worktree,quality);
+    await this.auditRole(t,'spec_reviewer',`${prefix}-spec_reviewer`,'POST',t.worktree,spec,
+      preAudits.get('spec_reviewer').auditSessionId);
+    await this.auditRole(t,'quality_reviewer',`${prefix}-quality_reviewer`,'POST',t.worktree,quality,
+      preAudits.get('quality_reviewer').auditSessionId);
     // Local reviews are TWO independent, source-attested assessments, not
     // external blind P0 seats. Never collapse their opinions into one PASS.
     const individual=Object.fromEntries([['spec_reviewer',spec],['quality_reviewer',quality]]
@@ -255,7 +283,7 @@ export class WorkflowController {
     }
     const agent=await this.invoke(t,role,phase,`TASK_SPEC:\n${t.taskSpec}\nInspect exact commit ${sha} in disposable test checkout. Do not modify product source. Controller will independently execute the frozen test commands.`,dir);
     const addedTests=await this.git.assertTestWorkspace(dir,sha);
-    await this.auditRole(t,'test_executor',phase,'PRE',dir);
+    const preTest=await this.auditRole(t,'test_executor',phase,'PRE',dir);
     const tests=await this.git.testRun(dir,t.frozen.tests.commands,this.store,t.id,phase);
     if(addedTests.length)tests.addedTests=addedTests;
     if(!tests.attestation){
@@ -264,9 +292,11 @@ export class WorkflowController {
         sha,tests,cwd:dir});
     }
     const evidence=this.store.artifact(t.id,`${phase}-test-receipts.json`,{sha,tests});
-    t.history.push({role:'test_executor',phase,sha,pass:tests.pass,evidenceSha256:evidence.sha256});
+    t.history.push({role:'test_executor',phase,sha,pass:tests.pass,
+      evidenceSha256:evidence.sha256,auditSessionId:preTest.auditSessionId});
     this.store.save(t,'TEST_RECEIPTS',{sha,pass:tests.pass,evidenceSha256:evidence.sha256});
-    await this.auditRole(t,'test_executor',phase,'POST',dir,{role:'test_executor',phase,verdict:tests.pass?'PASS':'FAIL',findings:[]});
+    await this.auditRole(t,'test_executor',phase,'POST',dir,{role:'test_executor',phase,
+      verdict:tests.pass?'PASS':'FAIL',evidenceSha256:evidence.sha256},preTest.auditSessionId);
     return {agent,tests,commit:sha,pass:tests.pass&&PASS(agent.verdict),findings:agent.findings};
   }
 
@@ -300,7 +330,7 @@ export class WorkflowController {
     return {serialized,sha256:sha256(serialized)};
   }
   async p0Review(t,cycle){
-    await this.auditRole(t,'P0',cycle,'PRE',t.worktree);
+    const preP0=await this.auditRole(t,'P0',cycle,'PRE',t.worktree);
     t.status='INFLIGHT';t.inflight={role:'P0',phase:cycle,sha:t.currentSha};
     this.store.save(t,'P0_STARTED',{cycle,sha:t.currentSha});
     let p;
@@ -308,9 +338,11 @@ export class WorkflowController {
     catch(e){t.status='NEEDS_RECONCILIATION';t.pendingHuman=String(e.message);this.store.save(t,'P0_UNCERTAIN',{cycle,error:String(e.message)});throw e;}
     const ev=this.store.artifact(t.id,`p0-${cycle}-summary.json`,p);
     t.status='READY';t.inflight=null;
-    t.history.push({role:'P0',phase:cycle,sha:t.currentSha,passed:p.passed,evidenceSha256:ev.sha256});
+    t.history.push({role:'P0',phase:cycle,sha:t.currentSha,passed:p.passed,
+      evidenceSha256:ev.sha256,auditSessionId:preP0.auditSessionId});
     this.store.save(t,'P0_COMPLETE',{cycle,sha:t.currentSha,passed:p.passed,evidenceSha256:ev.sha256});
-    await this.auditRole(t,'P0',cycle,'POST',t.worktree,{role:'P0',phase:cycle,verdict:p.passed?'PASS':'FAIL',findings:p.findings});
+    await this.auditRole(t,'P0',cycle,'POST',t.worktree,{role:'P0',phase:cycle,
+      verdict:p.passed?'PASS':'FAIL',evidenceSha256:ev.sha256},preP0.auditSessionId);
     return p;
   }
   next(t,stage,type,payload={}){t.stage=stage;t.status=TERMINAL.has(stage)?'WAITING_HUMAN':'READY';this.store.save(t,type,payload);}
