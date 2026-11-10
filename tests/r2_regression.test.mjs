@@ -8,7 +8,7 @@ import {execFileSync} from 'node:child_process';
 import {Store} from '../src/store.mjs';
 import {WorkflowController} from '../src/controller.mjs';
 import {parseAgentOutput,sha256,ROLE_PERMISSIONS,MAX_A,MAX_B} from '../src/policy.mjs';
-import {commitWorktree,porcelainPaths} from '../src/git.mjs';
+import {commitWorktree,porcelainPaths,assertTestWorkspace} from '../src/git.mjs';
 
 function sandbox(){
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'p1-r2-'));
@@ -163,5 +163,18 @@ test('Worker may add a separate test case but cannot replace the baseline',async
   const now=await commitWorktree(w.dir,'additive-test');
   assert.notEqual(now,old);
   assert.equal(fs.readFileSync(path.join(w.dir,'tests','new.test.mjs'),'utf8').includes('safe'),true);
+ }finally{w.dispose();}
+});
+
+test('TEST_ONLY disposable checkout allows only additive test cases and detects original file changes',async()=>{
+ const w=repo();try{
+  const exact=git(w.dir,'rev-parse','HEAD');
+  fs.mkdirSync(path.join(w.dir,'tests'));
+  fs.writeFileSync(path.join(w.dir,'tests','new.test.mjs'),'import test from "node:test"; test("new",()=>{});');
+  const exam=await assertTestWorkspace(w.dir,exact);
+  assert.equal(exam.length,1);
+  assert.equal(exam[0].path,'tests/new.test.mjs');
+  fs.writeFileSync(path.join(w.dir,'ordinary.txt'),'tampered original');
+  await assert.rejects(()=>assertTestWorkspace(w.dir,exact),/TEST_ONLY violation/);
  }finally{w.dispose();}
 });
