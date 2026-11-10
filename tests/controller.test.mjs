@@ -348,3 +348,31 @@ test('Disputed P0 cannot be approved by a generic Arbitrator PASS lacking findin
   x.store.verify('TASK1234');
  }finally{finish(x);}
 });
+
+test('unique process audit sessions bind PRE and POST to exact target evidence instead of phase replay',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  const result=await x.c.run('TASK1234');
+  assert.equal(result.stage,'WAIT_GATE_59');
+  const t=x.c.required('TASK1234');
+  const expected=new Set(['planner','worker','spec_reviewer','quality_reviewer',
+    'tester_gate_a','tester_gate_b','test_executor','arbitrator','P0']);
+  const actual=t.history.filter(h=>expected.has(h.role));
+  assert(actual.length>=9);
+  const sessions=new Set();
+  for(const h of actual){
+    assert.match(h.auditSessionId,/^[a-f0-9-]{36}$/i);
+    assert(!sessions.has(h.auditSessionId),'target executions cannot reuse audit sessions');
+    sessions.add(h.auditSessionId);
+    const audits=t.history.filter(a=>a.role==='pro_audit'&&a.auditSessionId===h.auditSessionId);
+    assert.equal(audits.length,2);
+    const pre=audits.find(a=>a.auditBinding.checkpoint==='PRE');
+    const post=audits.find(a=>a.auditBinding.checkpoint==='POST');
+    assert(pre&&post);
+    assert.equal(pre.auditBinding.targetEvidenceSha256,null);
+    assert.equal(post.auditBinding.targetEvidenceSha256,h.evidenceSha256);
+    assert.equal(post.auditBinding.targetAgentId,h.agentId??null);
+  }
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
