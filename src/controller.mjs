@@ -614,7 +614,7 @@ export class WorkflowController {
   // or retry any provider call. Only an entirely evidenced, already terminal
   // incident may become human-blocked; a second distinct signed authorization
   // is needed to resume at the original interrupted checkpoint.
-  certifyIncident({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null}){
+  certifyIncident({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null,processProof=null}){
     this.store.verify(id);
     const t=this.required(id);
     this.assertFrozenIntegrity(t);
@@ -645,19 +645,27 @@ export class WorkflowController {
       'explicit human incident certification is required');
     const basis=t.currentSha??t.alignmentApprovalSha??t.taskSpecSha??t.frozen.digest;
     const incidentEvidenceSha256=this.store.incidentEvidenceDigest(id,t);
+    const procedure=processProof??proof?.processProof;
+    this.store.verifyGateProcessProof(procedure,{
+      taskId:id,gate:'incident',digest:basis,actor,receipt,
+      stateSha256:sha256(t),evidenceRoot:this.store.evidenceRoot(id)});
+    assert(!this.store.approvalNonceUsed(procedure.keyId,procedure.statement.nonce),
+      'incident independent procedure proof has already been consumed');
     this.store.verifyHumanProof(proof,{taskId:id,gate:'incident',digest:basis,
-      actor,receipt,evidenceSha256:incidentEvidenceSha256});
+      actor,receipt,evidenceSha256:incidentEvidenceSha256,
+      processProofSha256:sha256(procedure)});
     assert(t.trustRootSha256&&t.trustRootSha256===this.store.trustRootDigest(),
       'incident trust roots drifted');
     assert(!this.store.approvalNonceUsed(proof.keyId,proof.statement.nonce),
       'incident approval nonce already consumed');
     const artifact=this.store.artifact(id,'incident-'+randomUUID()+'.json',{
       origin:t.stage,target:'BLOCKED',blockedStage:t.blockedStage,
-      actor,receipt,basis,incidentEvidenceSha256,proof});
+      actor,receipt,basis,incidentEvidenceSha256,proof,processProof:procedure});
     t.stage='BLOCKED';t.status='BLOCKED';t.inflight=null;
     t.pendingHuman='Incident independently reconciled; separate signed recovery is required.';
     this.store.save(t,'INCIDENT_RECONCILED_BLOCK',{
-      actor,evidenceSha256:artifact.sha256,incidentNonce:proof.statement.nonce});
+      actor,evidenceSha256:artifact.sha256,incidentNonce:proof.statement.nonce,
+      processNonce:procedure.statement.nonce,processProofSha256:sha256(procedure)});
     return {id,stage:t.stage,status:t.status,allowedToRedispatch:false};
   }
   // Noncompliance recovery deliberately has no generic skip-a-gate operation.
