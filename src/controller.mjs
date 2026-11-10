@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import * as git from './git.mjs';
-import {assert,checkedId,freezeConfig,MAX_A,MAX_B,sha256,PASS,PAUSE,hasBlockingFinding,TERMINAL,ROLE_PERMISSIONS,acceptedP0Dispute} from './policy.mjs';
+import {assert,checkedId,freezeConfig,MAX_A,MAX_B,sha256,PASS,PAUSE,hasBlockingFinding,TERMINAL,ROLE_PERMISSIONS,acceptedP0Dispute,verifyGateBTests,GATE_B_LAYERS} from './policy.mjs';
 
 const canonicalAuditBinding = value=>JSON.stringify(value,Object.keys(value??{}).sort());
 const ROLE_PROMPT = `Obey the frozen Soul, approved TASK_SPEC, stage constraints and exact SHA. Do NOT claim tests passed without evidence. End with one JSON object matching {"verdict":"PASS|FAIL|QUESTION|NEEDS_SPECIALIST|APPROVE_WITH_COMMENTS","summary":"...","findings":["..."]}. Planner must also include taskSpec string.`;
@@ -106,6 +106,7 @@ export class WorkflowController {
     if(t.stage==='READY_FINAL'||t.stage==='WAIT_GATE_59'||t.stage==='CLOSED'){
       assert(t.lastA?.pass===true,'missing independent Tester A pass');
       assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true,'missing final Tester B pass');
+      verifyGateBTests(t);
       assert(t.lastB?.commit===t.currentSha,'Tester B commit mismatch');
       const p0=t.p0Final??t.p0Initial;
       assert(p0?.commit===t.currentSha&&(p0.passed===true||acceptedP0Dispute(t)),
@@ -290,7 +291,21 @@ export class WorkflowController {
     const agent=await this.invoke(t,role,phase,`TASK_SPEC:\n${t.taskSpec}\nInspect exact commit ${sha} in disposable test checkout. Do not modify product source. Controller will independently execute the frozen test commands.`,dir);
     const addedTests=await this.git.assertTestWorkspace(dir,sha);
     const preTest=await this.auditRole(t,'test_executor',phase,'PRE',dir);
-    const tests=await this.git.testRun(dir,t.frozen.tests.commands,this.store,t.id,phase);
+    let tests;
+    if(role==='tester_gate_b'){
+      const layers={};const receipts=[];
+      for(const layer of GATE_B_LAYERS){
+        const approved=t.frozen.tests.gateB?.[layer];
+        assert(Array.isArray(approved)&&approved.length>0,
+          'mandatory Tester B '+layer+' matrix missing; BLOCKED');
+        const completed=await this.git.testRun(dir,approved,this.store,t.id,phase+'-'+layer);
+        layers[layer]=completed;
+        receipts.push(...completed.receipts.map(receipt=>({...receipt,layer})));
+        if(!completed.pass)break; // Fail-closed, do not pretend later layers ran
+      }
+      tests={pass:GATE_B_LAYERS.every(layer=>layers[layer]?.pass===true),
+        layers,receipts};
+    }else tests=await this.git.testRun(dir,t.frozen.tests.commands,this.store,t.id,phase);
     if(addedTests.length)tests.addedTests=addedTests;
     if(!tests.attestation){
       assert(this.attestor,'independent OS Tester witness not configured; BLOCKED');
