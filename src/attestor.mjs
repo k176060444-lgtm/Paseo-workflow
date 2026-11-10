@@ -51,7 +51,12 @@ export class IndependentExecutionAttestor {
       typeof dispatchId==='string'&&dispatchId.length>0,'missing Paseo identity');
     return this.#ask({schema:1,source:'paseo-agent',taskId:task.id,
       role,phase,commit:commit??null,serverId,agentId,dispatchId,
-      claimedRawSha256:sha256(raw),requestedAt:new Date().toISOString()});
+      claimedRawSha256:sha256(raw),
+      requiredProtocol:'P1_EXECUTION_ATTESTATION_V2',
+      expectedModel:task.frozen.roles[role]?.model,
+      expectedHarness:task.frozen.roles[role]?.harness,
+      expectedSoulSha256:task.frozen.souls[role]?.sha256,
+      requestedAt:new Date().toISOString()});
   }
   async attestP0Preflight({node,task,commit}){
     // The independent remote-node witness must inspect the actual checkout
