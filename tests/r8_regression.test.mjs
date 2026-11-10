@@ -115,3 +115,17 @@ test('R8-005 failed approval attempt cannot wedge new independently signed retry
     store.verify(id);
   }finally{store.close();authority.restore();fs.rmSync(root,{recursive:true,force:true});}
 });
+
+test('independent Gate process public key must not alias the human approver or execution witness',()=>{
+ withManifest(({set,pem,human,execution})=>{
+   set({schema:1,human:{approver:pem(human)},procedure:{gate:pem(human)}});
+   assert.throws(loadTrustRoots,/overlap|independent/);
+   set({schema:1,human:{approver:pem(human)},
+     execution:{witness:pem(execution)},procedure:{gate:pem(execution)}});
+   assert.throws(loadTrustRoots,/overlap|independent/);
+   const process=generateKeyPairSync('ed25519');
+   set({schema:1,human:{approver:pem(human)},
+     execution:{witness:pem(execution)},procedure:{gate:pem(process)}});
+   assert.equal(loadTrustRoots().procedure.size,1);
+ });
+});
