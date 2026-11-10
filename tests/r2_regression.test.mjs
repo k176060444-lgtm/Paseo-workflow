@@ -139,3 +139,29 @@ test('R2-010 successful reviewer report survives peer failure',async()=>{
     w.store.verify(w.id);
   }finally{w.dispose();}
 });
+
+test('Worker cannot rewrite existing test cases or the test runner configuration',async()=>{
+ const w=repo();
+ try{
+  fs.mkdirSync(path.join(w.dir,'tests'));
+  fs.writeFileSync(path.join(w.dir,'tests','existing.test.mjs'),'assert.equal(1,1);');
+  fs.writeFileSync(path.join(w.dir,'package.json'),'{"scripts":{"test":"node --test"}}');
+  git(w.dir,'add','.');
+  git(w.dir,'-c','user.name=Test','-c','user.email=test@localhost','commit','-qm','protected-test-baseline');
+  fs.writeFileSync(path.join(w.dir,'tests','existing.test.mjs'),'assert.equal(1,2);');
+  await assert.rejects(()=>commitWorktree(w.dir,'bad-test-change'),/existing tests/);
+  git(w.dir,'restore','tests/existing.test.mjs');
+  fs.writeFileSync(path.join(w.dir,'package.json'),'{"scripts":{"test":"true"}}');
+  await assert.rejects(()=>commitWorktree(w.dir,'bad-test-script'),/test scripts\/configuration/);
+ }finally{w.dispose();}
+});
+test('Worker may add a separate test case but cannot replace the baseline',async()=>{
+ const w=repo();try{
+  fs.mkdirSync(path.join(w.dir,'tests'));
+  fs.writeFileSync(path.join(w.dir,'tests','new.test.mjs'),'import test from "node:test"; test("safe",()=>{});');
+  const old=git(w.dir,'rev-parse','HEAD');
+  const now=await commitWorktree(w.dir,'additive-test');
+  assert.notEqual(now,old);
+  assert.equal(fs.readFileSync(path.join(w.dir,'tests','new.test.mjs'),'utf8').includes('safe'),true);
+ }finally{w.dispose();}
+});
