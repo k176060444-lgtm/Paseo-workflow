@@ -191,8 +191,9 @@ export class WorkflowController {
       'Pro-Audit '+checkpoint+' did not approve process for '+targetRole+'; BLOCKED');
     return {...artifact,auditSessionId:sessionId};
   }
-  async invoke(t,role,phase,prompt,cwd=t.worktree){
+  async invoke(t,role,phase,prompt,cwd=t.worktree,onPreApproved=null){
     const pre=await this.auditRole(t,role,phase,'PRE',cwd);
+    if(onPreApproved)await onPreApproved();
     // Save an in-flight marker BEFORE any external side effect. Crashes must not auto-retry.
     const expectedSha=ROLE_PERMISSIONS[role]==='READ_ONLY'?await this.git.head(cwd):null;
     t.status='INFLIGHT';t.inflight={role,phase,at:new Date().toISOString()};
@@ -413,9 +414,13 @@ export class WorkflowController {
       }
       case 'A_WORKER':{
         if(t.aRound>=MAX_A){this.next(t,'STOPPED_BUDGET','GATE_A_EXHAUSTED');return;}
-        t.aRound++;this.store.save(t,'GATE_A_ROUND_START',{round:t.aRound});
-        const r=await this.invoke(t,'worker',`A${t.aRound}-worker`,
-          `APPROVED TASK_SPEC:\n${t.taskSpec}\nWORK PLAN:\n${t.workPlan}\nPrior findings:\n${t.aFindings?.join('\n')??'none'}\nImplement using TDD; no production side-effects.`);
+        const round=t.aRound+1;
+        const r=await this.invoke(t,'worker',`A${round}-worker`,
+          `APPROVED TASK_SPEC:\n${t.taskSpec}\nWORK PLAN:\n${t.workPlan}\nPrior findings:\n${t.aFindings?.join('\n')??'none'}\nImplement using TDD; no production side-effects.`,
+          t.worktree,()=>{
+            t.aRound=round;
+            this.store.save(t,'GATE_A_ROUND_START',{round});
+          });
         if(PAUSE(r.verdict)){this.paused(t,'Worker requests clarification: '+r.summary);return;}
         if(!PASS(r.verdict)){t.aFindings=r.findings;this.next(t,'A_WORKER','WORKER_TECHNICAL_FAIL');return;}
         t.currentSha=await this.git.commitWorktree(t.worktree,`A round ${t.aRound}`);
@@ -443,13 +448,22 @@ export class WorkflowController {
         this.next(t,'B_ENTER','P0_INITIAL_COLLECTED',{pass:r.passed,dispute:t.p0Dispute});return;
       }
       case 'B_ENTER':{
-        if(t.bRound>=MAX_B){this.next(t,'STOPPED_BUDGET','GATE_B_EXHAUSTED');return;}
-        t.bRound++;this.store.save(t,'GATE_B_ROUND_START',{round:t.bRound});
-        this.next(t,t.bFindings.length?'B_WORKER':'B_TEST',t.bFindings.length?'B_REMEDIATION_REQUIRED':'B_REMEDIATION_SKIPPED');return;
+        // An approved no-change path must not consume a remediation slot.
+        if(t.bFindings.length&&t.bRound>=MAX_B){
+          this.next(t,'STOPPED_BUDGET','GATE_B_EXHAUSTED');return;
+        }
+        this.next(t,t.bFindings.length?'B_WORKER':'B_TEST',
+          t.bFindings.length?'B_REMEDIATION_REQUIRED':'B_REMEDIATION_SKIPPED');return;
       }
       case 'B_WORKER':{
-        const r=await this.invoke(t,'worker_remediation',`B${t.bRound}-worker`,
-          `TASK_SPEC:\n${t.taskSpec}\nConfirmed issues:\n${t.bFindings.join('\n')}\nFix only approved issues, preserve evidence; perform TDD.`);
+        const round=t.bRound+1;
+        assert(round<=MAX_B,'Gate B technical remediation budget exhausted');
+        const r=await this.invoke(t,'worker_remediation',`B${round}-worker`,
+          `TASK_SPEC:\n${t.taskSpec}\nConfirmed issues:\n${t.bFindings.join('\n')}\nFix only approved issues, preserve evidence; perform TDD.`,
+          t.worktree,()=>{
+            t.bRound=round;
+            this.store.save(t,'GATE_B_ROUND_START',{round});
+          });
         if(PAUSE(r.verdict)){this.paused(t,'Remediation requests clarification');return;}
         if(!PASS(r.verdict)){t.bFindings=r.findings.length?r.findings:t.bFindings;this.next(t,'B_ENTER','B_WORKER_FAIL');return;}
         const old=t.currentSha;
