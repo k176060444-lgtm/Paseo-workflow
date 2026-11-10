@@ -36,6 +36,8 @@ Never store human private signing keys in the Controller state or Paseo profile.
 Never run live until local independent review and node-specific test have passed.`;
 
 function assertPaseoMode(task){
+  if((task.frozen.p0?.nodes??[]).some(n=>n.enabled===true&&n.transport==='a2a'))
+    throw new Error('rusty A2A enabled but native Hermes A2A bridge is not attached to standalone CLI; BLOCKED');
   if(task.frozen.p0?.transport!=='paseo')
     throw new Error('P0 must use Paseo Connected Hosts; SSH is manual-only disaster recovery');
 }
