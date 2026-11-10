@@ -5,7 +5,7 @@ import { verifyCommitEvidenceSync } from './git.mjs';
 import {loadTrustRoots,verifyHumanApproval,verifyExecutionAttestation} from './auth.mjs';
 import {SshP0Adapter} from './p0.mjs';
 import {verifyPaseoP0Envelope} from './p0_paseo.mjs';
-import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, acceptedP0Dispute } from './policy.mjs';
+import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, acceptedP0Dispute, verifyGateBTests } from './policy.mjs';
 
 export class Store {
   // Only the Store's own verified, synchronous mutation methods may append
@@ -227,6 +227,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       typeof t.currentSha==='string'&&/^[a-f0-9]{40}$/.test(t.currentSha),
       'Gate 5.9 requires exact frozen Git commits');
     assert(t.lastA?.pass===true&&t.lastA?.commit,'Gate 5.9 missing Tester A pass');
+    verifyGateBTests(t);
     assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true&&
       t.lastB?.commit===t.currentSha,'Gate 5.9 missing independent Tester B pass');
     const p0=t.p0Final??t.p0Initial;
@@ -594,6 +595,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         'Gate A pass requires registered Tester evidence');
     }
     if(['NEED_FINAL_COMMIT_P0','ARBITRATOR_TRIGGERED','P0_FINDINGS_OUTSTANDING','GATE_B_TEST_PASS'].includes(type)){
+      verifyGateBTests(t);
       assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true&&t.lastB.commit===t.currentSha,
         'Gate B pass requires matching Tester B evidence');
       assert(t.history.some(h=>h.role==='test_executor'&&h.sha===t.currentSha&&h.pass===true&&
