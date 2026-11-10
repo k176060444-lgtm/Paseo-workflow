@@ -102,11 +102,11 @@ test('R8-005 failed approval attempt cannot wedge new independently signed retry
     const original=store.save.bind(store);
     store.save=()=>{throw new Error('synthetic save failure after artifact registration');};
     assert.throws(()=>c.approve({id,gate:'0.1',digest:frozen.digest,actor:'human',
-      receipt,proof:authority.proof('0.1',frozen.digest,'human',receipt)}),
+      receipt,proof:authority.proof('0.1',frozen.digest,'human',receipt,store)}),
       /synthetic save failure/);
     store.save=original;
     const result=c.approve({id,gate:'0.1',digest:frozen.digest,actor:'human',
-      receipt,proof:authority.proof('0.1',frozen.digest,'human',receipt)});
+      receipt,proof:authority.proof('0.1',frozen.digest,'human',receipt,store)});
     assert.equal(result.stage,'PLANNER');
     const names=store.db.prepare('SELECT name FROM artifacts WHERE task_id=?').all(id)
       .map(x=>x.name).filter(x=>x.startsWith('approval-0-1-'));
