@@ -169,6 +169,9 @@ export function parseAgentOutput(raw, role) {
       !/^\s*(?:[-*]\s*)?\[?(?:LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]/i.test(f)))
   )) throw new Error(`${role}: inconsistent PASS/findings severity; manual reconciliation required`);
   if (role === 'planner') assert(typeof output.taskSpec === 'string' && output.taskSpec.length > 20, 'planner TASK_SPEC absent');
+  if(output.userAlignment!==undefined)
+    assert(typeof output.userAlignment==='string'&&output.userAlignment.length>40,
+      'Planner USER_ALIGNMENT is invalid');
   return output;
 }
 // Interpret case-insensitive severity markers in prose, not arbitrary mentions within a
@@ -201,4 +204,4 @@ export function acceptedP0Dispute(t){
   });
 }
 
-export const AGENT_SCHEMA = {type:'object',properties:{verdict:{type:'string',enum:['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS','APPROVE','REQUEST_CHANGES']},summary:{type:'string'},findings:{type:'array',items:{type:'string'}},taskSpec:{type:'string'}},required:['verdict','summary','findings'],additionalProperties:false};
+export const AGENT_SCHEMA = {type:'object',properties:{verdict:{type:'string',enum:['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS','APPROVE','REQUEST_CHANGES']},summary:{type:'string'},findings:{type:'array',items:{type:'string'}},taskSpec:{type:'string'},userAlignment:{type:'string'}},required:['verdict','summary','findings'],additionalProperties:false};
