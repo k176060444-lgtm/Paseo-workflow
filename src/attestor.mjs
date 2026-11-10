@@ -66,13 +66,14 @@ export class IndependentExecutionAttestor {
       physicalId:node.physicalId,workspaceId:node.workspaceId,
       cwd:node.cwd,commit,requestedAt:new Date().toISOString()});
   }
-  async attestP0Result({node,task,cycle,commit,jobId,agentId,raw}){
+  async attestP0Result({node,task,cycle,commit,jobId,agentId,raw,binding}){
     // A trusted per-node signer must independently retrieve this Agent's
     // original Paseo output. The Controller's supplied raw is merely a hint.
     return this.#ask({schema:1,source:'paseo-p0-agent',
       taskId:task.id,cycle,commit,jobId,nodeId:node.id,
       serverId:node.serverId,physicalId:node.physicalId,
-      model:node.model,harness:node.harness,agentId,
+      model:node.model,harness:node.harness,agentId,binding,
+      requiredProtocol:'P1_P0_NODE_RESULT_V2',
       claimedRawSha256:sha256(raw),requestedAt:new Date().toISOString()});
   }
   async attestTests({task,phase,commit,sha,tests,cwd}){
