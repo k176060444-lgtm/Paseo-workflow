@@ -197,3 +197,41 @@ test('P0 inventory refuses Worker disguised as blind Reviewer',()=>{
  const x=mock();x.nodes[0].role='worker';
  assert.throws(()=>adapter(x).validateInventory(),/only permits pinned direct/);
 });
+
+
+test('read-only P0 lost-ACK lookup finds exact original labels without creating Agent, and always closes remote',async()=>{
+ const x=mock();const node=x.nodes[0];
+ node.paseoUrl='ws://192.168.5.6:6767/ws';node.passwordEnv='PASEO_TEST_PASSWORD';
+ const old=process.env.PASEO_TEST_PASSWORD;process.env.PASEO_TEST_PASSWORD='synthetic';
+ let closes=0,lists=0,creates=0;
+ try{
+  const directClientFactory=async()=>({
+    hosts:{list:async()=>({self:{serverId:node.serverId}})},
+    agents:{list:async args=>{
+      lists++;assert.equal(args.includeBackground,true);
+      return {entries:[
+        {agent:{id:'agent-valid',status:'running',labels:{
+          'p0-job':'job-valid','p0-task':'TASKP800','p0-cycle':'initial-A1',
+          'p0-commit':'a'.repeat(40)}}},
+        {agent:{id:'wrong',status:'idle',labels:{'p0-job':'unrelated'}}}
+      ]};
+    },create:async()=>{creates++;throw Error('reconcile must never create');}},
+    close:async()=>{closes++;}
+  });
+  const r=await adapter(x,{directClientFactory}).reconcileByLabels(node,{
+    taskId:'TASKP800',cycle:'initial-A1',jobId:'job-valid',commit:'a'.repeat(40)});
+  assert.deepEqual(r.map(a=>a.id),['agent-valid']);
+  assert.equal(lists,1);assert.equal(creates,0);assert.equal(closes,1);
+  const bad=await adapter(x,{directClientFactory:async()=>({
+    hosts:{list:async()=>({self:{serverId:'wrong'}})},
+    close:async()=>{closes++;}
+  })});
+  await assert.rejects(()=>bad.reconcileByLabels(node,{
+    taskId:'TASKP800',cycle:'initial-A1',jobId:'job-valid',commit:'a'.repeat(40)}),
+    /identity drift/);
+  assert.equal(closes,2);
+ }finally{
+  if(old===undefined)delete process.env.PASEO_TEST_PASSWORD;
+  else process.env.PASEO_TEST_PASSWORD=old;
+ }
+});
