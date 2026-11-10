@@ -110,6 +110,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       return g(dir,'rev-parse','HEAD');
     },
     assertUnchanged:async (dir,sha)=>{assert.equal(g(dir,'rev-parse','HEAD'),sha);},
+    assertTestWorkspace:async (dir,sha)=>{assert.equal(g(dir,'rev-parse','HEAD'),sha);return [];},
     makeTestCheckout:async (source,sha,dir)=>{
       fs.mkdirSync(path.dirname(dir),{recursive:true});
       g(source,'worktree','add','--detach',dir,sha);return dir;
@@ -223,10 +224,12 @@ test('config SHA/role permissions and SQL ledger resist casual drift',async()=>{
  }finally{finish(x);}
 });
 
-test('permission policy is code-fixed and TEST_ONLY agent is read-only; no dangerous access',()=>{
+test('permission policy keeps TEST_ONLY in disposable write workspace with restricted test commands',()=>{
  assert.equal(MAX_A,10);assert.equal(MAX_B,10);
- assert.equal(providerOptions('tester_gate_a','codex').sandbox_mode,'read-only');
- assert.equal(providerOptions('tester_gate_b','opencode').permission.edit,'deny');
+ assert.equal(providerOptions('tester_gate_a','codex').sandbox_mode,'workspace-write');
+ assert.equal(providerOptions('tester_gate_b','opencode').permission.edit,'allow');
+ assert.equal(providerOptions('tester_gate_b','opencode',[['npm','test']]).permission.bash['npm test'],'allow');
+ assert.equal(providerOptions('tester_gate_b','opencode').permission.bash['*'],'deny');
  assert.equal(providerOptions('worker','opencode').permission.external_directory,'deny');
  assert.equal(providerOptions('spec_reviewer','opencode').permission.bash,'deny');
 });
