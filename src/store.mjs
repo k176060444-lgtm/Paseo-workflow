@@ -524,12 +524,23 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         oldTask.id,oldTask,{exclude:artifact.name}),
       'incident original evidence snapshot changed since human approval');
     this.assertRecoverableDispatches(oldTask.id);
+    assert(original.processProof?.schema===1&&
+      payload.processProofSha256===sha256(original.processProof)&&
+      payload.processNonce===original.processProof.statement?.nonce,
+      'incident must include separately signed original process witness');
+    this.verifyGateProcessProof(original.processProof,{
+      taskId:oldTask.id,gate:'incident',digest:basis,
+      actor:original.actor,receipt:original.receipt,
+      stateSha256:sha256(oldTask),
+      evidenceRoot:this.evidenceRoot(oldTask.id,{exclude:artifact.name})});
     this.verifyHumanProof(original.proof,{taskId:oldTask.id,gate:'incident',
       digest:basis,actor:original.actor,receipt:original.receipt,
-      evidenceSha256:original.incidentEvidenceSha256});
+      evidenceSha256:original.incidentEvidenceSha256,
+      processProofSha256:payload.processProofSha256});
     assert(payload.incidentNonce===original.proof?.statement?.nonce,
       'incident proof nonce mismatch');
     this.#consumeApproval(oldTask.id,'incident',original.proof);
+    this.#consumeApproval(oldTask.id,'procedure-incident',original.processProof);
   }
   #verifyRecoveryReceipt(oldTask,nextTask,payload){
     assert(oldTask.trustRootSha256!==null&&
