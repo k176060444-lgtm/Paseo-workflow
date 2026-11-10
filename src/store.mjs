@@ -221,7 +221,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
   #validateFinalGate(t){
     assert(t.stage==='WAIT_GATE_59'&&t.status==='WAITING_HUMAN',
       'Gate 5.9 requires waiting human stage');
-    assert(t.aRound>=1&&t.bRound>=1&&t.aRound<=MAX_A&&t.bRound<=MAX_B,
+    assert(t.aRound>=1&&t.bRound>=0&&t.aRound<=MAX_A&&t.bRound<=MAX_B&&
+      (t.bRound>0||(!t.changesInB&&t.p0Initial?.commit===t.currentSha)),
       'Gate 5.9 has incomplete or invalid round budgets');
     assert(typeof t.baseSha==='string'&&/^[a-f0-9]{40}$/.test(t.baseSha)&&
       typeof t.currentSha==='string'&&/^[a-f0-9]{40}$/.test(t.currentSha),
