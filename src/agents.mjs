@@ -53,6 +53,7 @@ export class PaseoAgentRuntime {
     const data=parseAgentOutput(result.lastMessage,role);
     const bare={role,phase,agentId:agent.id,dispatchId,verdict:data.verdict,
       summary:data.summary,findings:data.findings,taskSpec:data.taskSpec??null,
+      model:cfg.model,harness:cfg.harness,soulSha256:soul.sha256,
       raw:result.lastMessage,...(auditBinding?{auditBinding}:{})};
     assert(this.attestor,'independent Paseo execution attestor not installed; BLOCKED');
     // No model or Controller key can sign this receipt. The IPC attestor must
