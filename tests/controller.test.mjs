@@ -189,7 +189,7 @@ function finish(x){
 
 test('happy path skips unnecessary remediation but always runs final Arbitrator',async()=>{
  const x=setup();try{await movePastPlanning(x);const result=await x.c.run('TASK1234');
- assert.equal(result.stage,'WAIT_GATE_59');assert.equal(result.aRound,1);assert.equal(result.bRound,1);
+ assert.equal(result.stage,'WAIT_GATE_59');assert.equal(result.aRound,1);assert.equal(result.bRound,0);
  assert.equal(x.getP0Calls(),1);assert(!x.modelCalls.includes('worker_remediation'));assert(x.modelCalls.includes('arbitrator'));
  assert(x.modelCalls.filter(q=>q==='pro_audit').length>10);
  const ledger=x.store.verify('TASK1234');assert(ledger.events>10);
@@ -453,10 +453,10 @@ test('Tester B executes and preserves three separate exact approved command laye
     assert.equal(result.stage,'WAIT_GATE_59');
     const last=x.c.required('TASK1234');
     assert.equal(verifyGateBTests(last),true);
-    assert.deepEqual(visited.filter(v=>v.phase.startsWith('B1-test-')).map(v=>v.phase),
-      ['B1-test-smoke','B1-test-canary','B1-test-regression']);
+    assert.deepEqual(visited.filter(v=>v.phase.startsWith('B0-test-')).map(v=>v.phase),
+      ['B0-test-smoke','B0-test-canary','B0-test-regression']);
     for(const layer of ['smoke','canary','regression']){
-      const call=visited.find(v=>v.phase==='B1-test-'+layer);
+      const call=visited.find(v=>v.phase==='B0-test-'+layer);
       assert.deepEqual(call.commands,last.frozen.tests.gateB[layer]);
       assert.equal(last.lastB.tests.layers[layer].pass,true);
     }
