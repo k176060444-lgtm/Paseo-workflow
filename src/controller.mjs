@@ -582,12 +582,12 @@ export class WorkflowController {
     }
     else {
       assert(expectedSha===null,'pre-commit recovery must not invent a Git SHA');
-      assert(expectedBasis===(t.taskSpecSha??t.frozen.digest),
+      assert(expectedBasis===(t.alignmentApprovalSha??t.taskSpecSha??t.frozen.digest),
         'pre-commit recovery requires the frozen task/spec digest as explicit basis');
     }
     assert(typeof actor==='string'&&actor.trim().length>1&&
       typeof receipt==='string'&&receipt.length>15,'explicit recovery receipt required');
-    const basis=t.currentSha??t.taskSpecSha??t.frozen.digest;
+    const basis=t.currentSha??t.alignmentApprovalSha??t.taskSpecSha??t.frozen.digest;
     // An explicit human recovery returns to the *recorded failed checkpoint*, never
     // an inferred later Gate. Old synthetic pre-commit BLOCKED fixtures retain the
     // safe PLANNER fallback; real WAIT_HUMAN records require blockedStage.
