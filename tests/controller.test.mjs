@@ -10,7 +10,7 @@ import {WorkflowController} from '../src/controller.mjs';
 import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical,verifyGateBTests} from '../src/policy.mjs';
 import {verifyCommitEvidenceSync} from '../src/git.mjs';
 
-function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false}={}) {
+function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false,preRejectRole=null}={}) {
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-case-'));
   const g=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
   const repo=path.join(tmp,'repo');fs.mkdirSync(repo);
@@ -72,7 +72,9 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     x.store.recordIntent(x.task.id,x.phase,dispatchId);
     if(ambiguous&&x.role==='planner')throw Error('provider lost connection after request');
     x.store.recordAck(dispatchId,agentId);
-    const verdict=x.role==='worker'&&workerFails?'FAIL':
+    const verdict=x.role==='pro_audit'&&preRejectRole&&
+      x.phase.startsWith('audit-PRE-'+preRejectRole+'-')?'FAIL':
+      x.role==='worker'&&workerFails?'FAIL':
       x.role==='worker_remediation'&&remediationFails?'FAIL':
       x.role==='spec_reviewer'&&x.phase==='workplan-scope-review'&&scopeDrift?'FAIL':'PASS';
     x.store.recordTerminal(dispatchId);
@@ -489,4 +491,31 @@ test('unapproved test command cannot be exposed as an OpenCode tool permission',
   assert.equal(allowed['npm test'],'allow');
   assert.equal(allowed['node -e console.log(1)'],undefined);
   assert.equal(allowed['*'],'deny');
+});
+
+test('A Worker PRE compliance rejection spends zero Gate A technical rounds',async()=>{
+  const x=setup({preRejectRole:'worker'});
+  try{
+    await movePastPlanning(x);
+    await assert.rejects(()=>x.c.run('TASK1234'),/Pro-Audit PRE did not approve/);
+    const t=x.c.required('TASK1234');
+    assert.equal(t.aRound,0);
+    assert.equal(t.stage,'BLOCKED');
+    assert.equal(x.modelCalls.filter(r=>r==='worker').length,0);
+    assert.equal(x.store.dispatches(t.id).filter(r=>r.phase==='A1-worker').length,0);
+    x.store.verify(t.id);
+  }finally{finish(x);}
+});
+test('B Remediation PRE compliance rejection spends zero Gate B technical rounds',async()=>{
+  const x=setup({preRejectRole:'worker_remediation',p0HasFindings:true});
+  try{
+    await movePastPlanning(x);
+    await assert.rejects(()=>x.c.run('TASK1234'),/Pro-Audit PRE did not approve/);
+    const t=x.c.required('TASK1234');
+    assert.equal(t.aRound,1);
+    assert.equal(t.bRound,0);
+    assert.equal(t.stage,'BLOCKED');
+    assert.equal(x.modelCalls.filter(r=>r==='worker_remediation').length,0);
+    x.store.verify(t.id);
+  }finally{finish(x);}
 });
