@@ -161,6 +161,17 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(entry?.digest===digest,`required registered artifact missing: ${name}`);
     return fs.readFileSync(path.join(this.dir(id),'evidence',name),'utf8');
   }
+  // Original evidence is read via the registered manifest and checked digest;
+  // neither Arbitrator nor Pro-Audit should rely on model-written summaries.
+  readEvidenceByDigest(id,digest){
+    this.verify(id);
+    assert(typeof digest==='string'&&/^[a-f0-9]{64}$/.test(digest),
+      'invalid registered evidence SHA');
+    const row=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+      .get(id,digest);
+    assert(row?.name,'review docket evidence missing');
+    return {name:row.name,sha256:digest,content:this.#requireArtifact(id,row.name,digest)};
+  }
   #checkGateReceipt(oldTask,nextTask,type,payload){
     const gate=type==='GATE_0.1_APPROVED'?'0.1':type==='GATE_0.2_APPROVED'?'0.2':'5.9';
     const file=payload.approvalFile;
