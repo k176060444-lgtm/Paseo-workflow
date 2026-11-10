@@ -232,8 +232,39 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?').get(t.id,h.evidenceSha256)),
       'Gate 5.9 needs persisted P0 evidence');
     for(const h of t.history)
-      if(['spec_reviewer','quality_reviewer','test_executor','tester_gate_a','tester_gate_b','arbitrator','pro_audit'].includes(h.role))
+      if(['spec_reviewer','quality_reviewer','test_executor','tester_gate_a',
+          'tester_gate_b','arbitrator','pro_audit'].includes(h.role))
         this.#verifyHistoryExecution(t,h);
+    // Process compliance must surround EVERY actual role dispatch, including
+    // both independent reviewers, Tester command execution, P0 and Arbitrator.
+    // The final gate independently checks both signed receipts and their order.
+    const auditedRoles=new Set(['planner','worker','spec_reviewer','quality_reviewer',
+      'tester_gate_a','tester_gate_b','test_executor','worker_remediation',
+      'arbitrator','P0']);
+    for(let i=0;i<t.history.length;i++){
+      const h=t.history[i];
+      if(!auditedRoles.has(h.role))continue;
+      const actualPhase=['spec_reviewer','quality_reviewer'].includes(h.role)?
+        h.phase+'-'+h.role:h.phase;
+      const name=checkpoint=>'audit-'+checkpoint+'-'+h.role+'-'+actualPhase;
+      const find=(checkpoint)=>t.history.findIndex((a,j)=>
+        a.role==='pro_audit'&&a.phase===name(checkpoint)&&
+        (checkpoint==='PRE'?j<i:j>i));
+      const pre=find('PRE'),post=find('POST');
+      assert(pre>=0&&post>=0,'missing ordered PRE/POST process compliance for '+h.role);
+      for(const idx of [pre,post]){
+        const receipt=t.history[idx];
+        assert(receipt.verdict==='PASS','noncompliant process check cannot release Gate 5.9');
+        const found=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+          .get(t.id,receipt.evidenceSha256);
+        assert(found,'process audit missing authenticated original report');
+        const raw=JSON.parse(this.#requireArtifact(t.id,found.name,receipt.evidenceSha256));
+        assert(raw.role==='pro_audit'&&raw.phase===receipt.phase&&raw.verdict==='PASS'&&
+          Array.isArray(raw.findings)&&raw.findings.length===0,
+          'process compliance result contains findings or mismatched identity');
+        this.#verifyHistoryExecution(t,receipt);
+      }
+    }
   }
   #verifyP0Nodes(t,summary){
     const inventory=(t.frozen.p0?.nodes??[]).filter(n=>n.enabled===true);
