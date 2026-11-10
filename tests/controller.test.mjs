@@ -20,10 +20,12 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
   g(repo,'-c','user.name=Test','-c','user.email=test@localhost','commit','-qm','baseline');
   const keys=generateKeyPairSync('ed25519');
   const witness=generateKeyPairSync('ed25519');
+  const processWitness=generateKeyPairSync('ed25519');
   const manifest=path.join(tmp,'public-trust.json');
   fs.writeFileSync(manifest,JSON.stringify({schema:1,human:{
     'offline-auditor':keys.publicKey.export({format:'pem',type:'spki'})},
-    execution:{'offline-execution-witness':witness.publicKey.export({format:'pem',type:'spki'})}}));
+    execution:{'offline-execution-witness':witness.publicKey.export({format:'pem',type:'spki'})},
+    procedure:{'offline-process-witness':processWitness.publicKey.export({format:'pem',type:'spki'})}}));
   const prevTrustFile=process.env.P1_TRUST_ROOTS_FILE;
   const prevTrustHash=process.env.P1_TRUST_ROOTS_SHA256;
   process.env.P1_TRUST_ROOTS_FILE=manifest;
@@ -37,14 +39,26 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       signature:sign(null,Buffer.from(canonical(statement)),witness.privateKey).toString('base64')};
   }
   function proof(gate,digest,receipt,actor='user'){
+    const signedProcess=['0.1','0.2','5.9'].includes(gate);
+    const processStatement=signedProcess?{purpose:'P1_PROCESS_GATE_V1',
+      taskId:'TASK1234',gate,digest,actor,receiptSha256:sha256(receipt),
+      stateSha256:sha256(store.get('TASK1234')),evidenceRoot:store.evidenceRoot('TASK1234'),
+      scope:'PROCESS_ONLY',verdict:'COMPLIANT',
+      checks:['GATE_BASIS','HUMAN_AUTHORITY','PROCESS_EVIDENCE'],
+      nonce:randomUUID(),issuedAt:new Date().toISOString()}:null;
+    const processProof=signedProcess?{schema:1,keyId:'offline-process-witness',
+      statement:processStatement,signature:sign(null,Buffer.from(canonical(processStatement)),
+        processWitness.privateKey).toString('base64')}:null;
     const statement={purpose:'P1_HUMAN_GATE_V1',taskId:'TASK1234',gate,digest,
       actor,receipt,nonce:randomUUID(),issuedAt:new Date().toISOString(),
+      ...(processProof?{processProofSha256:sha256(processProof)}:{}),
       ...(gate==='5.9'?{
         evidenceSha256:store.evidenceDigest('TASK1234','final-compliance.json'),
         evidenceRoot:store.evidenceRoot('TASK1234')
       }:{})};
     return {schema:1,keyId:'offline-auditor',statement,
-      signature:sign(null,Buffer.from(canonical(statement)),keys.privateKey).toString('base64')};
+      signature:sign(null,Buffer.from(canonical(statement)),keys.privateKey).toString('base64'),
+      ...(processProof?{processProof}:{})};
   }
   const roles={};const soulDir=path.join(tmp,'souls');fs.mkdirSync(soulDir);
   for(const [role] of Object.entries(ROLE_PERMISSIONS)){
