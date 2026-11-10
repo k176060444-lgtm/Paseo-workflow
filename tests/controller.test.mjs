@@ -77,7 +77,8 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     x.store.recordTerminal(dispatchId);
     const base={role:x.role,phase:x.phase,agentId,dispatchId,verdict,
       summary:'synthetic test runtime only',findings:verdict==='FAIL'?['needs fixing']:[],
-      taskSpec:x.role==='planner'?'Build a tested feature using the approved specification and TDD.':null};
+      taskSpec:x.role==='planner'?'Build a tested feature using the approved specification and TDD.':null,
+      ...(x.auditBinding?{auditBinding:x.auditBinding}:{} )};
     if(x.role==='arbitrator'&&conflicting&&arbResolves){
       const p0=x.task.p0Final??x.task.p0Initial;
       base.disputeResolution={
