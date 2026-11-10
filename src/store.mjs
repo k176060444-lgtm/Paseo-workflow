@@ -271,8 +271,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     for(let i=0;i<t.history.length;i++){
       const h=t.history[i];
       if(!auditedRoles.has(h.role))continue;
-      const actualPhase=['spec_reviewer','quality_reviewer'].includes(h.role)?
-        h.phase+'-'+h.role:h.phase;
+      const actualPhase=['spec_reviewer','quality_reviewer'].includes(h.role)&&
+        /^[AB][0-9]+-review$/.test(h.phase)?h.phase+'-'+h.role:h.phase;
       // Never match by phase alone: retries and authorized recoveries must have
       // distinct audit sessions with their own independently attested reports.
       assert(typeof h.auditSessionId==='string'&&
@@ -422,7 +422,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       expected={taskId:t.id,role:'test_executor',phase:h.phase,commit:h.sha,
         agentId:'',dispatchId:'',rawSha256:sha256({sha:raw.sha,tests:bareTests})};
     }else{
-      const phase=['spec_reviewer','quality_reviewer'].includes(h.role)?h.phase+'-'+h.role:h.phase;
+      const phase=['spec_reviewer','quality_reviewer'].includes(h.role)&&/^[AB][0-9]+-review$/.test(h.phase)?
+        h.phase+'-'+h.role:h.phase;
       assert(raw.role===h.role&&raw.phase===phase&&raw.agentId===h.agentId&&
         raw.verdict===h.verdict&&typeof raw.dispatchId==='string',
         'Agent execution result/history mismatch');
