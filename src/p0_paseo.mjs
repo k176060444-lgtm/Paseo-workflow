@@ -45,12 +45,40 @@ export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,co
     reportSha256:sha256(r)});
   return r;
 }
+async function makeDirectClient({url,password}) {
+  const {createPaseoClient}=await import('@getpaseo/client');
+  const client=createPaseoClient({url,password});
+  await client.connect();
+  return client;
+}
+async function closeClient(client){
+  if(typeof client.dispose==='function')await client.dispose();
+  else if(typeof client.close==='function')await client.close();
+}
+function validatedEndpoint(node){
+  assert(typeof node.paseoUrl==='string'&&typeof node.passwordEnv==='string'&&
+    /^PASEO_[A-Z0-9_]+_PASSWORD$/.test(node.passwordEnv),
+    'direct Paseo URL and approved environment password alias required');
+  const uri=new URL(node.paseoUrl);
+  assert(['ws:','wss:'].includes(uri.protocol)&&uri.pathname==='/ws'&&
+    !uri.username&&!uri.password&&!uri.search&&!uri.hash,
+    'invalid authenticated direct Paseo daemon endpoint');
+  // Cleartext WebSocket is limited to explicitly approved private-LAN peers.
+  const host=uri.hostname.replace(/^\\[|\\]$/g,'');
+  const a=host.split('.').map(Number);
+  const privateIp=a.length===4&&a.every(v=>Number.isInteger(v)&&v>=0&&v<=255)&&
+    (a[0]===10||(a[0]===172&&a[1]>=16&&a[1]<=31)||
+      (a[0]===192&&a[1]===168));
+  assert(uri.protocol==='wss:'||privateIp,
+    'unencrypted Paseo WebSocket forbidden outside trusted private LAN');
+  return uri.toString();
+}
 export class PaseoP0Adapter{
   constructor(nodes,{client,attestor,p0Roots,pollMs=60000,extraThirdMs=600000,
     deadlineMs=7200000,sleep=ms=>new Promise(r=>setTimeout(r,ms)),
-    clock=()=>Date.now()}={}){
+    clock=()=>Date.now(),directClientFactory=makeDirectClient}={}){
     this.nodes=nodes.filter(n=>n.enabled===true);
-    Object.assign(this,{client,attestor,p0Roots,pollMs,extraThirdMs,deadlineMs,sleep,clock});
+    Object.assign(this,{client,attestor,p0Roots,pollMs,extraThirdMs,deadlineMs,sleep,clock,directClientFactory});
   }
   validateInventory(){
     assert(this.nodes.length>=2&&this.nodes.length<=3,'P0 requires 2–3 Paseo hosts');
@@ -58,32 +86,50 @@ export class PaseoP0Adapter{
       assert(new Set(this.nodes.map(n=>n[key])).size===this.nodes.length,
         'P0 duplicate physical host attribute: '+key);
     for(const n of this.nodes)
-      assert(n.transport==='direct'&&n.serverId&&n.registrationId&&
+      assert(n.transport==='direct'&&n.serverId&&
+        ((n.paseoUrl&&n.passwordEnv)||n.registrationId)&&
         n.workspaceId&&n.cwd&&n.model?.startsWith(n.harness+'/')&&
         ['opencode','codex'].includes(n.harness),
         'P0 only permits pinned direct Paseo hosts and provider');
-    assert(this.client?.hosts?.client&&this.attestor?.attestP0Preflight&&
-      this.attestor?.attestP0Result,
-      'P0 Paseo Connected Hosts or independent witness not deployed; BLOCKED');
+    assert(this.nodes.every(n=>n.paseoUrl)||this.client?.hosts?.client,
+      'P0 direct client or registered Hosts API unavailable; BLOCKED');
+    assert(this.attestor?.attestP0Preflight&&this.attestor?.attestP0Result,
+      'independent remote witness not deployed; BLOCKED');
   }
   async connect(node,task,commit){
-    const directory=await this.client.hosts.list();
-    const host=(directory.hosts??[]).find(h=>h.serverId===node.serverId&&
-      h.registrationId===node.registrationId&&h.enabled!==false&&
-      h.metadata?.p1Transport==='direct');
-    assert(host,'P0 host identity/direct transport not pinned; no SSH fallback');
-    const target=JSON.stringify(host.target??host.connection??'');
-    assert(!target.toLowerCase().includes('ssh://'),'SSH host connection forbidden for normal P0');
-    const remote=await this.client.hosts.client(node.serverId);
+    let remote;
+    if(node.paseoUrl){
+      const url=validatedEndpoint(node);
+      const password=process.env[node.passwordEnv];
+      assert(typeof password==='string'&&password.length>0,
+        'approved remote Paseo credential unavailable; BLOCKED');
+      remote=await this.directClientFactory({url,password,node});
+      const identity=await remote.hosts.list();
+      assert(identity?.self?.serverId===node.serverId,
+        'remote Paseo daemon serverId mismatch; BLOCKED');
+      const available=await remote.providers.listAvailable();
+      assert(available?.[node.harness]===true||
+        available?.providers?.[node.harness]?.available===true,
+        'remote approved Harness unavailable; BLOCKED');
+    }else{
+      const directory=await this.client.hosts.list();
+      const host=(directory.hosts??[]).find(h=>h.serverId===node.serverId&&
+        h.registrationId===node.registrationId&&h.enabled!==false&&
+        h.metadata?.p1Transport==='direct');
+      assert(host,'P0 Host registration mismatch; no SSH fallback');
+      const target=JSON.stringify(host.target??host.connection??'');
+      assert(!target.toLowerCase().includes('ssh://'),'SSH host connection forbidden');
+      remote=await this.client.hosts.client(node.serverId);
+    }
     try{
       const x=await remote.workspaces.ref(node.workspaceId).refresh();
       const workspace=x?.workspace??x;
-      assert(workspace&&(workspace.directory??workspace.cwd)===node.cwd,
+      assert(workspace&&(workspace.workspaceDirectory??workspace.directory??workspace.cwd)===node.cwd,
         'remote Paseo workspace mismatch');
       const proof=await this.attestor.attestP0Preflight({node,task,commit});
       verifyPaseoP0Preflight(this.p0Roots,node,proof,task.id,commit);
       return remote;
-    }catch(e){await remote.dispose();throw e;}
+    }catch(e){await closeClient(remote);throw e;}
   }
   async review({task,commit,taskSpec,store,cycle}){
     this.validateInventory();
@@ -173,7 +219,7 @@ export class PaseoP0Adapter{
         dispute:result.some(x=>['QUESTION','NEEDS_SPECIALIST'].includes(x.verdict))||
           result.some(x=>PASS(x.verdict))&&result.some(x=>x.verdict==='FAIL'),
         findings:result.flatMap(r=>r.findings)};
-    }finally{await Promise.allSettled(ready.map(x=>x.remote.dispose()));}
+    }finally{await Promise.allSettled(ready.map(x=>closeClient(x.remote)));}
   }
   async reconcileByLabels(node,{taskId,cycle,jobId,commit}){
     assert(this.client?.hosts?.client,'P0 Paseo connection unavailable');
@@ -184,6 +230,6 @@ export class PaseoP0Adapter{
       return list.map(x=>x?.agent??x).filter(a=>
         a?.labels?.['p0-job']===jobId&&a?.labels?.['p0-task']===taskId&&
         a?.labels?.['p0-cycle']===cycle&&a?.labels?.['p0-commit']===commit);
-    }finally{await remote.dispose();}
+    }finally{await closeClient(remote);}
   }
 }
