@@ -78,7 +78,7 @@ async function main(){
           const sha=store.evidenceDigest(task.id,name);
           request=JSON.parse(store.readEvidenceByDigest(task.id,sha).content);
         }catch(e){
-          if(!/missing|not found|required registered artifact/i.test(String(e.message)))
+          if(e.message!=='requested registered evidence digest unavailable')
             throw e;
           continue;
         }
