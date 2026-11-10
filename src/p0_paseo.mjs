@@ -21,13 +21,22 @@ export function verifyPaseoP0Preflight(roots,node,proof,taskId,commit){
     nodeId:node.id,physicalId:node.physicalId,serverId:node.serverId,
     workspaceId:node.workspaceId,cwd:node.cwd,commit,head:commit,clean:true});
 }
-export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,commit}){
+export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,commit,binding=null}){
   assert(envelope?.report&&envelope?.proof,'P0 signed original result missing');
   const r=envelope.report;
   assert(r.taskId===taskId&&r.cycle===cycle&&r.jobId===jobId&&r.commit===commit&&
     r.nodeId===node.id&&r.physicalId===node.physicalId&&r.serverId===node.serverId&&
     r.model===node.model&&r.harness===node.harness,
     'P0 physical node/Commit/Provider mismatch');
+  if(binding){
+    assert(binding.role===node.role&&binding.workspaceId===node.workspaceId&&
+      binding.cwd===node.cwd&&typeof binding.soulSha256==='string'&&
+      typeof binding.promptSha256==='string'&&
+      typeof binding.taskSpecSha256==='string'&&
+      typeof binding.intentSha256==='string'&&
+      canonical(r.binding)===canonical(binding),
+      'signed P0 result does not bind approved role/Soul/prompt/intent/workspace');
+  }
   assert(typeof r.agentId==='string'&&r.agentId.length>0&&
     typeof r.rawMessage==='string'&&r.stdoutSha256===sha256(r.rawMessage),
     'P0 original Paseo Agent raw output not bound');
@@ -40,10 +49,10 @@ export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,co
   if(r.verdict==='APPROVE_WITH_COMMENTS')
     assert(r.findings.every(f=>/^\s*(?:[-*]\s*)?\[?(LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]/i.test(f)),
       'P0 contains blocking or unclassified comments');
-  signed(roots,node,envelope.proof,{purpose:'P1_P0_NODE_RESULT_V1',taskId,cycle,
+  signed(roots,node,envelope.proof,{purpose:binding?'P1_P0_NODE_RESULT_V2':'P1_P0_NODE_RESULT_V1',taskId,cycle,
     jobId,commit,nodeId:node.id,physicalId:node.physicalId,
     serverId:node.serverId,agentId:r.agentId,model:r.model,harness:r.harness,
-    reportSha256:sha256(r)});
+    ...(binding?{bindingSha256:sha256(binding)}:{}),reportSha256:sha256(r)});
   return {...r,verdict:parsed.verdict};
 }
 async function makeDirectClient({url,password}) {
@@ -155,9 +164,12 @@ export class PaseoP0Adapter{
           '. Independent of other nodes. ORIGINAL USER INTENT:\n'+task.frozen.intent+
           '\nAPPROVED TASK_SPEC SHA256: '+sha256(taskSpec)+'\nTASK_SPEC:\n'+taskSpec+
           '\nReturn terminal JSON verdict PASS/FAIL/QUESTION/NEEDS_SPECIALIST, summary and findings; identify specific code evidence.';
+        const binding={role,soulSha256:soul.sha256,promptSha256:sha256(prompt),
+          taskSpecSha256:sha256(taskSpec),intentSha256:task.frozen.intentSha256??
+            sha256(task.frozen.intent),workspaceId:node.workspaceId,cwd:node.cwd};
         const request={jobId,taskId:task.id,cycle,serverId:node.serverId,
           nodeId:node.id,workspaceId:node.workspaceId,commit,
-          soulSha256:soul.sha256,promptSha256:sha256(prompt)};
+          soulSha256:soul.sha256,promptSha256:sha256(prompt),binding};
         store.artifact(task.id,'p0-'+cycle+'-'+node.id+'-request.json',request);
         store.recordIntent(task.id,'P0:'+cycle+':'+node.id,jobId);
         // A lost create ACK is UNKNOWN. Do NOT re-create automatically.
@@ -170,7 +182,7 @@ export class PaseoP0Adapter{
         });
         assert(handle.id,'P0 remote agent ACK identity missing');
         store.recordAck(jobId,node.serverId+':'+handle.id);
-        jobs.push({node,remote,jobId,agentId:handle.id});
+        jobs.push({node,remote,jobId,agentId:handle.id,binding});
       }
       while(true){
         for(const job of jobs){
@@ -185,9 +197,9 @@ export class PaseoP0Adapter{
               'P0 Agent did not finish with stable raw report');
             const envelope=await this.attestor.attestP0Result({
               node:job.node,task,cycle,commit,jobId:job.jobId,
-              agentId:job.agentId,raw:result.lastMessage});
+              agentId:job.agentId,raw:result.lastMessage,binding:job.binding});
             const body=verifyPaseoP0Envelope(this.p0Roots,job.node,envelope,
-              {taskId:task.id,cycle,jobId:job.jobId,commit});
+              {taskId:task.id,cycle,jobId:job.jobId,commit,binding:job.binding});
             assert(body.agentId===job.agentId,'P0 signed Agent ID mismatched ACK');
             const ev=store.artifact(task.id,'p0-'+cycle+'-'+job.node.id+'-result.json',envelope);
             store.recordTerminal(job.jobId);
