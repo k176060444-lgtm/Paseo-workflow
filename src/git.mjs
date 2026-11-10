@@ -89,6 +89,22 @@ function safeChange(dir,p){
   assert(file.startsWith(root+path.sep),'git change outside worktree');
   if(fs.existsSync(file))assert(!fs.lstatSync(file).isSymbolicLink(),`symlink in change: ${p}`);
 }
+// Existing tests, test discovery/configuration and test scripts are immutable
+// to Worker/Remediation. Adding new test cases is allowed; weakening the
+// approved baseline is never a permitted side effect of code implementation.
+const PROTECTED_TEST_CONFIG=/(^|\/)(?:package(?:-lock)?\.json|pytest\.ini|tox\.ini|pyproject\.toml|setup\.cfg|jest\.config\.[^/]+|vitest\.config\.[^/]+|playwright\.config\.[^/]+|karma\.conf\.[^/]+|tsconfig(?:\.[^/]+)?\.json)$/i;
+const TEST_PATH=/(^|\/)(?:tests?|__tests__)(\/|$)|(?:^|\/)(?:test_[^/]+\.py|[^/]+\.(?:test|spec)\.[cm]?[jt]sx?)$/i;
+async function enforceBaselineTestIntegrity(dir,paths){
+  for(const p of paths){
+    if(!TEST_PATH.test(p)&&!PROTECTED_TEST_CONFIG.test(p))continue;
+    safeChange(dir,p);
+    assert(!PROTECTED_TEST_CONFIG.test(p),
+      'Worker may not alter test scripts/configuration without separate human approval: '+p);
+    const old=await execArgv('git',['cat-file','-e','HEAD:'+p],{cwd:dir});
+    assert(old.code!==0,'Worker may only add new test cases, never edit/delete/rename existing tests: '+p);
+    assert(TEST_PATH.test(p),'new non-test file in protected test area: '+p);
+  }
+}
 async function validateStaged(dir){
   const diff=await must('git',['diff','--cached','--name-only','-z'],{cwd:dir,raw:true});
   for(const p of diff.split('\0').filter(Boolean))safeChange(dir,p);
@@ -104,12 +120,14 @@ async function validateStaged(dir){
 export async function commitWorktree(dir,tag) {
   const raw=await must('git',['status','--porcelain','-z','--untracked-files=all'],{cwd:dir,raw:true});
   for(const p of porcelainPaths(raw))safeChange(dir,p);
+  await enforceBaselineTestIntegrity(dir,porcelainPaths(raw));
   if(raw) {
     await git(dir,'add','--all');
     // Inspect the actual index before commit. A rename's source and destination
     // were validated above, and the post-add scan detects newly staged paths.
     const after=await must('git',['status','--porcelain','-z','--untracked-files=all'],{cwd:dir,raw:true});
     for(const p of porcelainPaths(after))safeChange(dir,p);
+    await enforceBaselineTestIntegrity(dir,porcelainPaths(after));
     await validateStaged(dir);
     await must('git',['-c','user.name=P1 Controller','-c','user.email=p1@localhost','commit','-m',`P1 ${tag}`],{cwd:dir});
   }
