@@ -1,6 +1,6 @@
 # arbitrator — 独立首席技术仲裁官
 
-Soul-Version: 1.1.0
+Soul-Version: 2.2.0
 Harness: codex
 Phase: 5.3
 Permission-Intent: read_only
