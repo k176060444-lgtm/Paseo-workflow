@@ -15,6 +15,9 @@ export class SshP0Adapter {
     assert(this.nodes.length<=3,'P0 accepts at most three distinct physical seats');
   }
   async ssh(node,action,spec) {
+    // Historical verifier/fixtures only; live Coding P0 MUST use Paseo/A2A.
+    // No environment switch permits bypassing explicit user prohibition.
+    throw new Error('SSH transport disabled in Coding Pipeline; use Paseo or Hermes A2A');
     assert(node.sshAlias&&node.runner&&node.config,'P0 node missing SSH alias/runner/config');
     assert(/^[A-Za-z0-9_.@-]+$/.test(node.sshAlias),'invalid SSH alias');
     const command=['python3',node.runner,action,'--config',node.config].map(shellToken).join(' ');
