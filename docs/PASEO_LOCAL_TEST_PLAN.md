@@ -1,3 +1,5 @@
+> **HISTORICAL ONLY (superseded 2026-11-10).** This document describes pre-remediation S0–R8 decisions and must not be used as current deployment instructions. 21bao/5bao/9bao now have Paseo installed; 5bao/9bao were reached by authenticated native SDK direct connections, not SSH. Current policy: no SSH in Coding, Planner detail only after Gate 0.2, process-only Pro-Audit PRE/POST every role, mandatory final Arbitrator, rusty native Hermes A2A only. See [current README](../README.md) and [remediation status](REMEDIATION_20261110.md).
+
 # 21bao Paseo 安装/联调的分阶段建议（仅计划；未授权执行）
 
 ## 现在是否需要安装
