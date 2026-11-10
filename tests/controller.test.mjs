@@ -10,7 +10,7 @@ import {WorkflowController} from '../src/controller.mjs';
 import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical} from '../src/policy.mjs';
 import {verifyCommitEvidenceSync} from '../src/git.mjs';
 
-function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false}={}) {
+function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true}={}) {
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-case-'));
   const g=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
   const repo=path.join(tmp,'repo');fs.mkdirSync(repo);
@@ -78,6 +78,17 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     const base={role:x.role,phase:x.phase,agentId,dispatchId,verdict,
       summary:'synthetic test runtime only',findings:verdict==='FAIL'?['needs fixing']:[],
       taskSpec:x.role==='planner'?'Build a tested feature using the approved specification and TDD.':null};
+    if(x.role==='arbitrator'&&conflicting&&arbResolves){
+      const p0=x.task.p0Final??x.task.p0Initial;
+      base.disputeResolution={
+        reportSetSha256:sha256(p0.reports),
+        decisions:p0.reports.filter(r=>r.verdict==='FAIL').map(r=>({
+          nodeId:r.nodeId,reportSha256:sha256(r),disposition:'FALSE_POSITIVE',
+          rationale:'Synthetic test only: independent evidence marks this finding as a false positive.',
+          codeRefs:['source.txt:1']
+        }))
+      };
+    }
     const attestation=attest({taskId:x.task.id,role:x.role,phase:x.phase,
       commit:x.task.currentSha??null,agentId,dispatchId,rawSha256:sha256(base)});
     return {...base,attestation};
@@ -287,5 +298,49 @@ test('R7-002 final Gate rejects late evidence not covered by signed compliance r
      /final compliance receipt mismatched/);
    assert.equal(x.c.required('TASK1234').stage,'WAIT_GATE_59');
    x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('signed human recovery resumes a WAIT_HUMAN checkpoint without skipping Gate',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'PLAN_DETAIL');
+  x.c.paused(t,'Synthetic question requiring user clarification');
+  const stopped=x.c.required('TASK1234');
+  assert.equal(stopped.stage,'WAIT_HUMAN');
+  assert.equal(stopped.status,'WAITING_HUMAN');
+  const msg='Human explicitly clarifies approved details and authorizes resuming this checkpoint.';
+  const out=x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
+   expectedBasis:t.taskSpecSha,proof:x.proof('recovery',t.taskSpecSha,msg)});
+  assert.equal(out.stage,'PLAN_DETAIL');
+  assert.equal(x.c.required('TASK1234').status,'READY');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('Arbitrator may dismiss authenticated disputed P0 FALSE_POSITIVE only with exact signed report-set evidence',async()=>{
+ const x=setup({conflicting:true});try{
+  await movePastPlanning(x);
+  const out=await x.c.run('TASK1234');
+  assert.equal(out.stage,'WAIT_GATE_59');
+  const t=x.c.required('TASK1234');
+  assert.equal(t.p0Final.passed,false);
+  assert.equal(t.finalArbitration.disputeResolution.reportSetSha256,sha256(t.p0Final.reports));
+  assert.equal(t.bFindings.length,0);
+  assert.equal(x.getP0Calls(),2);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('Disputed P0 cannot be approved by a generic Arbitrator PASS lacking finding-by-finding ruling',async()=>{
+ const x=setup({conflicting:true,arbResolves:false});try{
+  await movePastPlanning(x);
+  const out=await x.c.run('TASK1234');
+  assert.equal(out.stage,'WAIT_HUMAN');
+  const t=x.c.required('TASK1234');
+  assert.equal(t.finalArbitration,null);
+  assert(t.bFindings.length>0);
+  x.store.verify('TASK1234');
  }finally{finish(x);}
 });
