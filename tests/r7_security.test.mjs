@@ -62,9 +62,11 @@ test('R7-003 identical nonce is rejected across distinct tasks and valid signatu
   let store;
   try{
     const {privateKey,publicKey}=generateKeyPairSync('ed25519');
+    const procedure=generateKeyPairSync('ed25519');
     const manifest=path.join(root,'trust.json');
     fs.writeFileSync(manifest,JSON.stringify({schema:1,human:{
-      'nonce-auditor':publicKey.export({format:'pem',type:'spki'})}}));
+      'nonce-auditor':publicKey.export({format:'pem',type:'spki')}},
+      procedure:{'independent-process':procedure.publicKey.export({format:'pem',type:'spki'})}}));
     process.env.P1_TRUST_ROOTS_FILE=manifest;
     process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(manifest,'utf8'));
     store=new Store(path.join(root,'state'));
@@ -79,22 +81,33 @@ test('R7-003 identical nonce is rejected across distinct tasks and valid signatu
         history:[],inflight:null,pendingHuman:null};
       store.init(t);
       const receipt='Approved in disposable synthetic nonce test '+i,actor='auditor';
+      const pStatement={purpose:'P1_PROCESS_GATE_V1',taskId:id,gate:'0.1',
+        digest:frozen.digest,actor,receiptSha256:sha256(receipt),
+        stateSha256:sha256(t),evidenceRoot:store.evidenceRoot(id),
+        scope:'PROCESS_ONLY',verdict:'COMPLIANT',
+        checks:['GATE_BASIS','HUMAN_AUTHORITY','PROCESS_EVIDENCE'],
+        nonce:randomUUID(),issuedAt:new Date().toISOString()};
+      const processProof={schema:1,keyId:'independent-process',statement:pStatement,
+        signature:sign(null,Buffer.from(canonical(pStatement)),
+          procedure.privateKey).toString('base64')};
       const statement={purpose:'P1_HUMAN_GATE_V1',taskId:id,gate:'0.1',
-        digest:frozen.digest,actor,receipt,nonce,issuedAt:new Date().toISOString()};
+        digest:frozen.digest,actor,receipt,nonce,processProofSha256:sha256(processProof),
+        issuedAt:new Date().toISOString()};
       const proof={schema:1,keyId:'nonce-auditor',statement,
         signature:sign(null,Buffer.from(canonical(statement)),privateKey).toString('base64')};
       const approvalFile='approval-0-1-'+nonce+'.json';
       const ev=store.artifact(id,approvalFile,{gate:'0.1',
-        digest:frozen.digest,actor,receipt,proof});
+        digest:frozen.digest,actor,receipt,proof,processProof});
       const next=store.get(id);next.stage='PLANNER';next.status='READY';
       const save=()=>store.save(next,'GATE_0.1_APPROVED',{
-        digest:frozen.digest,actor,approvalSha256:ev.sha256,approvalNonce:nonce,approvalFile});
+        digest:frozen.digest,actor,approvalSha256:ev.sha256,approvalNonce:nonce,approvalFile,
+        processNonce:processProof.statement.nonce,processProofSha256:sha256(processProof)});
       if(i===0)assert.doesNotThrow(save);
       else assert.throws(save,/signed human approval nonce already consumed/);
       assert.equal(store.get(id).stage,i===0?'PLANNER':'WAIT_GATE_01');
       store.verify(id);
     }
-    assert.equal(store.db.prepare('SELECT COUNT(*) AS count FROM consumed_approvals').get().count,1);
+    assert.equal(store.db.prepare('SELECT COUNT(*) AS count FROM consumed_approvals').get().count,2);
   }finally{
     store?.close();
     if(prevFile===undefined)delete process.env.P1_TRUST_ROOTS_FILE;
