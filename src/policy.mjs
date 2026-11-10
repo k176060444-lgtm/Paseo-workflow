@@ -126,12 +126,24 @@ export function finalJsonEnvelope(raw, role='agent') {
     `${role}: final JSON verdict must be terminal; manual reconciliation required`);
   return results[0].obj;
 }
+// Normalize legacy Soul verdicts at the input trust boundary, never in signed
+// payloads. Gate-specific PASS aliases are accepted only for their Tester.
+export function normalizeVerdict(value,role){
+  const base={APPROVE:'PASS',REQUEST_CHANGES:'FAIL',REJECT:'FAIL',
+    NEEDS_CLARIFICATION:'QUESTION',UNVERIFIED:'QUESTION'};
+  if(value==='GATE_A_PASS'){
+    assert(role==='tester_gate_a','Gate A PASS from wrong role');return 'PASS';
+  }
+  if(value==='GATE_B_PASS'){
+    assert(role==='tester_gate_b','Gate B PASS from wrong role');return 'PASS';
+  }
+  return base[value]??value;
+}
 export function parseAgentOutput(raw, role) {
   const output=finalJsonEnvelope(raw,role);
   assert(output && typeof output === 'object' && !Array.isArray(output), `${role}: invalid output`);
   // Legacy Soul v1.1 uses APPROVE/REQUEST_CHANGES; normalize at the trust boundary.
-  if (output.verdict === 'APPROVE') output.verdict = 'PASS';
-  if (output.verdict === 'REQUEST_CHANGES') output.verdict = 'FAIL';
+  output.verdict = normalizeVerdict(output.verdict,role);
   assert(['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS'].includes(output.verdict), `${role}: invalid verdict`);
   assert(typeof output.summary === 'string' && output.summary.length > 0, `${role}: missing summary`);
   assert(Array.isArray(output.findings) && output.findings.every(f => typeof f === 'string'), `${role}: findings must be strings`);
