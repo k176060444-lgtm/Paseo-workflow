@@ -40,7 +40,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       signature:sign(null,Buffer.from(canonical(statement)),witness.privateKey).toString('base64')};
   }
   function proof(gate,digest,receipt,actor='user'){
-    const signedProcess=['0.1','0.2','5.9'].includes(gate);
+    const signedProcess=['0.1','0.2','5.9','incident'].includes(gate);
     const processStatement=signedProcess?{purpose:'P1_PROCESS_GATE_V1',
       taskId:'TASK1234',gate,digest,actor,receiptSha256:sha256(receipt),
       stateSha256:sha256(store.get('TASK1234')),evidenceRoot:store.evidenceRoot('TASK1234'),
