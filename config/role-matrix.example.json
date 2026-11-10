@@ -113,7 +113,10 @@
         "enabled": false,
         "transport": "a2a",
         "role": "blind_c",
-        "peerName": "rustyhand"
+        "peerName": "rustyhand",
+        "serverId": "a2a-rustyhand",
+        "harness": "rusty",
+        "model": "rusty/approved-model"
       }
     ],
     "timing": {
