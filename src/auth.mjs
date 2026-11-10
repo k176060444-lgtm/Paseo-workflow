@@ -37,6 +37,15 @@ export function loadTrustRoots(){
       'human/execution key overlap forbidden: distinct issuers and private-key custody required');
     ids.add(id);fingerprints.add(fp(pub));execution.set(id,pub);
   }
+  const procedure=new Map();
+  for(const [id,pem] of Object.entries(manifest.procedure??{})){
+    assert(/^[a-zA-Z0-9_-]{3,60}$/.test(id),'invalid independent Gate procedure signer ID');
+    const pub=createPublicKey(pem);
+    assert(pub.asymmetricKeyType==='ed25519','Gate procedure issuer must be Ed25519');
+    assert(!ids.has(id)&&!fingerprints.has(fp(pub)),
+      'Gate procedure signing key must be independent of human/execution keys');
+    ids.add(id);fingerprints.add(fp(pub));procedure.set(id,pub);
+  }
   const p0=new Map();
   for(const [id,pem] of Object.entries(manifest.p0??{})){
     assert(/^[A-Za-z0-9_-]{2,80}$/.test(id),'invalid independent P0 key ID');
@@ -46,10 +55,46 @@ export function loadTrustRoots(){
       'human/execution/P0 key overlap forbidden');
     ids.add(id);fingerprints.add(fp(pub));p0.set(id,pub);
   }
-  return {digest:expected,keys,execution,p0};
+  return {digest:expected,keys,execution,p0,procedure};
 }
 
-export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,receipt,evidenceSha256=null,evidenceRoot=null}){
+// Procedural Gate proof is signed by an independent process issuer, not the
+// Controller, model role, or human approver. It proves the process witness
+// approved the exact waiting state, approval basis and evidence set.
+export function verifyGateProcess(roots,envelope,{
+  taskId,gate,digest,actor,receipt,stateSha256,evidenceRoot
+}){
+  assert(roots?.procedure?.size>0,
+    'independent human-Gate process signer not provisioned; BLOCKED');
+  assert(envelope?.schema===1&&typeof envelope.keyId==='string',
+    'independent Gate procedure envelope required');
+  const key=roots.procedure.get(envelope.keyId);
+  assert(key,'unknown independent Gate process signer');
+  const st=envelope.statement;
+  assert(st?.purpose==='P1_PROCESS_GATE_V1'&&st.taskId===taskId&&
+    st.gate===gate&&st.digest===digest&&st.actor===actor&&
+    st.receiptSha256===sha256(receipt)&&st.stateSha256===stateSha256&&
+    st.evidenceRoot===evidenceRoot&&st.scope==='PROCESS_ONLY'&&
+    st.verdict==='COMPLIANT'&&Array.isArray(st.checks)&&
+    ['GATE_BASIS','HUMAN_AUTHORITY','PROCESS_EVIDENCE'].every(x=>st.checks.includes(x)),
+    'independent Gate procedural witness does not cover exact approved process');
+  assert(typeof st.nonce==='string'&&/^[a-f0-9-]{36}$/i.test(st.nonce),
+    'independent Gate process nonce missing');
+  const issued=Date.parse(st.issuedAt);
+  assert(Number.isFinite(issued)&&issued<=Date.now()+120000&&
+    issued>=Date.now()-30*60000,'independent Gate process proof expired');
+  assert(typeof envelope.signature==='string'&&/^[A-Za-z0-9+/]{86}==$/.test(envelope.signature),
+    'invalid Gate process signature encoding');
+  const sig=Buffer.from(envelope.signature,'base64');
+  assert(sig.length===64&&verify(null,Buffer.from(canonical(st)),key,sig),
+    'independent Gate procedure signature invalid');
+  return {keyId:envelope.keyId,nonce:st.nonce};
+}
+
+export function verifyHumanApproval(roots,envelope,{
+  taskId,gate,digest,actor,receipt,evidenceSha256=null,evidenceRoot=null,
+  processProofSha256
+}){
   assert(roots&&roots.keys.size>0,'authenticated human approval not provisioned; BLOCKED');
   assert(envelope&&envelope.schema===1&&typeof envelope.keyId==='string',
     'human approval signature envelope missing');
@@ -57,7 +102,8 @@ export function verifyHumanApproval(roots,envelope,{taskId,gate,digest,actor,rec
   assert(key,'unrecognized human approval signer');
   const s=envelope.statement;
   assert(s&&s.purpose==='P1_HUMAN_GATE_V1'&&s.taskId===taskId&&
-    s.gate===gate&&s.digest===digest&&s.actor===actor&&s.receipt===receipt,
+    s.gate===gate&&s.digest===digest&&s.actor===actor&&s.receipt===receipt&&
+    (processProofSha256===undefined||s.processProofSha256===processProofSha256),
     'human approval signed statement mismatch');
   if(gate==='5.9')
     assert(typeof evidenceSha256==='string'&&/^[0-9a-f]{64}$/.test(evidenceSha256)&&
