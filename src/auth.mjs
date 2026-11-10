@@ -93,8 +93,11 @@ export function verifyExecutionAttestation(roots,envelope,expected,{allowHistori
   const key=roots.execution.get(envelope.keyId);
   assert(key,'execution issuer is not in independently pinned trust roots');
   const s=envelope.statement;
-  assert(s&&s.purpose==='P1_EXECUTION_ATTESTATION_V1',
+  const strictRole=typeof expected.model==='string';
+  assert(s&&s.purpose===(strictRole?'P1_EXECUTION_ATTESTATION_V2':'P1_EXECUTION_ATTESTATION_V1'),
     'wrong execution attestation purpose');
+  if(strictRole)for(const field of ['model','harness','soulSha256'])
+    assert(s[field]===expected[field],`independent witness ${field} mismatch`);
   for(const field of ['taskId','role','phase','commit','agentId','dispatchId','rawSha256'])
     assert(s[field]===expected[field],`execution attestation ${field} mismatch`);
   assert(typeof s.rawSha256==='string'&&/^[a-f0-9]{64}$/.test(s.rawSha256),
