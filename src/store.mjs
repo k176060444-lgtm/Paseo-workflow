@@ -412,6 +412,13 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       proof=attestation;
       expected={taskId:t.id,role:h.role,phase,commit:h.sha??null,
         agentId:h.agentId,dispatchId:raw.dispatchId,rawSha256:sha256(bare)};
+      const approved=t.frozen.roles?.[h.role];
+      if(approved){
+        assert(raw.model===approved.model&&raw.harness===approved.harness&&
+          raw.soulSha256===t.frozen.souls?.[h.role]?.sha256,
+          'execution observed model/Harness/Soul differs from approved matrix');
+        Object.assign(expected,{model:raw.model,harness:raw.harness,soulSha256:raw.soulSha256});
+      }
       const dispatch=this.db.prepare('SELECT state,agent_id,phase FROM dispatches WHERE id=? AND task_id=?')
         .get(raw.dispatchId,t.id);
       assert(dispatch?.state==='TERMINAL'&&dispatch.agent_id===h.agentId&&
