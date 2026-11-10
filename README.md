@@ -1,3 +1,5 @@
+> **V2.3 source-only continuation:** [R11 Coding mainline remediation](docs/R11_CODING_MAINLINE_REMEDIATION.md) adds original-dispatch read-only reconciliation, three mandatory Tester B layers with verified original logs, exact signed-terminal recovery checks and technical budget allocation after compliant PRE. **Not cleared for live execution or release.**
+
 > **R10 source-only remediation:** See [R10 evidence/reliability status](docs/R10_EVIDENCE_RELIABILITY_REMEDIATION.md). Unique Pro-Audit PRE/POST evidence sessions, independent execution-witness V2 and P0 witness V2 are now required. A read-only `p0-reconcile` command is available. Real host witness/cancel/recovery and full workflow integration are **NOT VERIFIED**. Do not deploy from this branch.\n\n# Paseo-workflow — Coding Pipeline V2.2 mainline correction candidate
 
 **Status (2026-11-10): source remediation + offline CI only; NOT approved for live Coding, paid Provider calls, deployment or production.** Existing historical R2–R8 documents are retained as evidence and do not supersede this README or current user decisions.
