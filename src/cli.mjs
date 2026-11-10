@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import {sha256,assert} from './policy.mjs';
 import {Store} from './store.mjs';
 import {WorkflowController} from './controller.mjs';
 import {PaseoAgentRuntime} from './agents.mjs';
@@ -25,6 +26,7 @@ Commands:
   init --id TASK1234 --matrix config/role-matrix.json --intent path/to/intent.md
   status --id TASK1234
   verify --id TASK1234
+  p0-reconcile --id TASK1234 --cycle initial-A1|final-B1  # READ ONLY, queries only originally persisted dispatch IDs
   approve --id TASK1234 --gate 0.1|0.2|5.9 --digest SHA --actor NAME --receipt FILE --approval-proof SIGNED_JSON
   run --id TASK1234                   # requires explicit safety environment and installed Paseo
   recover --id TASK1234 --actor NAME --receipt FILE --approval-proof SIGNED_JSON --sha EXACT_COMMIT
@@ -39,19 +41,53 @@ function assertPaseoMode(task){
   if((task.frozen.p0?.nodes??[]).some(n=>n.enabled===true&&n.transport==='a2a'))
     throw new Error('rusty A2A enabled but native Hermes A2A bridge is not attached to standalone CLI; BLOCKED');
   if(task.frozen.p0?.transport!=='paseo')
-    throw new Error('P0 must use Paseo Connected Hosts; SSH is manual-only disaster recovery');
+    throw new Error('P0 must use native authenticated Paseo; SSH prohibited');
 }
 async function main(){
   const a=argsOf(process.argv.slice(2));const cmd=a._[0];
   if(!cmd||cmd==='help'){console.log(usage);return;}
   const root=path.resolve(a.state??'.p1-state');
-  const store=new Store(root,{readOnly:cmd==='status'||cmd==='verify'});
+  const store=new Store(root,{readOnly:['status','verify','p0-reconcile'].includes(cmd)});
   let runtime=null;
   try{
     const controller=new WorkflowController({store,runtime:null,p0:null});
     let result;
     if(cmd==='init')result=controller.create({id:need(a,'id'),configFile:need(a,'matrix'),intentFile:need(a,'intent')});
     else if(cmd==='status'||cmd==='verify')result=controller.inspect(need(a,'id'));
+    else if(cmd==='p0-reconcile'){
+      const task=controller.required(need(a,'id')),cycle=need(a,'cycle');
+      assert(/^(?:initial-A|final-B)[1-9][0-9]*$/.test(cycle),
+        'reconciliation requires exact original P0 cycle');
+      assertPaseoMode(task);
+      const commit=task.currentSha;
+      assert(/^[a-f0-9]{40}$/.test(commit??''),
+        'P0 reconciliation requires a pinned current Commit');
+      store.verify(task.id);
+      const adapter=new PaseoP0Adapter(task.frozen.p0.nodes??[],{});
+      const observations=[];
+      for(const node of adapter.nodes){
+        const jobId=sha256(task.id+':'+cycle+':'+commit+':'+node.id).slice(0,40);
+        const known=store.dispatches(task.id).find(d=>d.id===jobId&&
+          d.phase==='P0:'+cycle+':'+node.id);
+        if(!known){
+          observations.push({nodeId:node.id,serverId:node.serverId,
+            state:'NOT_DISPATCHED',agentId:null});
+          continue;
+        }
+        // Read-only remote SDK enumeration: NEVER creates, cancels, archives or
+        // marks a dispatch terminal, and never claims reconciliation is approved.
+        const agents=await adapter.reconcileByLabels(node,{
+          taskId:task.id,cycle,jobId,commit});
+        assert(agents.length<=1,'duplicate remote Agents with same P0 job label; BLOCKED');
+        observations.push({nodeId:node.id,serverId:node.serverId,
+          state:known.state,agentId:known.agent_id,
+          remoteMatches:agents.map(agent=>({id:agent.id,status:agent.status})),
+          consistent:known.agent_id===null?agents.length===0:
+            agents.length===1&&known.agent_id===node.serverId+':'+agents[0].id});
+      }
+      result={taskId:task.id,cycle,commit,mode:'READ_ONLY_NO_MUTATION',
+        observations,manualReconciliationRequired:true};
+    }
     else if(cmd==='approve')result=await store.withLock(need(a,'id'),()=>controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a),proof:approvalProof(a)}));
     else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a)}));
     else if(cmd==='run'){
