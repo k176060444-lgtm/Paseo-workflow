@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(t.stage==='WAIT_GATE_01'&&t.status==='WAITING_HUMAN',
       'new tasks must start at human Gate 0.1');
     assert(t.aRound===0&&t.bRound===0,'new task round budgets must start at zero');
-    for(const key of ['taskSpec','taskSpecSha','baseSha','currentSha','lastA','lastB','p0Initial','p0Final'])
+    for(const key of ['taskSpec','taskSpecSha','userAlignment','alignmentSha','alignmentApprovalSha','baseSha','currentSha','lastA','lastB','p0Initial','p0Final'])
       assert(t[key]===null||t[key]===undefined,`new task may not pre-seed ${key}`);
     assert(!t.inflight&&!t.pendingHuman,'new task must not claim pending execution');
     assert(!t.changesInB,'new task cannot claim B changes');
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'Gate approval requires nonce-scoped original filename');
     const raw=this.#requireArtifact(oldTask.id,file,payload.approvalSha256);
     const receipt=JSON.parse(raw);
-    const digest=gate==='0.1'?oldTask.frozen.digest:gate==='0.2'?oldTask.taskSpecSha:oldTask.currentSha;
+    const digest=gate==='0.1'?oldTask.frozen.digest:gate==='0.2'?oldTask.alignmentApprovalSha:oldTask.currentSha;
     assert(receipt.gate===gate&&receipt.digest===digest&&payload.digest===digest,
       'approval artifact does not match exact Gate basis');
     assert(typeof receipt.actor==='string'&&receipt.actor.length>1&&
@@ -212,6 +212,9 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     if(gate==='0.2'){
       assert(oldTask.taskSpecSha&&oldTask.taskSpec,'Gate 0.2 needs frozen TASK_SPEC');
       this.#requireArtifact(oldTask.id,'TASK_SPEC.md',oldTask.taskSpecSha);
+      this.#requireArtifact(oldTask.id,'USER_ALIGNMENT.md',oldTask.alignmentSha);
+      assert(oldTask.alignmentApprovalSha===sha256({alignmentSha:oldTask.alignmentSha,
+        taskSpecSha:oldTask.taskSpecSha}),'signed Gate 0.2 does not bind both approved artifacts');
     }
     if(gate==='5.9')this.#validateFinalGate(oldTask);
   }
@@ -459,10 +462,10 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(typeof name==='string'&&/^recovery-[a-z0-9-]+\.json$/.test(name),
       'authenticated recovery artifact missing');
     const data=JSON.parse(this.#requireArtifact(oldTask.id,name,payload.evidenceSha256));
-    const basis=oldTask.currentSha??oldTask.taskSpecSha??oldTask.frozen.digest;
+    const basis=oldTask.currentSha??oldTask.alignmentApprovalSha??oldTask.taskSpecSha??oldTask.frozen.digest;
     assert(data.origin===oldTask.stage&&data.target===nextTask.stage&&
       data.actor===payload.actor&&data.expectedSha===(oldTask.currentSha??null)&&
-      data.expectedBasis===(oldTask.currentSha?null:oldTask.taskSpecSha??oldTask.frozen.digest),
+      data.expectedBasis===(oldTask.currentSha?null:oldTask.alignmentApprovalSha??oldTask.taskSpecSha??oldTask.frozen.digest),
       'recovery artifact/target/basis mismatch');
     this.verifyHumanProof(data.proof,{taskId:oldTask.id,gate:'recovery',
       digest:basis,actor:data.actor,receipt:data.receipt});
@@ -607,6 +610,11 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       this.#verifyP0Nodes(t,p0);
     }
     if(type==='PLAN_DETAIL_COMPLETE'){
+      assert(t.history.some(h=>h.role==='spec_reviewer'&&h.phase==='workplan-scope-review'&&
+        PASS(h.verdict)&&h.evidenceSha256&&
+        this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?')
+          .get(t.id,h.evidenceSha256)),
+        'independent scope-consistency review required before freezing detailed plan');
       assert(typeof t.workPlan==='string'&&t.workPlanSha===sha256(t.workPlan),
         'detailed plan must be frozen after Gate 0.2');
       this.#requireArtifact(t.id,'WORK_PLAN.md',t.workPlanSha);
@@ -625,6 +633,11 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     if(type==='TASK_SPEC_CANDIDATE'){
       assert(t.taskSpecSha===payload.sha256,'Planner TASK_SPEC digest missing from transition');
       this.#requireArtifact(t.id,'TASK_SPEC.md',t.taskSpecSha);
+      assert(t.alignmentSha===payload.alignmentSha&&
+        t.alignmentApprovalSha===payload.approvalSha&&
+        t.alignmentApprovalSha===sha256({alignmentSha:t.alignmentSha,taskSpecSha:t.taskSpecSha}),
+        'Planner alignment and frozen spec approval digest mismatch');
+      this.#requireArtifact(t.id,'USER_ALIGNMENT.md',t.alignmentSha);
       assert(oldTask.status==='READY'&&oldTask.inflight===null||oldTask.status==='READY'&&oldTask.inflight===undefined,
         'Planner must be completed before freezing TASK_SPEC');
     }
@@ -696,6 +709,23 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       assert(type==='TASK_SPEC_CANDIDATE',
         'TASK_SPEC may only be frozen at the Planner candidate transition');
     }
+    const align=(t)=>{
+      const present=t.userAlignment!==null&&t.userAlignment!==undefined;
+      assert(present===(t.alignmentSha!==null&&t.alignmentSha!==undefined)&&
+        present===(t.alignmentApprovalSha!==null&&t.alignmentApprovalSha!==undefined),
+        'plain-language alignment, hashes and spec approval must be present together');
+      if(!present)return null;
+      assert(typeof t.userAlignment==='string'&&t.userAlignment.length>40&&
+        t.alignmentSha===sha256(t.userAlignment)&&
+        t.alignmentApprovalSha===sha256({alignmentSha:t.alignmentSha,taskSpecSha:t.taskSpecSha}),
+        'frozen user-alignment hash or combined Gate 0.2 digest mismatch');
+      return {content:t.userAlignment,sha:t.alignmentSha,approval:t.alignmentApprovalSha};
+    };
+    const beforeAlign=align(oldTask),afterAlign=align(nextTask);
+    if(beforeAlign)assert(canonical(beforeAlign)===canonical(afterAlign),
+      'approved user alignment is immutable');
+    else if(afterAlign)assert(type==='TASK_SPEC_CANDIDATE',
+      'user alignment may only be established by Planner candidate');
     for(const key of ['created','baseSha']){
       if(oldTask[key]!==undefined&&oldTask[key]!==null)
         assert(nextTask[key]===oldTask[key],`${key} cannot be replaced`);
