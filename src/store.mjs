@@ -535,7 +535,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       if(status)assert(t.status===status,`unexpected status for ${type}`);
       else assert(t.status===oldTask.status,`event ${type} cannot change task status`);
       const scoped={
-        GATE_A_ROUND_START:['A_WORKER'],GATE_B_ROUND_START:['B_ENTER'],
+        GATE_A_ROUND_START:['A_WORKER'],GATE_B_ROUND_START:['B_WORKER'],
         REVIEW_PAIR_STARTED:['A_REVIEW','B_REVIEW'],REVIEW_SEAT_RECORDED:['A_REVIEW','B_REVIEW'],
         REVIEW_PAIR_UNCERTAIN:['A_REVIEW','B_REVIEW'],REVIEW_PAIR_TERMINAL:['A_REVIEW','B_REVIEW'],
         P0_STARTED:['P0_INITIAL','P0_FINAL'],P0_UNCERTAIN:['P0_INITIAL','P0_FINAL'],
