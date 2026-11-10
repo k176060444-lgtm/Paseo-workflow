@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {generateKeyPairSync,sign,randomUUID} from 'node:crypto';
-import {canonical,sha256,MAX_A,MAX_B,ROLE_PERMISSIONS} from '../src/policy.mjs';
+import {canonical,sha256,assert,MAX_A,MAX_B,ROLE_PERMISSIONS} from '../src/policy.mjs';
 
 export function resealSyntheticState(store,state) {
   const id=state.id;
