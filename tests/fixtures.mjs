@@ -46,10 +46,12 @@ export function syntheticHumanAuthority(dir,taskId) {
   const oldHash=process.env.P1_TRUST_ROOTS_SHA256;
   const pair=generateKeyPairSync('ed25519');
   const witness=generateKeyPairSync('ed25519');
+  const procedure=generateKeyPairSync('ed25519');
   const file=path.join(dir,'synthetic-human-public.json');
   fs.writeFileSync(file,JSON.stringify({schema:1,human:{
     'synthetic-operator':pair.publicKey.export({format:'pem',type:'spki'})},
-    execution:{'synthetic-witness':witness.publicKey.export({format:'pem',type:'spki'})}}));
+    execution:{'synthetic-witness':witness.publicKey.export({format:'pem',type:'spki'})},
+    procedure:{'synthetic-process':procedure.publicKey.export({format:'pem',type:'spki'})}}));
   process.env.P1_TRUST_ROOTS_FILE=file;
   process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(file,'utf8'));
   return {
@@ -60,11 +62,23 @@ export function syntheticHumanAuthority(dir,taskId) {
       return {schema:1,keyId:'synthetic-witness',statement,
         signature:sign(null,Buffer.from(canonical(statement)),witness.privateKey).toString('base64')};
     },
-    proof(gate,digest,actor,receipt){
+    proof(gate,digest,actor,receipt,store=null){
+      const isGate=['0.1','0.2','5.9'].includes(gate);
+      assert(!isGate||store,'synthetic Gate process proof requires exact store snapshot');
+      const pStatement=isGate?{purpose:'P1_PROCESS_GATE_V1',taskId,gate,digest,actor,
+        receiptSha256:sha256(receipt),stateSha256:sha256(store.get(taskId)),
+        evidenceRoot:store.evidenceRoot(taskId),scope:'PROCESS_ONLY',verdict:'COMPLIANT',
+        checks:['GATE_BASIS','HUMAN_AUTHORITY','PROCESS_EVIDENCE'],
+        nonce:randomUUID(),issuedAt:new Date().toISOString()}:null;
+      const processProof=pStatement?{schema:1,keyId:'synthetic-process',
+        statement:pStatement,signature:sign(null,Buffer.from(canonical(pStatement)),
+          procedure.privateKey).toString('base64')}:null;
       const statement={purpose:'P1_HUMAN_GATE_V1',taskId,gate,digest,actor,
-        receipt,nonce:randomUUID(),issuedAt:new Date().toISOString()};
+        receipt,...(processProof?{processProofSha256:sha256(processProof)}:{}),
+        nonce:randomUUID(),issuedAt:new Date().toISOString()};
       return {schema:1,keyId:'synthetic-operator',statement,
-        signature:sign(null,Buffer.from(canonical(statement)),pair.privateKey).toString('base64')};
+        signature:sign(null,Buffer.from(canonical(statement)),pair.privateKey).toString('base64'),
+        ...(processProof?{processProof}:{})};
     },
     restore(){
       if(oldFile===undefined)delete process.env.P1_TRUST_ROOTS_FILE;
