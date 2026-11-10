@@ -1,3 +1,5 @@
+> **HISTORICAL ONLY (superseded 2026-11-10).** This document describes pre-remediation S0–R8 decisions and must not be used as current deployment instructions. 21bao/5bao/9bao now have Paseo installed; 5bao/9bao were reached by authenticated native SDK direct connections, not SSH. Current policy: no SSH in Coding, Planner detail only after Gate 0.2, process-only Pro-Audit PRE/POST every role, mandatory final Arbitrator, rusty native Hermes A2A only. See [current README](../README.md) and [remediation status](REMEDIATION_20261110.md).
+
 # Soul v1.1.0 → P1 V2.1 迁移差异（未经正式批准）
 
 本仓库保留了用户历史 Soul 的原始字节与来源 SHA，不应静默覆盖。下面是必须在正式模型调用前由用户审核的新行为契约：
