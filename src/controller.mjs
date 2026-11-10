@@ -153,7 +153,7 @@ export class WorkflowController {
   async invoke(t,role,phase,prompt,cwd=t.worktree){
     await this.auditRole(t,role,phase,'PRE',cwd);
     // Save an in-flight marker BEFORE any external side effect. Crashes must not auto-retry.
-    const expectedSha=(ROLE_PERMISSIONS[role]==='READ_ONLY'||ROLE_PERMISSIONS[role]==='TEST_ONLY')?await this.git.head(cwd):null;
+    const expectedSha=ROLE_PERMISSIONS[role]==='READ_ONLY'?await this.git.head(cwd):null;
     t.status='INFLIGHT';t.inflight={role,phase,at:new Date().toISOString()};
     this.store.save(t,'INFLIGHT',{role,phase});
     let result;
@@ -163,6 +163,11 @@ export class WorkflowController {
       (result.verdict!=='PASS'||!(result.findings??[]).length),
       `${role}: contradictory PASS/findings; reconcile manually`);
     if(expectedSha) await this.git.assertUnchanged(cwd,expectedSha);
+    if(ROLE_PERMISSIONS[role]==='TEST_ONLY'){
+      assert(typeof this.git.assertTestWorkspace==='function',
+        'TEST_ONLY checkout verifier missing; BLOCKED');
+      await this.git.assertTestWorkspace(cwd,t.currentSha);
+    }
     const artifact=this.store.artifact(t.id,`${phase}-${role}-${randomUUID().slice(0,8)}.json`,result);
     t.history.push({role,phase,agentId:result.agentId,verdict:result.verdict,
       sha:t.currentSha??null,evidenceSha256:artifact.sha256,at:new Date().toISOString()});
@@ -222,9 +227,25 @@ export class WorkflowController {
   async test(t,role,phase,sha){
     const testdir=path.join(this.store.dir(t.id),`test-${phase}`);
     const dir=await this.git.makeTestCheckout(t.frozen.project.repo,sha,testdir);
+    // Tester B must retain the original independent Tester A exam verbatim.
+    if(role==='tester_gate_b')for(const e of t.lastA?.tests?.addedTests??[]){
+      assert(typeof e.path==='string'&&/^(?:tests?|__tests__)\/[A-Za-z0-9_.\/+-]+$/.test(e.path),
+        'invalid frozen Tester A case path');
+      const source=path.resolve(this.store.dir(t.id),`test-A${t.aRound}-test`,e.path);
+      const dest=path.resolve(dir,e.path);
+      assert(source.startsWith(this.store.dir(t.id)+path.sep)&&dest.startsWith(dir+path.sep),
+        'Tester A exam path escape');
+      assert(sha256(fs.readFileSync(source,'utf8'))===e.sha256,
+        'Tester A case changed before final test');
+      assert(!fs.existsSync(dest),'Tester B exam would overwrite existing test');
+      fs.mkdirSync(path.dirname(dest),{recursive:true});
+      fs.copyFileSync(source,dest);
+    }
     const agent=await this.invoke(t,role,phase,`TASK_SPEC:\n${t.taskSpec}\nInspect exact commit ${sha} in disposable test checkout. Do not modify product source. Controller will independently execute the frozen test commands.`,dir);
+    const addedTests=await this.git.assertTestWorkspace(dir,sha);
     await this.auditRole(t,'test_executor',phase,'PRE',dir);
     const tests=await this.git.testRun(dir,t.frozen.tests.commands,this.store,t.id,phase);
+    if(addedTests.length)tests.addedTests=addedTests;
     if(!tests.attestation){
       assert(this.attestor,'independent OS Tester witness not configured; BLOCKED');
       tests.attestation=await this.attestor.attestTests({task:t,phase,commit:sha,
