@@ -194,3 +194,22 @@ test('registered evidence exact-byte retry is idempotent without a new ledger ev
   w.store.verify(w.id);
  }finally{w.dispose();}
 });
+
+test('signed human recovery cannot re-run an apparently TERMINAL Agent whose original attested result was never registered',()=>{
+  const w=sandbox();
+  try{
+    const c=new WorkflowController({store:w.store,runtime:null,p0:null});
+    w.store.recordIntent(w.id,'A1-worker','unrecorded-dispatch');
+    w.store.recordAck('unrecorded-dispatch','worker-original-agent');
+    w.store.recordTerminal('unrecorded-dispatch');
+    const msg='Human explicitly approves recovery after independent incident review.';
+    const basis=w.store.get(w.id).frozen.digest;
+    const proof=w.proof('recovery',basis,'human',msg);
+    assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'human',
+      receipt:msg,expectedBasis:basis,proof}),
+      /TERMINAL dispatch has no unique registered original signed execution/);
+    assert.equal(w.store.get(w.id).stage,'BLOCKED');
+    assert.equal(w.store.dispatches(w.id)[0].state,'TERMINAL');
+    w.store.verify(w.id);
+  }finally{w.dispose();}
+});
