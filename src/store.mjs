@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { verifyCommitEvidenceSync } from './git.mjs';
-import {loadTrustRoots,verifyHumanApproval,verifyGateProcess,verifyExecutionAttestation} from './auth.mjs';
+import {loadTrustRoots,verifyHumanApproval,verifyGateProcess,verifyExecutionAttestation,verifyObserverReadiness} from './auth.mjs';
 import {SshP0Adapter} from './p0.mjs';
 import {verifyPaseoP0Envelope} from './p0_paseo.mjs';
 import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, acceptedP0Dispute, verifyGateBTests } from './policy.mjs';
@@ -81,6 +81,9 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
   }
   verifyGateProcessProof(envelope,fields){
     return verifyGateProcess(this.#trustRoots,envelope,fields);
+  }
+  verifyObserverReadiness(envelope,fields){
+    return verifyObserverReadiness(this.#trustRoots,envelope,fields);
   }
   transaction(fn) {
     assert(!this.readOnly,'store opened read-only');
