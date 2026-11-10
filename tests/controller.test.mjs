@@ -523,3 +523,25 @@ test('B Remediation PRE compliance rejection spends zero Gate B technical rounds
     x.store.verify(t.id);
   }finally{finish(x);}
 });
+
+
+test('final Gate refuses a valid log digest borrowed from a different Tester B layer',async()=>{
+  const x=setup();
+  try{
+    await movePastPlanning(x);
+    const result=await x.c.run('TASK1234');
+    assert.equal(result.stage,'WAIT_GATE_59');
+    const t=x.c.required('TASK1234'),actual=t.lastB;
+    assert.equal(x.store.verifyOriginalTestLogs(t,actual,actual.agent.phase),undefined);
+    const forged=structuredClone(actual);
+    forged.tests.layers.smoke.receipts[0].logSha256=
+      actual.tests.layers.canary.receipts[0].logSha256;
+    assert.throws(()=>x.store.verifyOriginalTestLogs(t,forged,actual.agent.phase),
+      /artifact|evidence|digest|mismatch/);
+    const forgedExit=structuredClone(actual);
+    forgedExit.tests.layers.regression.receipts[0].code=7;
+    assert.throws(()=>x.store.verifyOriginalTestLogs(t,forgedExit,actual.agent.phase),
+      /original receipt contradicts/);
+    x.store.verify('TASK1234');
+  }finally{finish(x);}
+});
