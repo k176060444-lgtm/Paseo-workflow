@@ -61,7 +61,8 @@ async function main(){
         controller.attestor=witness;
         assertPaseoMode(task);
         controller.p0=new PaseoP0Adapter(task.frozen.p0.nodes??[],{
-          client:runtime.client,attestor:witness,...(task.frozen.p0.timing??{})});
+          client:runtime.client,attestor:witness,p0Roots:store.p0TrustRoots(),
+          ...(task.frozen.p0.timing??{})});
       }
       controller.runtime=runtime;
       result=await controller.run(task.id);
