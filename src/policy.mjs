@@ -162,4 +162,28 @@ export const hasBlockingFinding = findings => findings.some(f =>
   /^(?:\s*[-*]\s*)?(?:\[?(?:BLOCKER|CRITICAL|HIGH|P0|P1)\]?\s*[:：-]|severity\s*[:=]\s*(?:BLOCKER|CRITICAL|HIGH|P0|P1)\b)/i.test(f));
 export const PASS = verdict => verdict === 'PASS' || verdict === 'APPROVE_WITH_COMMENTS';
 export const PAUSE = verdict => verdict === 'QUESTION' || verdict === 'NEEDS_SPECIALIST';
+/* An Arbitrator may dismiss a genuinely disputed, independently verified P0
+ * finding with evidence, but may NEVER waive missing witnesses, unsigned
+ * reports, unknown results, or a unanimous FAIL. The complete signed original
+ * P0 report set stays immutable in the task ledger. */
+export function acceptedP0Dispute(t){
+  const p0=t.p0Final??t.p0Initial;
+  const decisions=t.finalArbitration?.disputeResolution;
+  if(!p0?.dispute||p0.commit!==t.currentSha||!Array.isArray(p0.reports)||
+    p0.reports.length<2||!Array.isArray(decisions?.decisions)||
+    decisions.reportSetSha256!==sha256(p0.reports))return false;
+  const positives=p0.reports.filter(r=>PASS(r.verdict)&&r.findings?.length===0);
+  const negative=p0.reports.filter(r=>r.verdict==='FAIL');
+  if(positives.length===0||negative.length===0||positives.length+negative.length!==p0.reports.length||
+    decisions.decisions.length!==negative.length)return false;
+  return negative.every(r=>{
+    const matches=decisions.decisions.filter(d=>d.nodeId===r.nodeId&&
+      d.reportSha256===sha256(r)&&d.disposition==='FALSE_POSITIVE'&&
+      typeof d.rationale==='string'&&d.rationale.trim().length>=40&&
+      Array.isArray(d.codeRefs)&&d.codeRefs.length>0&&
+      d.codeRefs.every(x=>typeof x==='string'&&x.trim().length>=3));
+    return matches.length===1;
+  });
+}
+
 export const AGENT_SCHEMA = {type:'object',properties:{verdict:{type:'string',enum:['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS','APPROVE','REQUEST_CHANGES']},summary:{type:'string'},findings:{type:'array',items:{type:'string'}},taskSpec:{type:'string'}},required:['verdict','summary','findings'],additionalProperties:false};
