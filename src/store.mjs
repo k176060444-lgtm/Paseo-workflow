@@ -858,6 +858,51 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     });
   }
   dispatches(id){return this.db.prepare('SELECT * FROM dispatches WHERE task_id=? ORDER BY created,id').all(id);}
+  // Before human-controlled replay, prove that every allegedly completed
+  // dispatch corresponds to ONE original independently attested execution.
+  // TERMINAL alone is insufficient: a crash can occur after terminal ACK but
+  // before the Controller registers the result for downstream phases.
+  assertRecoverableDispatches(id){
+    this.verify(id);
+    const t=this.get(id);
+    const checkedP0=new Set();
+    for(const d of this.dispatches(id)){
+      assert(d.state==='TERMINAL',
+        'recoverable task contains outstanding remote dispatch; read-only reconcile first');
+      if(d.phase.startsWith('P0:')){
+        const match=/^P0:(initial-A[1-9]\d*|final-B[1-9]\d*):([a-zA-Z0-9_-]+)$/.exec(d.phase);
+        assert(match,'P0 dispatch has invalid cycle/peer');
+        const cycle=match[1],nodeId=match[2];
+        const p0=[t.p0Initial,t.p0Final].find(p=>
+          p?.cycle===cycle&&p.reports?.some(r=>r.nodeId===nodeId&&r.jobId===d.id));
+        assert(p0,'P0 TERMINAL row has no matching independently signed original result');
+        if(!checkedP0.has(cycle)){
+          this.#verifyP0Nodes({...t,currentSha:p0.commit},p0);
+          checkedP0.add(cycle);
+        }
+        continue;
+      }
+      const matches=[];
+      for(const h of t.history??[]){
+        if(typeof h.evidenceSha256!=='string')continue;
+        const entry=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+          .get(id,h.evidenceSha256);
+        assert(entry?.name,'recorded execution is missing its authenticated artifact');
+        const original=JSON.parse(this.#requireArtifact(id,entry.name,h.evidenceSha256));
+        if(original.dispatchId===d.id){
+          assert(original.phase===d.phase&&original.agentId===d.agent_id&&
+            h.agentId===d.agent_id,
+            'recovered Agent original execution conflicts with terminal ledger identity');
+          matches.push(h);
+        }
+      }
+      assert(matches.length===1,
+        'TERMINAL dispatch has no unique registered original signed execution; BLOCKED');
+      this.#verifyHistoryExecution(t,matches[0]);
+    }
+    return true;
+  }
+
   verify(id){
     assert(this.get(id),'unknown task');
     let previous='0'.repeat(64), count=0;
