@@ -107,6 +107,12 @@ export class WorkflowController {
       assert(typeof this.p0?.validateInventory==='function',
         'P0 inventory verifier missing before model dispatch');
       this.p0.validateInventory();
+      assert(typeof this.attestor.attestReadiness==='function',
+        'independent OS/Paseo observer V1 capability preflight unavailable; BLOCKED');
+      const challenge=randomUUID(),stateSha256=sha256(t);
+      const signed=await this.attestor.attestReadiness({task:t,stateSha256,challenge});
+      this.store.verifyObserverReadiness(signed,{
+        taskId:t.id,configSha:t.frozen.digest,stateSha256,challenge});
     }
   }
   compliance(t){
