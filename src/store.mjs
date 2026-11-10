@@ -345,9 +345,24 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       const name='p0-'+cycle+'-'+node.id+'-result.json';
       assert(report.evidence?.sha256,'P0 original node evidence digest missing');
       const raw=JSON.parse(this.#requireArtifact(t.id,name,report.evidence.sha256));
+      const requestFile='p0-'+cycle+'-'+node.id+'-request.json';
+      const record=this.db.prepare('SELECT digest FROM artifacts WHERE task_id=? AND name=?')
+        .get(t.id,requestFile);
+      const request=mode==='paseo'?
+        JSON.parse(this.#requireArtifact(t.id,requestFile,record?.digest)):null;
+      if(mode==='paseo'){
+        assert(request?.jobId===jobId&&request.commit===t.currentSha&&
+          request.binding?.role===node.role&&
+          request.binding?.soulSha256===t.frozen.souls?.[node.role]?.sha256&&
+          request.binding?.promptSha256===request.promptSha256&&
+          request.binding?.taskSpecSha256===sha256(t.taskSpec)&&
+          request.binding?.intentSha256===t.frozen.intentSha256&&
+          request.binding?.workspaceId===node.workspaceId&&request.binding?.cwd===node.cwd,
+          'original requested blind-review role/Soul/prompt/spec/intent/workspace mismatch');
+      }
       const verified=mode==='paseo'
         ?verifyPaseoP0Envelope(this.#trustRoots,node,raw,
-          {taskId:t.id,cycle,jobId,commit:t.currentSha})
+          {taskId:t.id,cycle,jobId,commit:t.currentSha,binding:request.binding})
         :new SshP0Adapter(inventory).verify(node,raw,jobId,t.currentSha);
       assert(verified.physicalId===report.physicalId&&verified.verdict===report.verdict&&
         canonical(verified.findings)===canonical(report.findings),
