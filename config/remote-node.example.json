@@ -7,5 +7,8 @@
   "opencode": "/usr/local/bin/opencode",
   "hmacKeyPath": "/etc/p1/node-secret.hmac",
   "timeoutSec": 3600,
-  "physicalId": "must-confirm-physical-node"
+  "physicalId": "must-confirm-physical-node",
+  "_status": "HISTORICAL_OFFLINE_FIXTURE_ONLY_DO_NOT_DEPLOY",
+  "enabled": false,
+  "_reason": "5bao/9bao must use authenticated native Paseo SDK, never SSH runner"
 }
