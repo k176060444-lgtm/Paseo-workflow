@@ -9,6 +9,7 @@ import {Store} from '../src/store.mjs';
 import {WorkflowController} from '../src/controller.mjs';
 import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical,verifyGateBTests} from '../src/policy.mjs';
 import {verifyCommitEvidenceSync} from '../src/git.mjs';
+import {resealLastEventSyntheticState} from './fixtures.mjs';
 
 function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false,preRejectRole=null}={}) {
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-case-'));
@@ -52,6 +53,8 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     const statement={purpose:'P1_HUMAN_GATE_V1',taskId:'TASK1234',gate,digest,
       actor,receipt,nonce:randomUUID(),issuedAt:new Date().toISOString(),
       ...(processProof?{processProofSha256:sha256(processProof)}:{}),
+      ...(gate==='incident'?{evidenceSha256:store.incidentEvidenceDigest(
+        'TASK1234',store.get('TASK1234'))}:{}),
       ...(gate==='5.9'?{
         evidenceSha256:store.evidenceDigest('TASK1234','final-compliance.json'),
         evidenceRoot:store.evidenceRoot('TASK1234')
@@ -603,6 +606,53 @@ test('independently signed Gate process proof binds exact evidence root and reje
     digest:t.alignmentApprovalSha,actor:'user',receipt:msg,proof:signed}),
     /independent Gate procedural witness does not cover exact approved process/);
   assert.equal(x.c.required(t.id).stage,'WAIT_GATE_02');
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+
+
+test('uncertain incident can only become human BLOCKED when every original dispatch already has independently authenticated result',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  const end=await x.c.run('TASK1234');
+  assert.equal(end.stage,'WAIT_GATE_59');
+  const t=x.c.required('TASK1234');
+  t.stage='NEEDS_RECONCILIATION';t.status='NEEDS_RECONCILIATION';
+  t.blockedStage='READY_FINAL';t.inflight={role:'arbitrator',phase:'synthetic-crash'};
+  t.pendingHuman='Synthetic crash after original signed result registration.';
+  resealLastEventSyntheticState(x.store,t);
+  const msg='I inspected the independent original terminal evidence and permit only incident closure, never immediate redispatch.';
+  const signed=x.proof('incident',t.currentSha,msg);
+  const output=x.c.certifyIncident({id:t.id,actor:'user',receipt:msg,
+    expectedSha:t.currentSha,proof:signed});
+  assert.equal(output.stage,'BLOCKED');
+  assert.equal(output.status,'BLOCKED');
+  assert.equal(output.allowedToRedispatch,false);
+  const now=x.c.required(t.id);
+  assert.equal(now.inflight,null);
+  assert.equal(now.blockedStage,'READY_FINAL');
+  assert.equal(x.store.approvalNonceUsed(signed.keyId,signed.statement.nonce),true);
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+test('incident certificate cannot turn an orphan TERMINAL ACK into a safe restart',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  await x.c.run('TASK1234');
+  const t=x.c.required('TASK1234');
+  x.store.recordIntent(t.id,'A1-worker','orphan-terminal-without-report');
+  x.store.recordAck('orphan-terminal-without-report','orphan-agent');
+  x.store.recordTerminal('orphan-terminal-without-report');
+  const current=x.c.required(t.id);
+  current.stage='NEEDS_RECONCILIATION';current.status='NEEDS_RECONCILIATION';
+  current.blockedStage='A_WORKER';current.inflight={role:'worker',phase:'A1-worker'};
+  resealLastEventSyntheticState(x.store,current);
+  const msg='I request a safe incident closure while preserving all original records.';
+  const signed=x.proof('incident',current.currentSha,msg);
+  assert.throws(()=>x.c.certifyIncident({id:current.id,actor:'user',receipt:msg,
+    expectedSha:current.currentSha,proof:signed}),
+    /TERMINAL dispatch has no unique registered original signed execution/);
+  assert.equal(x.c.required(t.id).stage,'NEEDS_RECONCILIATION');
   x.store.verify(t.id);
  }finally{finish(x);}
 });
