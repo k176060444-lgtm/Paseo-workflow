@@ -45,16 +45,17 @@ export class WorkflowController {
     // existing evidence root, authority and approved digest BEFORE a human
     // Gate may consume authorization. The witness signs independently;
     // the human must then countersign its exact evidence digest.
-    this.store.verifyGateProcessProof(processProof,{
+    const gateProcessProof=processProof??proof?.processProof;
+    this.store.verifyGateProcessProof(gateProcessProof,{
       taskId:id,gate,digest,actor,receipt,stateSha256:sha256(t),
       evidenceRoot:this.store.evidenceRoot(id),
     });
-    assert(!this.store.approvalNonceUsed(processProof.keyId,processProof.statement.nonce),
+    assert(!this.store.approvalNonceUsed(gateProcessProof.keyId,gateProcessProof.statement.nonce),
       'independent Gate process nonce already consumed');
     this.store.verifyHumanProof(proof,{taskId:id,gate,digest,actor,receipt,
       evidenceSha256:gate==='5.9'?this.store.evidenceDigest(id,'final-compliance.json'):null,
       evidenceRoot:gate==='5.9'?this.store.evidenceRoot(id):null,
-      processProofSha256:sha256(processProof),
+      processProofSha256:sha256(gateProcessProof),
     });
     assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
       'approval trust root is not pinned');
@@ -62,14 +63,14 @@ export class WorkflowController {
       'human approval nonce already consumed');
     const approvalFile=`approval-${gate.replace('.','-')}-${proof.statement.nonce}.json`;
     const approval=this.store.artifact(id,approvalFile,
-      {gate,digest,actor,receipt,proof,processProof,at:new Date().toISOString()});
+      {gate,digest,actor,receipt,proof,processProof:gateProcessProof,at:new Date().toISOString()});
     if(gate==='0.1'){t.stage='PLANNER';t.status='READY';}
     else if(gate==='0.2'){t.stage='PLAN_DETAIL';t.status='READY';}
     else {t.stage='CLOSED';t.status='APPROVED_FOR_SEPARATE_RELEASE_REVIEW';}
     this.store.save(t,`GATE_${gate}_APPROVED`,
       {digest,actor,approvalSha256:approval.sha256,approvalNonce:proof.statement.nonce,
-       approvalFile,processNonce:processProof.statement.nonce,
-       processProofSha256:sha256(processProof)});
+       approvalFile,processNonce:gateProcessProof.statement.nonce,
+       processProofSha256:sha256(gateProcessProof)});
     return {id,stage:t.stage,approvalSha256:approval.sha256};
   }
   required(id){const t=this.store.get(id);assert(t,`unknown task ${id}`);return t;}
