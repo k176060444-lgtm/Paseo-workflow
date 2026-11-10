@@ -31,6 +31,7 @@ Commands:
   agent-reconcile --id TASK1234        # READ ONLY, local original dispatch labels
   approve --id TASK1234 --gate 0.1|0.2|5.9 --digest SHA --actor NAME --receipt FILE --approval-proof SIGNED_JSON --process-proof SEPARATELY_SIGNED_JSON
   run --id TASK1234                   # requires explicit safety environment and installed Paseo
+  incident-close --id TASK1234 --actor NAME --receipt FILE --approval-proof SIGNED_INCIDENT --sha EXACT_COMMIT  # only fully attested original tasks
   recover --id TASK1234 --actor NAME --receipt FILE --approval-proof SIGNED_JSON --sha EXACT_COMMIT
   recover --id TASK1234 --actor NAME --receipt FILE --approval-proof SIGNED_JSON --basis FROZEN_SPEC_OR_CONFIG_SHA  # pre-commit only
 State root: --state /secure/state (default .p1-state)
@@ -124,6 +125,7 @@ async function main(){
         observations,manualReconciliationRequired:true};
     }
     else if(cmd==='approve')result=await store.withLock(need(a,'id'),()=>controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a),proof:approvalProof(a),processProof:processProof(a)}));
+    else if(cmd==='incident-close')result=await store.withLock(need(a,'id'),()=>controller.certifyIncident({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a)}));
     else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a)}));
     else if(cmd==='run'){
       const task=controller.required(need(a,'id'));
