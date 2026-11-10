@@ -561,3 +561,48 @@ test('final Gate refuses a valid log digest borrowed from a different Tester B l
     x.store.verify('TASK1234');
   }finally{finish(x);}
 });
+
+test('all human Gates fail closed if independent process witness is missing or its human countersignature changes',async()=>{
+ const x=setup();try{
+  const result=await x.c.run('TASK1234');
+  assert.equal(result.stage,'WAIT_GATE_02');
+  const task=x.c.required('TASK1234');
+  const msg='Explicitly accept the independently reviewed user alignment and high-level scope.';
+  const signed=x.proof('0.2',task.alignmentApprovalSha,msg);
+  assert.throws(()=>x.c.approve({id:task.id,gate:'0.2',
+    digest:task.alignmentApprovalSha,actor:'user',receipt:msg,
+    proof:{...signed,processProof:undefined}}),
+    /independent Gate procedure envelope required/);
+  const alternative=x.proof('0.2',task.alignmentApprovalSha,msg);
+  assert.throws(()=>x.c.approve({id:task.id,gate:'0.2',
+    digest:task.alignmentApprovalSha,actor:'user',receipt:msg,
+    proof:{...signed,processProof:alternative.processProof}}),
+    /human approval signed statement mismatch/);
+  const tampered=structuredClone(signed);
+  tampered.processProof.signature='A'.repeat(86)+'==';
+  assert.throws(()=>x.c.approve({id:task.id,gate:'0.2',
+    digest:task.alignmentApprovalSha,actor:'user',receipt:msg,proof:tampered}),
+    /independent Gate procedure signature invalid/);
+  assert.equal(x.c.required('TASK1234').stage,'WAIT_GATE_02');
+  assert.equal(x.store.approvalNonceUsed(signed.keyId,signed.statement.nonce),false);
+  x.store.verify(task.id);
+  const approved=x.c.approve({id:task.id,gate:'0.2',
+    digest:task.alignmentApprovalSha,actor:'user',receipt:msg,proof:signed});
+  assert.equal(approved.stage,'PLAN_DETAIL');
+  x.store.verify(task.id);
+ }finally{finish(x);}
+});
+test('independently signed Gate process proof binds exact evidence root and rejects late artifacts',async()=>{
+ const x=setup();try{
+  await x.c.run('TASK1234');
+  const t=x.c.required('TASK1234');
+  const msg='User specifically approves this frozen task after process verification.';
+  const signed=x.proof('0.2',t.alignmentApprovalSha,msg);
+  x.store.artifact(t.id,'unexpected-before-human-approval.json',{late:true});
+  assert.throws(()=>x.c.approve({id:t.id,gate:'0.2',
+    digest:t.alignmentApprovalSha,actor:'user',receipt:msg,proof:signed}),
+    /independent Gate procedural witness does not cover exact approved process/);
+  assert.equal(x.c.required(t.id).stage,'WAIT_GATE_02');
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
