@@ -14,7 +14,8 @@ export class WorkflowController {
     const t={id,frozen,trustRootSha256:this.store.trustRootDigest(),stage:'WAIT_GATE_01',status:'WAITING_HUMAN',aRound:0,bRound:0,
       baseSha:null,currentSha:null,taskSpec:null,taskSpecSha:null,
       lastA:null,lastB:null,p0Initial:null,p0Final:null,changesInB:false,
-      bFindings:[],pendingHuman:null,history:[],created:new Date().toISOString()};
+      bFindings:[],pendingHuman:null,history:[],workPlan:null,workPlanSha:null,
+      finalArbitration:null,created:new Date().toISOString()};
     this.store.init(t);
     const snapshot=this.store.artifact(id,'frozen-manifest.json',frozen);
     this.store.event(id,'CONFIG_FROZEN',{sha256:frozen.digest,artifactSha256:snapshot.sha256});
@@ -52,7 +53,7 @@ export class WorkflowController {
     const approval=this.store.artifact(id,approvalFile,
       {gate,digest,actor,receipt,proof,at:new Date().toISOString()});
     if(gate==='0.1'){t.stage='PLANNER';t.status='READY';}
-    else if(gate==='0.2'){t.stage='PREPARE';t.status='READY';}
+    else if(gate==='0.2'){t.stage='PLAN_DETAIL';t.status='READY';}
     else {t.stage='CLOSED';t.status='APPROVED_FOR_SEPARATE_RELEASE_REVIEW';}
     this.store.save(t,`GATE_${gate}_APPROVED`,
       {digest,actor,approvalSha256:approval.sha256,approvalNonce:proof.statement.nonce,approvalFile});
@@ -95,6 +96,8 @@ export class WorkflowController {
         Array.isArray(r.findings)&&r.findings.length===0),
         'P0 quorum does not match final SHA or has unresolved findings');
       assert(!t.bFindings.length,'unresolved P0 findings');
+      assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
+        'final Arbitrator must independently accept original user intent and code completeness');
     }
     return true;
   }
@@ -254,12 +257,23 @@ export class WorkflowController {
     this.compliance(t);
     switch(t.stage){
       case 'PLANNER':{
-        const r=await this.invoke(t,'planner','planner',`User goal:\n${t.frozen.intent}\nCreate a precise, actionable TASK_SPEC. No source edits.`,t.frozen.project.repo);
+        const r=await this.invoke(t,'planner','planner',`User goal:\n${t.frozen.intent}\nBefore Gate 0.2 produce only a plain-language Chinese user alignment and high-level strategy TASK_SPEC for approval; explain outcomes, scope and key decisions. Do not decompose coding tasks or expose unnecessary technical detail yet. No source edits.`,t.frozen.project.repo);
         if(PAUSE(r.verdict)){this.paused(t,'Planner requires clarification: '+r.summary);return;}
         if(!PASS(r.verdict)){this.failed(t,'Planner failed to produce acceptable TASK_SPEC');return;}
         t.taskSpec=r.taskSpec;t.taskSpecSha=sha256(r.taskSpec);
         this.store.artifact(t.id,'TASK_SPEC.md',r.taskSpec);
         this.next(t,'WAIT_GATE_02','TASK_SPEC_CANDIDATE',{sha256:t.taskSpecSha});return;
+      }
+      case 'PLAN_DETAIL':{
+        const r=await this.invoke(t,'planner','planner-detail',
+          'The user has approved this Gate 0.2 alignment and strategy:\\n'+t.taskSpec+
+          '\\nNow prepare implementation-ready tasks and TDD execution plan in taskSpec, without changing approved scope.',
+          t.frozen.project.repo);
+        if(PAUSE(r.verdict)){this.paused(t,'Detailed plan needs clarification');return;}
+        if(!PASS(r.verdict)){this.failed(t,'Detailed task plan rejected');return;}
+        t.workPlan=r.taskSpec;t.workPlanSha=sha256(r.taskSpec);
+        this.store.artifact(t.id,'WORK_PLAN.md',r.taskSpec);
+        this.next(t,'PREPARE','PLAN_DETAIL_COMPLETE',{sha256:t.workPlanSha});return;
       }
       case 'PREPARE':{
         const dir=path.join(this.store.dir(t.id),'worktree');
@@ -271,7 +285,7 @@ export class WorkflowController {
         if(t.aRound>=MAX_A){this.next(t,'STOPPED_BUDGET','GATE_A_EXHAUSTED');return;}
         t.aRound++;this.store.save(t,'GATE_A_ROUND_START',{round:t.aRound});
         const r=await this.invoke(t,'worker',`A${t.aRound}-worker`,
-          `TASK_SPEC:\n${t.taskSpec}\nPrior findings:\n${t.aFindings?.join('\n')??'none'}\nImplement using TDD; no production side-effects.`);
+          `APPROVED TASK_SPEC:\n${t.taskSpec}\nWORK PLAN:\n${t.workPlan}\nPrior findings:\n${t.aFindings?.join('\n')??'none'}\nImplement using TDD; no production side-effects.`);
         if(PAUSE(r.verdict)){this.paused(t,'Worker requests clarification: '+r.summary);return;}
         if(!PASS(r.verdict)){t.aFindings=r.findings;this.next(t,'A_WORKER','WORKER_TECHNICAL_FAIL');return;}
         t.currentSha=await this.git.commitWorktree(t.worktree,`A round ${t.aRound}`);
@@ -330,7 +344,7 @@ export class WorkflowController {
         if(!currentP0||currentP0.commit!==t.currentSha){this.next(t,'P0_FINAL','NEED_FINAL_COMMIT_P0');return;}
         if(t.p0Dispute){this.next(t,'ARBITRATOR','ARBITRATOR_TRIGGERED');return;}
         if(t.bFindings.length){this.next(t,'B_ENTER','P0_FINDINGS_OUTSTANDING');return;}
-        this.next(t,'READY_FINAL','GATE_B_TEST_PASS');return;
+        this.next(t,'ARBITRATOR','GATE_B_TEST_PASS');return;
       }
       case 'P0_FINAL':{
         const r=await this.p0Review(t,`final-B${t.bRound}`);
@@ -339,16 +353,21 @@ export class WorkflowController {
         t.p0Dispute=r.dispute||(r.reports.some(x=>PASS(x.verdict))&&r.reports.some(x=>x.verdict==='FAIL'));
         if(t.p0Dispute){this.next(t,'ARBITRATOR','P0_CONFLICT_NEEDS_ARBITRATION');return;}
         if(!r.passed || t.bFindings.length){this.next(t,'B_ENTER','P0_FINAL_REQUIRES_REMEDIATION');return;}
-        this.next(t,'READY_FINAL','P0_FINAL_PASS',{sha:r.commit});return;
+        this.next(t,'ARBITRATOR','P0_FINAL_PASS',{sha:r.commit});return;
       }
       case 'ARBITRATOR':{
         const r=await this.invoke(t,'arbitrator',`B${t.bRound}-arbitrator`,
-          `TASK_SPEC:\n${t.taskSpec}\nConflict reports for commit ${t.currentSha}:\n${JSON.stringify(t.p0Final??t.p0Initial)}\nAdjudicate technical disagreement; you cannot waive quorum, tests or compliance.`,t.worktree);
-        if(PAUSE(r.verdict)||!PASS(r.verdict)){this.paused(t,'Unresolved arbitration: '+r.summary);return;}
+          `ORIGINAL USER INTENT:\n${t.frozen.intent}\nAPPROVED TASK SPEC:\n${t.taskSpec}\nDETAILED WORK PLAN:\n${t.workPlan}\nFINAL COMMIT: ${t.currentSha}\nP0 REPORTS:\n${JSON.stringify(t.p0Final??t.p0Initial)}\nMandatory final technical acceptance: verify actual code completeness, missing features and original user requirements. When substantive technical opinions conflict, make a reasoned final ruling; do not waive missing tests, quorum, identities or process compliance.`,t.worktree);
+        if(PAUSE(r.verdict)){this.paused(t,'Arbitrator needs clarification: '+r.summary);return;}
+        if(!PASS(r.verdict)){
+          t.bFindings=r.findings?.length?r.findings:['Final Arbitrator rejected code completeness'];
+          this.next(t,'B_ENTER','ARBITRATION_NEEDS_REMEDIATION');return;
+        }
         // Arbitrator cannot override an actual FAIL or an invalid P0 report.
         if(t.bFindings.length||!(t.p0Final??t.p0Initial)?.passed){this.paused(t,'Arbitrator cannot waive blocking P0 findings; human action required');return;}
         t.p0Dispute=false;
-        this.next(t,'READY_FINAL','ARBITRATION_RECORDED');return;
+        t.finalArbitration={sha:t.currentSha,verdict:r.verdict,agentId:r.agentId,phase:r.phase};
+        this.next(t,'READY_FINAL','ARBITRATION_FINALIZED',{sha:t.currentSha,agentId:r.agentId});return;
       }
       case 'READY_FINAL':{
         this.compliance(t);
@@ -356,7 +375,8 @@ export class WorkflowController {
           policy:'10+10+Compliance Gate',taskId:t.id,baseSha:t.baseSha,
           finalSha:t.currentSha,aRound:t.aRound,bRound:t.bRound,
           p0:(t.p0Final??t.p0Initial).reports.map(x=>({nodeId:x.nodeId,physicalId:x.physicalId,commit:x.commit,verdict:x.verdict})),
-          testerB:t.lastB.tests.receipts,controller:'v0.1.0',taskConfigSha:t.frozen.digest,
+          testerB:t.lastB.tests.receipts,arbitrator:t.finalArbitration,
+          controller:'v0.2.0',taskConfigSha:t.frozen.digest,
           evidenceRoot:this.store.evidenceRoot(t.id),
           ledger:this.store.verify(t.id),pass:true});
         this.next(t,'WAIT_GATE_59','WAITING_HUMAN_GATE_5_9',{complianceSha256:compliance.sha256,finalCommit:t.currentSha});return;
@@ -407,7 +427,9 @@ export class WorkflowController {
   inspect(id){return this.store.readSnapshot(()=>{
     this.store.verify(id);
     const t=this.required(id);return {id,stage:t.stage,status:t.status,aRound:t.aRound,bRound:t.bRound,sha:t.currentSha,
-      specSha:t.taskSpecSha,configSha:t.frozen.digest,inflight:t.inflight,pendingHuman:t.pendingHuman,
+      specSha:t.taskSpecSha,alignment:t.stage==='WAIT_GATE_02'?t.taskSpec:undefined,
+      workPlanSha:t.workPlanSha,finalArbitration:t.finalArbitration,
+      configSha:t.frozen.digest,inflight:t.inflight,pendingHuman:t.pendingHuman,
       dispatches:this.store.dispatches(id),ledger:this.store.verify(id)};
   });}
   // Noncompliance recovery deliberately has no generic skip-a-gate operation.
