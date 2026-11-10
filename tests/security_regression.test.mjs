@@ -119,3 +119,49 @@ test('R7 background-agent reconcile uses includeBackground and unwraps refresh',
   const fresh=await runtime.findExistingAgent('agent-1');
   assert.equal(fresh.lastUsage.inputTokens,12);
 });
+
+
+test('read-only local Paseo reconciliation requires exact task/dispatch/phase and never creates Agents',async()=>{
+  const runtime=new PaseoAgentRuntime('ws://127.0.0.1:6767/ws');
+  let lists=0,creates=0;
+  runtime.client={agents:{
+    list:async options=>{
+      lists++;assert.equal(options.includeBackground,true);
+      return {entries:[
+        {agent:{id:'a-1',status:'working',labels:{
+          'p1-task':'TASK1234','p1-dispatch':'dispatch-original',
+          'p1-phase':'worker-phase','p1-role':'worker','p1-commit':'a'.repeat(40)}}},
+        {agent:{id:'a-legacy',status:'idle',labels:{
+          'p1-task':'TASK1234','p1-phase':'worker-phase'}}},
+        {agent:{id:'another',status:'idle',labels:{
+          'p1-task':'TASK9999','p1-dispatch':'dispatch-original',
+          'p1-phase':'worker-phase'}}}
+      ]};
+    },
+    create:async()=>{creates++;throw Error('reconciliation cannot execute a task');}
+  }};
+  const task={id:'TASK1234'};
+  const rows=[{id:'dispatch-original',task_id:'TASK1234',phase:'worker-phase',
+    agent_id:'a-1',state:'ACKNOWLEDGED'},
+    {id:'dispatch-lost',task_id:'TASK1234',phase:'worker-phase',
+    agent_id:null,state:'DISPATCH_INTENT'}];
+  const result=await runtime.reconcileRecordedDispatches(task,rows);
+  assert.equal(result.mode,'READ_ONLY_NO_SIDE_EFFECTS');
+  assert.equal(result.observations.length,2);
+  assert.equal(result.observations[0].verdict,'IDENTIFIED_NOT_RECOVERED');
+  assert.equal(result.observations[0].match.id,'a-1');
+  assert.deepEqual(result.observations[1].ambiguousLegacyAgents.map(x=>x.id),['a-legacy']);
+  assert.equal(result.observations[1].verdict,'UNKNOWN_NO_REDISPATCH');
+  assert.equal(lists,1);assert.equal(creates,0);
+  await assert.rejects(()=>runtime.reconcileRecordedDispatches(task,[
+    {id:'dispatch-original',task_id:'TASK9999',phase:'worker-phase'}]),/does not belong/);
+});
+test('read-only local reconciliation refuses replay of agent with mismatched phase label',async()=>{
+  const runtime=new PaseoAgentRuntime('ws://127.0.0.1:6767/ws');
+  runtime.client={agents:{list:async()=>({entries:[{agent:{id:'impostor',
+    labels:{'p1-task':'TASK1234','p1-dispatch':'dispatch-original',
+      'p1-phase':'different-phase','p1-role':'worker'}}}]})}};
+  await assert.rejects(()=>runtime.reconcileRecordedDispatches({id:'TASK1234'},[
+    {id:'dispatch-original',task_id:'TASK1234',phase:'worker-phase',state:'DISPATCH_INTENT'}]),
+    /label contradicts/);
+});
