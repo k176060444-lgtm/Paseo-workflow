@@ -27,7 +27,8 @@ export class PaseoAgentRuntime {
   async listAllAgents(){
     assert(this.client,'Paseo not connected');
     // In 0.15.3 background:true agents are omitted from default list().
-    const entries=await this.client.agents.list({includeBackground:true});
+    const response=await this.client.agents.list({includeBackground:true});
+    const entries=Array.isArray(response)?response:response?.entries;
     assert(Array.isArray(entries),'unexpected Paseo background agent list shape');
     return entries.map(x=>x?.agent??x);
   }
