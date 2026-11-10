@@ -5,7 +5,7 @@ import { verifyCommitEvidenceSync } from './git.mjs';
 import {loadTrustRoots,verifyHumanApproval,verifyExecutionAttestation} from './auth.mjs';
 import {SshP0Adapter} from './p0.mjs';
 import {verifyPaseoP0Envelope} from './p0_paseo.mjs';
-import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS } from './policy.mjs';
+import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, acceptedP0Dispute } from './policy.mjs';
 
 export class Store {
   // Only the Store's own verified, synchronous mutation methods may append
@@ -215,13 +215,13 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true&&
       t.lastB?.commit===t.currentSha,'Gate 5.9 missing independent Tester B pass');
     const p0=t.p0Final??t.p0Initial;
-    assert(p0?.passed===true&&p0.commit===t.currentSha,
-      'Gate 5.9 requires P0 for the exact final SHA');
+    assert(p0?.commit===t.currentSha&&(p0.passed===true||acceptedP0Dispute(t)),
+      'Gate 5.9 requires passing P0 or an authenticated evidence-bound final dispute ruling');
     assert(Array.isArray(p0.reports)&&p0.reports.length>=2&&
       new Set(p0.reports.map(r=>r.physicalId)).size>=2&&
-      p0.reports.every(r=>r.commit===t.currentSha&&PASS(r.verdict)&&
-        Array.isArray(r.findings)&&r.findings.length===0),
-      'Gate 5.9 P0 physical quorum/commit/findings invalid');
+      p0.reports.every(r=>r.commit===t.currentSha&&Array.isArray(r.findings))&&
+      (p0.passed===true||acceptedP0Dispute(t)),
+      'Gate 5.9 P0 physical quorum/commit/unresolved disputes invalid');
     assert(!t.bFindings?.length,'Gate 5.9 unresolved findings');
     assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
       'Gate 5.9 requires final Arbitrator acceptance of original user intent and code completeness');
@@ -239,7 +239,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(t.history.some(h=>h.role==='test_executor'&&h.sha===t.currentSha&&h.pass===true&&
       this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?').get(t.id,h.evidenceSha256)),
       'Gate 5.9 needs persisted Tester B receipts');
-    assert(t.history.some(h=>h.role==='P0'&&h.sha===t.currentSha&&h.passed===true&&
+    assert(t.history.some(h=>h.role==='P0'&&h.sha===t.currentSha&&
+      (h.passed===true||acceptedP0Dispute(t))&&
       this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?').get(t.id,h.evidenceSha256)),
       'Gate 5.9 needs persisted P0 evidence');
     for(const h of t.history)
@@ -551,6 +552,10 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     if(type==='ARBITRATION_FINALIZED'){
       assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
         'final Arbitrator must bind current commit');
+      const p0=t.p0Final??t.p0Initial;
+      assert(p0?.passed===true||acceptedP0Dispute(t),
+        'final arbitration cannot waive unverifiable P0 evidence');
+      assert(!t.bFindings?.length,'arbitration did not close outstanding findings');
       assert(t.history.some(h=>h.role==='arbitrator'&&h.sha===t.currentSha&&
         h.agentId===t.finalArbitration.agentId&&PASS(h.verdict)),
         'final Arbitrator execution receipt missing');
@@ -569,7 +574,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       p0Final:new Set(['P0_CONFLICT_NEEDS_ARBITRATION','P0_FINAL_REQUIRES_REMEDIATION','P0_FINAL_PASS']),
       aFindings:new Set(['WORKER_TECHNICAL_FAIL','A_REVIEW_FAIL','GATE_A_TEST_FAIL']),
       bFindings:new Set(['P0_INITIAL_COLLECTED','B_WORKER_FAIL','B_COMMIT_FROZEN',
-        'B_REVIEW_FAIL','B_TEST_FAIL','P0_CONFLICT_NEEDS_ARBITRATION',
+        'B_REVIEW_FAIL','B_TEST_FAIL','ARBITRATION_FINALIZED','P0_CONFLICT_NEEDS_ARBITRATION',
         'P0_FINAL_REQUIRES_REMEDIATION','P0_FINAL_PASS','ARBITRATION_NEEDS_REMEDIATION']),
       p0Dispute:new Set(['P0_INITIAL_COLLECTED','P0_CONFLICT_NEEDS_ARBITRATION',
         'P0_FINAL_REQUIRES_REMEDIATION','P0_FINAL_PASS','ARBITRATION_FINALIZED']),
