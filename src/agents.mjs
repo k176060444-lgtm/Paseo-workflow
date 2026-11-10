@@ -43,6 +43,9 @@ export class PaseoAgentRuntime {
         'dispatch does not belong to the frozen task');
       if(d.phase.startsWith('P0:'))continue; // separate pinned remote P0 reconciliation
       const exact=scoped.filter(a=>a.labels?.['p1-dispatch']===d.id);
+      for(const agent of exact)assert(agent.labels?.['p1-phase']===d.phase&&
+        typeof agent.labels?.['p1-role']==='string',
+        'remote Agent label contradicts persisted original dispatch phase');
       assert(exact.length<=1,'duplicate local Paseo Agent dispatch identity; BLOCKED');
       const ambiguous=scoped.filter(a=>a.labels?.['p1-phase']===d.phase&&
         !a.labels?.['p1-dispatch']);
