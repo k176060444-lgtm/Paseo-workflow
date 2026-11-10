@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     }
     if(gate==='5.9')this.#validateFinalGate(oldTask);
   }
-  #verifyOriginalTestLogs(t,record,phase){
+  verifyOriginalTestLogs(t,record,phase){
     assert(record?.tests?.pass===true&&Array.isArray(record.tests.receipts),
       'independent test evidence is absent or not passing');
     const buckets=record.tests.layers;
@@ -251,8 +251,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'Gate 5.9 requires exact frozen Git commits');
     assert(t.lastA?.pass===true&&t.lastA?.commit,'Gate 5.9 missing Tester A pass');
     verifyGateBTests(t);
-    this.#verifyOriginalTestLogs(t,t.lastA,t.lastA?.agent?.phase);
-    this.#verifyOriginalTestLogs(t,t.lastB,t.lastB?.agent?.phase);
+    this.verifyOriginalTestLogs(t,t.lastA,t.lastA?.agent?.phase);
+    this.verifyOriginalTestLogs(t,t.lastB,t.lastB?.agent?.phase);
     assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true&&
       t.lastB?.commit===t.currentSha,'Gate 5.9 missing independent Tester B pass');
     const p0=t.p0Final??t.p0Initial;
