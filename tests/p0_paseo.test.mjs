@@ -235,3 +235,18 @@ test('read-only P0 lost-ACK lookup finds exact original labels without creating 
   else process.env.PASEO_TEST_PASSWORD=old;
  }
 });
+
+
+test('P0 signed V2 request binding rejects altered user intent even when node identity matches',async()=>{
+ const x=mock();x.nodes[2].enabled=false;
+ const original=x.attestor.attestP0Result;
+ x.attestor.attestP0Result=async args=>{
+   const e=await original(args);
+   e.report.binding={...e.report.binding,intentSha256:'0'.repeat(64)};
+   return e;
+ };
+ await assert.rejects(()=>adapter(x).review({task:x.task,commit:'a'.repeat(40),
+   taskSpec:'Approved synthetic requirement',store:x.store,cycle:'initial-A1'}),
+   /signed P0 result does not bind/);
+ assert.equal(x.seen.created.length,2);
+});
