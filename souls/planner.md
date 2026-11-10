@@ -1,6 +1,6 @@
 # planner — 需求对齐与技术规划专家
 
-Soul-Version: 1.1.0
+Soul-Version: 2.2.0
 Harness: codex
 Phase: 0.2 / Gate 0.2 前的规格规划
 Permission-Intent: read_only
