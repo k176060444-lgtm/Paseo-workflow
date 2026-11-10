@@ -1,5 +1,5 @@
 import {verify} from 'node:crypto';
-import {assert,canonical,sha256,parseAgentOutput,PASS,providerOptions} from './policy.mjs';
+import {assert,canonical,sha256,parseAgentOutput,normalizeVerdict,PASS,providerOptions} from './policy.mjs';
 
 function signed(roots,node,proof,expected){
   const key=roots instanceof Map?roots.get(node.id):roots?.p0?.get(node.id);
@@ -32,10 +32,11 @@ export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,co
     typeof r.rawMessage==='string'&&r.stdoutSha256===sha256(r.rawMessage),
     'P0 original Paseo Agent raw output not bound');
   const parsed=parseAgentOutput(r.rawMessage,node.role??'blind_a');
-  assert(parsed.verdict===r.verdict&&canonical(parsed.findings)===canonical(r.findings),
+  assert(parsed.verdict===normalizeVerdict(r.verdict,node.role??'blind_a')&&
+    canonical(parsed.findings)===canonical(r.findings),
     'P0 verdict/finding cannot contradict raw Agent output');
   assert(r.exitCode===0&&r.clean===true,'P0 remote execution failed or altered checkout');
-  assert(!(r.verdict==='PASS'&&r.findings.length>0),'P0 contradictory PASS/findings');
+  assert(!(parsed.verdict==='PASS'&&r.findings.length>0),'P0 contradictory PASS/findings');
   if(r.verdict==='APPROVE_WITH_COMMENTS')
     assert(r.findings.every(f=>/^\s*(?:[-*]\s*)?\[?(LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]/i.test(f)),
       'P0 contains blocking or unclassified comments');
@@ -43,7 +44,7 @@ export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,co
     jobId,commit,nodeId:node.id,physicalId:node.physicalId,
     serverId:node.serverId,agentId:r.agentId,model:r.model,harness:r.harness,
     reportSha256:sha256(r)});
-  return r;
+  return {...r,verdict:parsed.verdict};
 }
 async function makeDirectClient({url,password}) {
   const {createPaseoClient}=await import('@getpaseo/client');
@@ -64,7 +65,7 @@ function validatedEndpoint(node){
     !uri.username&&!uri.password&&!uri.search&&!uri.hash,
     'invalid authenticated direct Paseo daemon endpoint');
   // Cleartext WebSocket is limited to explicitly approved private-LAN peers.
-  const host=uri.hostname.replace(/^\\[|\\]$/g,'');
+  const host=uri.hostname.replace(/^\[|\]$/g,'');
   const a=host.split('.').map(Number);
   const privateIp=a.length===4&&a.every(v=>Number.isInteger(v)&&v>=0&&v<=255)&&
     (a[0]===10||(a[0]===172&&a[1]>=16&&a[1]<=31)||
@@ -86,7 +87,8 @@ export class PaseoP0Adapter{
       assert(new Set(this.nodes.map(n=>n[key])).size===this.nodes.length,
         'P0 duplicate physical host attribute: '+key);
     for(const n of this.nodes)
-      assert(n.transport==='direct'&&n.serverId&&
+      assert(['blind_a','blind_b','blind_c'].includes(n.role)&&
+        n.transport==='direct'&&n.serverId&&
         ((n.paseoUrl&&n.passwordEnv)||n.registrationId)&&
         n.workspaceId&&n.cwd&&n.model?.startsWith(n.harness+'/')&&
         ['opencode','codex'].includes(n.harness),
@@ -104,13 +106,6 @@ export class PaseoP0Adapter{
       assert(typeof password==='string'&&password.length>0,
         'approved remote Paseo credential unavailable; BLOCKED');
       remote=await this.directClientFactory({url,password,node});
-      const identity=await remote.hosts.list();
-      assert(identity?.self?.serverId===node.serverId,
-        'remote Paseo daemon serverId mismatch; BLOCKED');
-      const available=await remote.providers.listAvailable();
-      assert(available?.[node.harness]===true||
-        available?.providers?.[node.harness]?.available===true,
-        'remote approved Harness unavailable; BLOCKED');
     }else{
       const directory=await this.client.hosts.list();
       const host=(directory.hosts??[]).find(h=>h.serverId===node.serverId&&
@@ -122,6 +117,15 @@ export class PaseoP0Adapter{
       remote=await this.client.hosts.client(node.serverId);
     }
     try{
+      if(node.paseoUrl){
+        const identity=await remote.hosts.list();
+        assert(identity?.self?.serverId===node.serverId,
+          'remote Paseo daemon serverId mismatch; BLOCKED');
+        const available=await remote.providers.listAvailable();
+        assert(Array.isArray(available?.providers)&&available.providers.some(p=>
+          p?.provider===node.harness&&p?.available===true),
+          'remote approved Harness unavailable; BLOCKED');
+      }
       const x=await remote.workspaces.ref(node.workspaceId).refresh();
       const workspace=x?.workspace??x;
       assert(workspace&&(workspace.workspaceDirectory??workspace.directory??workspace.cwd)===node.cwd,
@@ -144,12 +148,13 @@ export class PaseoP0Adapter{
     try{
       assert(ready.length>=2,'P0 requires 2 authenticated Paseo hosts before paid dispatch');
       for(const {node,remote} of ready){
-        const role=node.role??'blind_a',soul=task.frozen.souls[role];
+        const role=node.role,soul=task.frozen.souls[role];
         assert(soul?.text,'P0 frozen Soul missing');
         const jobId=sha256(task.id+':'+cycle+':'+commit+':'+node.id).slice(0,40);
         const prompt='Blind read-only review of EXACT commit '+commit+
-          '. Independent of other nodes. TASK_SPEC:\n'+taskSpec+
-          '\nReturn one JSON verdict/summary/findings.';
+          '. Independent of other nodes. ORIGINAL USER INTENT:\n'+task.frozen.intent+
+          '\nAPPROVED TASK_SPEC SHA256: '+sha256(taskSpec)+'\nTASK_SPEC:\n'+taskSpec+
+          '\nReturn terminal JSON verdict PASS/FAIL/QUESTION/NEEDS_SPECIALIST, summary and findings; identify specific code evidence.';
         const request={jobId,taskId:task.id,cycle,serverId:node.serverId,
           nodeId:node.id,workspaceId:node.workspaceId,commit,
           soulSha256:soul.sha256,promptSha256:sha256(prompt)};
