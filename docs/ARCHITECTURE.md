@@ -1,66 +1,65 @@
-# P1 V2.1 运行流程与接口契约
+# Coding Pipeline architecture — mainline V2.2 candidate (2026-11-10)
 
-## 流程顺序（以 Controller 为准）
+This file supersedes the pre-R8 SSH-centric architecture prose. Actual live performance remains NOT_VERIFIED.
 
+## Controller state flow
+
+```text
+Gate 0.1: approve user intent + model/Harness matrix
+    Planner: plain-language need/method/strategy alignment
+Gate 0.2: approve candidate TASK_SPEC SHA
+    Planner Detail: implementation-specific work plan/TDD tasks
+    PREPARE: independent working copy and frozen base commit
+Gate A: max 10 rounds
+    Worker -> Spec & Quality independent concurrent review -> Tester A
+    failures -> next available Gate A round
+P0 initial: at least 2 distinct physical verified Blind Review seats
+Gate B: max 10 rounds
+    no confirmed defects -> skip Worker Remediation
+    defects -> targeted Worker Remediation -> new commit -> Spec & Quality
+    Tester B + original tests + target regression
+    modified final commit -> renewed P0 on exact final SHA
+    disputes -> Arbitrator technical ruling (cannot bypass quorum)
+Final Arbitrator: MANDATORY even if no disputes
+    original user requirements + code completeness + final engineering evidence
+    rejection -> remediation if budget remains, otherwise STOP
+Final Compliance Gate: evidence, authorization, exact commits, ordered audits
+Gate 5.9: human approval; NEVER auto-release
 ```
-QQBot → Hermes
-             ↳ Workflow Controller (独立本地进程 + SQLite)
-                  Gate 0.1: 用户批准 intent + Role Matrix SHA
-                  Planner (Paseo Codex/OpenCode) → TASK_SPEC
-                  Gate 0.2: 用户批准 TASK_SPEC SHA
-                  Prepare: git worktree --detach <approved base SHA>
-                  ┌ Gate A (最多10轮，含第一轮) ─────────────┐
-                  │ Worker TDD → 固定 Commit              │
-                  │ [Spec Reviewer || Quality Reviewer]   │
-                  │ Tester A + 独立真实测试收据 → Gate A   │
-                  └───────────────────────────────────────┘
-                  P0 Initial: 5bao/9bao (rusty optional), ≥2 distinct verified physical nodes
-                  ┌ Gate B (最多10轮，含无整改时的首次验证) ┐
-                  │ 无必须整改事项 → SKIP Worker Remediation│
-                  │ 否则 Remediation → new Commit → 双审   │
-                  │ Tester B + 独立真实测试收据            │
-                  │ new Commit ? 再执行 P0(≥2节点) : 已覆盖│
-                  │ 争议 ? 按需 Arbitrator : 不调用        │
-                  │ FAIL ? 余下预算内再次整改 : PASS      │
-                  └───────────────────────────────────────┘
-                  Final Compliance Gate（确定性程序）
-                  Gate 5.9 WAITING HUMAN → CLOSED (no deployment)
-```
 
-## 状态与计数不变量
+### Process compliance is a first-class invariant
 
-- Gate A 由 `aRound` 计数，`A_WORKER` 进入时 +1；第10轮失败后 `STOPPED_BUDGET`。
-- Gate B 由 `bRound` 计数，`B_ENTER` 进入时 +1；首次即使无整改仍计为第1轮。产生新 Commit 或再次远端 P0 均不重置。
-- `RUNNING` 和 `INFLIGHT` 不等于成功。启动前写账本、收到 ACK 后保存 Agent/Job ID；Controller 异常退出后原任务可能仍在进行。
-- 阶段转移前校验账本哈希、预算、角色权限；最终必须通过 commit=P0.commit=TesterB.commit 三方一致性。
-- 遇到 `QUESTION`、`NEEDS_SPECIALIST`、权限或身份不明，不能由大模型自行批准 Gate。
-- 合规问题不能作为普通技术失败自动吃掉下一轮预算。`BLOCKED` 只允许凭人工收据受控恢复；`NEEDS_RECONCILIATION` 本项目不自动清理或重派。
-- 审查两席必须绑定相同 Commit，并有不同 Agent ID；是否是实际独立推理和隔离环境仍须本地证据验收。
+`pro_audit` is a frozen independent role. Every individual role dispatch has a prior PRE and subsequent POST audit: Planner (both passes), Worker, Spec/Quality separately, Tester A/B, independent test-command executor, P0, remediation and Arbitrator. PRE must succeed before the target is dispatched; POST must succeed before downstream processing. Auditor and deterministic Store both check procedural evidence only, not technical correctness. The auditor is not recursively dispatched to review itself.
 
-## Paseo Client Adapter
+`Store` independently checks transition legality at every stage. Final Gate 5.9 verifies ordered, authenticated PRE/POST evidence for each actual role completion; arbitrary role self-assertions do not count as execution evidence. The 10+10 budget is independent of Pro-Audit calls; violations require line-stop and human-controlled recovery.
 
-使用 `client.agents.create({ config:{provider,systemPrompt,options}, cwd, prompt, outputSchema, background:true, labels })`，然后等待 `waitForFinish()`。`idle` 只意味着 Agent 轮次结束，不意味着任务通过；仅当最终 JSON 通过结构校验、随后满足 Git/测试/P0/Compliance Gate 时才能放行。
+### Human Gate 0.2
 
-`@getpaseo/client` 调用依据：
-- https://github.com/getpaseo/paseo/blob/6c1b48d2962ec6a48d5a553e312dfcc1f94e2e7a/public-docs/sdk/reference.md
-- https://github.com/getpaseo/paseo/blob/6c1b48d2962ec6a48d5a553e312dfcc1f94e2e7a/public-docs/sdk/provider-options.md
+Planner's first output is an intelligible alignment/strategy proposal; it **must not** create formal atomic Coding tasks. Gate 0.2 approves the exact candidate digest. Only after approval is `PLAN_DETAIL` allowed to produce a frozen `WORK_PLAN.md`; that implementation plan cannot redefine the user-approved task.
 
-**版本锁定说明：** 固定使用所研究源码包的 0.15.2，不代表用户本机当前已安装此版本。真实调用需要先验收安装与版本兼容。
+### Final Arbitrator
 
-## P0 Transport
+Arbitrator participates when substantive technical disputes arise and **always** before final technical acceptance. The final verdict must check the original user intent, partial/unimplemented features, delivered behavior, and exact final Commit supported by independent tests and P0. Its technical PASS never substitutes for process compliance, independent P0 receipts, user approval or missing executed tests.
 
-通过 `ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes <alias> python3 /path/p0_runner.py <submit|status> --config /path/config` 通信；SSH 已知主机密钥需要在本机预先可信固定。`submit` 的输入 JSON 从 stdin 传送，不拼接 Shell 命令字符串；远端命令名和路径做单引号转义。
+## Transport and execution
 
-远端收到任务后以 `jobId` 创建持久 `spec.json`，异步运行 native OpenCode 或可选 rusty harness；重复 Job ID 且内容相同返回 EXISTS，内容不同则拒绝；`status` 回传 HMAC-SHA256 签名的报告。
+Local 21bao Paseo SDK uses its authenticated loopback daemon. Both 5bao and 9bao were actually discovered on 2026-11-10 by separate password-authenticated SDK connections to known private-LAN WebSocket URLs and pinned `serverId` identities. `src/p0_paseo.mjs` supports this **direct** path and validates a remote Workspace's actual `workspaceDirectory` before P0 dispatch. Previous `hosts.list()` registration is not required; optional Connected Hosts API compatibility remains.
 
-必须验证报告的 `jobId/nodeId/commit/harness/model/exitCode/clean/findings`，且使用不同物理 ID 及独立节点密钥。**密钥签名不证明真实物理机器，不证明实际模型或完全只读**：这些仍由可信 SSH 身份、机器清单、远端测试与人工审计建立。
+There is NO SSH path in normal Coding orchestration; historical `SshP0Adapter.ssh()` deliberately throws. Users have not authorized SSH as an orchestration transport. Physical identity is not established by a serverId alone. Witness keys, read-only OS isolation and exact Commit checkouts remain necessary.
 
-P0 第三席额外等待只在两席有效之后开始，最多 600 秒；只有一席有效永远不能 PASS。所有有效报告必须纳入判断，不能忽略有冲突的第三份报告。
+rusty uses Hermes' own authenticated A2A peer `rustyhand` as an **optional** third Reviewer. Agent Card authentication succeeded, but Task ID, request lifecycle, signed original result and review workspaces are unverified. `src/p0_a2a.mjs` is a strict interface to the **native Hermes A2A tool bridge** and does not independently build a JSON-RPC client. The standalone Controller rejects enabling rusty until the native bridge is actually connected and separately approved. Invalid or uncertain requests never get automatically resent.
 
-## 恢复与审批
+## Persistence and release
 
-`init` 冻结 manifest；`approve --gate 0.1 --digest <manifest>` 后才允许 Planner；`approve --gate 0.2 --digest <TASK_SPEC>` 后才允许 Worker；`approve --gate 5.9 --digest <finalSHA>` 仅标记 CLOSED，不部署。
+Signed independent execution receipts, remote physical review evidence and human approvals bind exact artifacts/Commits. SQLite hashes are tamper-evident only within the host, not an external immutable anchor. An uncertain Agent submit, missing ACK, unknown cancellation or missing witness stops the pipeline pending reconciliation. Gate 5.9 closes the workflow without merge, push or deployment.
 
-`recover` 仅允许已明确 BLOCKED、非 INFLIGHT 的任务，并保留人工批准收据。此恢复接口不支持自动跳过任一 Gate，且不能把一次 FAIL 改写成历史 PASS。需要重放的下游验证必须重新执行。
+## Still unverified
 
-**历史入库证据为本地哈希链，非不可篡改的外部公证。** 特权本机攻击者可以重写数据库及整条链，部署方必须另行建立独立证据存储或签名锚定。
+- Dedicated independent OS/Paseo witness service and physical-signing custody.
+- Live remote Agent/Provider lifecycle over new direct SDK transport.
+- Actual Hermes A2A task/Reviewer and third-seat signature integration.
+- Provider/model options/permissions in real cross-host workloads.
+- Windows/Linux process isolation, workload-boundary and storage ACL proof.
+- Full TEST_ONLY file-addition semantics and production state migration.
+
+These are technical blockers for live certification, not a reason to redesign the user's Coding mainline.
