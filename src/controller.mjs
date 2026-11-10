@@ -133,7 +133,8 @@ export class WorkflowController {
     const approved=t.frozen.roles?.[targetRole]??null;
     const soul=t.frozen.souls?.[targetRole]??null;
     const targetHistory=checkpoint==='POST'?t.history.findLast(h=>h.role===targetRole&&
-      (['spec_reviewer','quality_reviewer'].includes(targetRole)?
+      (['spec_reviewer','quality_reviewer'].includes(targetRole)&&
+        /^[AB][0-9]+-review$/.test(h.phase)?
         h.phase+'-'+targetRole===phase:h.phase===phase)&&
       h.auditSessionId===sessionId):null;
     if(checkpoint==='POST')assert(targetHistory?.evidenceSha256,
