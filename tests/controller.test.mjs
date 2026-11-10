@@ -168,8 +168,8 @@ async function movePastPlanning(x){
   assert.equal(plan.stage,'WAIT_GATE_02');
   const t=x.c.required('TASK1234');
   const msg='Approved the exact proposed TASK_SPEC SHA for implementation.';
-  x.c.approve({id:t.id,gate:'0.2',digest:t.taskSpecSha,actor:'user',
-    receipt:msg,proof:x.proof('0.2',t.taskSpecSha,msg)});
+  x.c.approve({id:t.id,gate:'0.2',digest:t.alignmentApprovalSha,actor:'user',
+    receipt:msg,proof:x.proof('0.2',t.alignmentApprovalSha,msg)});
 }
 function finish(x){
   x.store.close();
@@ -321,7 +321,7 @@ test('signed human recovery resumes a WAIT_HUMAN checkpoint without skipping Gat
   assert.equal(stopped.status,'WAITING_HUMAN');
   const msg='Human explicitly clarifies approved details and authorizes resuming this checkpoint.';
   const out=x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
-   expectedBasis:t.taskSpecSha,proof:x.proof('recovery',t.taskSpecSha,msg)});
+   expectedBasis:t.alignmentApprovalSha,proof:x.proof('recovery',t.alignmentApprovalSha,msg)});
   assert.equal(out.stage,'PLAN_DETAIL');
   assert.equal(x.c.required('TASK1234').status,'READY');
   x.store.verify('TASK1234');
