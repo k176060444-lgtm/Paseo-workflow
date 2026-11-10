@@ -13,7 +13,8 @@ export class HermesA2AP0Seat {
   validate(){
     const n=this.node;
     assert(n?.transport==='a2a'&&n.peerName==='rustyhand'&&
-      n.physicalId&&n.serverId&&n.harness&&n.model&&n.role,
+      ['blind_a','blind_b','blind_c'].includes(n.role)&&
+      n.physicalId&&n.serverId&&n.harness&&n.model,
       'rusty A2A inventory incomplete; BLOCKED');
     assert(this.bridge&&typeof this.bridge.submit==='function'&&
       typeof this.bridge.status==='function',
