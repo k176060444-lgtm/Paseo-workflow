@@ -131,6 +131,33 @@ export function verifyHumanApproval(roots,envelope,{
 // execution provenance. Only an independent signing service with its own
 // protected Ed25519 key may attest a verified Paseo/OS execution. This
 // module verifies; it intentionally has no private key or signing method.
+export const REQUIRED_OBSERVER_CAPABILITIES=Object.freeze([
+  'PASEO_AGENT_ORIGINAL_OUTPUT','OBSERVED_MODEL_HARNESS',
+  'FROZEN_SOUL_DIGEST','OS_READONLY_ISOLATION','ORIGINAL_TEST_LOGS',
+]);
+export function verifyObserverReadiness(roots,envelope,expected){
+  assert(roots?.execution?.size>0,'no independently pinned OS witness key; BLOCKED');
+  assert(envelope?.schema===1&&typeof envelope.keyId==='string',
+    'independent OS witness readiness signature required');
+  const key=roots.execution.get(envelope.keyId);
+  assert(key,'independent observer readiness signer not approved');
+  const st=envelope.statement;
+  assert(st?.purpose==='P1_OBSERVER_READY_V1'&&
+    st.taskId===expected.taskId&&st.configSha===expected.configSha&&
+    st.stateSha256===expected.stateSha256&&st.challenge===expected.challenge&&
+    st.outcome==='READY'&&
+    REQUIRED_OBSERVER_CAPABILITIES.every(c=>st.capabilities?.[c]===true),
+    'observer did not independently attest required model/OS/Paseo capabilities');
+  const at=Date.parse(st.issuedAt);
+  assert(typeof st.nonce==='string'&&/^[a-f0-9-]{36}$/i.test(st.nonce)&&
+    /^[a-f0-9-]{36}$/i.test(st.challenge)&&
+    Number.isFinite(at)&&at<=Date.now()+120000&&at>=Date.now()-120000,
+    'observer readiness expired or missing unique challenge');
+  const sig=Buffer.from(envelope.signature??'','base64');
+  assert(sig.length===64&&verify(null,Buffer.from(canonical(st)),key,sig),
+    'independent observer readiness signature invalid');
+  return {issuer:envelope.keyId,challenge:st.challenge};
+}
 export function verifyExecutionAttestation(roots,envelope,expected,{allowHistorical=false}={}){
   assert(roots?.execution?.size>0,
     'independent execution attestor not provisioned; BLOCKED');
