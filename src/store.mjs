@@ -551,6 +551,12 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       lastB:new Set(['NEED_FINAL_COMMIT_P0','ARBITRATOR_TRIGGERED','P0_FINDINGS_OUTSTANDING','GATE_B_TEST_PASS']),
       p0Initial:new Set(['P0_INITIAL_COLLECTED']),
       p0Final:new Set(['P0_CONFLICT_NEEDS_ARBITRATION','P0_FINAL_REQUIRES_REMEDIATION','P0_FINAL_PASS']),
+      aFindings:new Set(['WORKER_TECHNICAL_FAIL','A_REVIEW_FAIL','GATE_A_TEST_FAIL']),
+      bFindings:new Set(['P0_INITIAL_COLLECTED','B_WORKER_FAIL','B_COMMIT_FROZEN',
+        'B_REVIEW_FAIL','B_TEST_FAIL','P0_CONFLICT_NEEDS_ARBITRATION',
+        'P0_FINAL_REQUIRES_REMEDIATION','P0_FINAL_PASS','ARBITRATION_NEEDS_REMEDIATION']),
+      p0Dispute:new Set(['P0_INITIAL_COLLECTED','P0_CONFLICT_NEEDS_ARBITRATION',
+        'P0_FINAL_REQUIRES_REMEDIATION','P0_FINAL_PASS','ARBITRATION_FINALIZED']),
     };
     for(const [key,events] of Object.entries(protectedEvidence))
       if(canonical(oldTask[key])!==canonical(t[key]))
@@ -576,6 +582,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(oldTask&&nextTask&&oldTask.id===nextTask.id,'task identity changed');
     assert(canonical(nextTask.frozen)===canonical(oldTask.frozen),
       'frozen config is immutable after task creation');
+    assert(nextTask.trustRootSha256===oldTask.trustRootSha256,
+      'pinned trust root cannot be changed by a state transition');
     for(const [key,limit] of [['aRound',10],['bRound',10]]){
       const prev=oldTask[key],curr=nextTask[key];
       if(prev===undefined&&curr===undefined)continue; // synthetic legacy fixtures
