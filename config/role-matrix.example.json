@@ -18,7 +18,33 @@
         "diff",
         "--check"
       ]
-    ]
+    ],
+    "gateB": {
+      "smoke": [
+        [
+          "node",
+          "--test"
+        ]
+      ],
+      "canary": [
+        [
+          "git",
+          "diff",
+          "--check"
+        ]
+      ],
+      "regression": [
+        [
+          "node",
+          "--test"
+        ],
+        [
+          "git",
+          "diff",
+          "--check"
+        ]
+      ]
+    }
   },
   "roles": {
     "planner": {
