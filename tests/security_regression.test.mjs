@@ -39,6 +39,8 @@ test('F1: synthetic alternative runtime cannot pass a review pair with BLOCKER f
     }};
     const gitOps={assertUnchanged:async()=>{}};
     const c=new WorkflowController({store:w.store,runtime,gitOps,p0:null});
+    // Test-only isolation of reviewer verdict invariant; no live bypass switch exists.
+    c.auditRole=async()=>{};
     const t=w.store.get('TASK1234');t.worktree='/synthetic';
     const r=await c.invokePair(t,'A1-review','a'.repeat(40));
     assert.equal(r.pass,false);
