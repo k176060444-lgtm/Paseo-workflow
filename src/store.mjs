@@ -218,6 +218,28 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     }
     if(gate==='5.9')this.#validateFinalGate(oldTask);
   }
+  #verifyOriginalTestLogs(t,record,phase){
+    assert(record?.tests?.pass===true&&Array.isArray(record.tests.receipts),
+      'independent test evidence is absent or not passing');
+    const buckets=record.tests.layers;
+    const groups=buckets?Object.entries(buckets).map(([layer,x])=>({
+      prefix:phase+'-'+layer,receipts:x.receipts
+    })):[{prefix:phase,receipts:record.tests.receipts}];
+    for(const group of groups){
+      assert(Array.isArray(group.receipts)&&group.receipts.length>0,
+        'individual test layer contains no executed commands');
+      for(let i=0;i<group.receipts.length;i++){
+        const receipt=group.receipts[i],name=group.prefix+'-test-'+(i+1)+'.json';
+        assert(typeof receipt.logSha256==='string'&&/^[a-f0-9]{64}$/.test(receipt.logSha256),
+          'test command has no digest-bound original log');
+        const file=JSON.parse(this.#requireArtifact(t.id,name,receipt.logSha256));
+        assert(canonical(file.argv)===canonical(receipt.argv)&&
+          file.code===receipt.code&&file.code===0&&
+          file.timedOut===false&&file.truncated===false&&receipt.ok===true,
+          'test command original receipt contradicts signed final Tester result');
+      }
+    }
+  }
   #validateFinalGate(t){
     assert(t.stage==='WAIT_GATE_59'&&t.status==='WAITING_HUMAN',
       'Gate 5.9 requires waiting human stage');
@@ -229,6 +251,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'Gate 5.9 requires exact frozen Git commits');
     assert(t.lastA?.pass===true&&t.lastA?.commit,'Gate 5.9 missing Tester A pass');
     verifyGateBTests(t);
+    this.#verifyOriginalTestLogs(t,t.lastA,t.lastA?.agent?.phase);
+    this.#verifyOriginalTestLogs(t,t.lastB,t.lastB?.agent?.phase);
     assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true&&
       t.lastB?.commit===t.currentSha,'Gate 5.9 missing independent Tester B pass');
     const p0=t.p0Final??t.p0Initial;
