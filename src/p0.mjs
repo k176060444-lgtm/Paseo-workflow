@@ -1,12 +1,7 @@
 import fs from 'node:fs';
 import {createHmac,timingSafeEqual,createHash} from 'node:crypto';
-import {execArgv} from './git.mjs';
 import {assert,canonical,sha256,hasBlockingFinding,PASS} from './policy.mjs';
 
-function shellToken(s) {
-  assert(typeof s==='string'&&!s.includes('\0'),'invalid SSH token');
-  return `'${s.replaceAll("'", "'\\''")}'`;
-}
 export class SshP0Adapter {
   constructor(nodes,{pollMs=60000,extraThirdMs=600000,deadlineMs=7200000,sleep=ms=>new Promise(r=>setTimeout(r,ms)),clock=()=>Date.now()}={}){
     this.nodes=nodes.filter(n=>n.enabled===true);
@@ -14,17 +9,8 @@ export class SshP0Adapter {
     this.sleep=sleep;this.clock=clock;
     assert(this.nodes.length<=3,'P0 accepts at most three distinct physical seats');
   }
-  async ssh(node,action,spec) {
-    // Historical verifier/fixtures only; live Coding P0 MUST use Paseo/A2A.
-    // No environment switch permits bypassing explicit user prohibition.
+  async ssh(_node,_action,_spec) {
     throw new Error('SSH transport disabled in Coding Pipeline; use Paseo or Hermes A2A');
-    assert(node.sshAlias&&node.runner&&node.config,'P0 node missing SSH alias/runner/config');
-    assert(/^[A-Za-z0-9_.@-]+$/.test(node.sshAlias),'invalid SSH alias');
-    const command=['python3',node.runner,action,'--config',node.config].map(shellToken).join(' ');
-    const args=['-T','-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=15',node.sshAlias,command];
-    const r=await execArgv('ssh',args,{timeoutMs:60000,stdin:spec===undefined?undefined:canonical(spec)});
-    assert(r.code===0&&!r.timedOut&&!r.truncated,`SSH ${node.id} ${action} failed or uncertain: ${r.stderr.slice(0,250)}`);
-    try{return JSON.parse(r.stdout.trim());}catch{throw new Error(`P0 ${node.id}: invalid remote JSON; reconcile manually`);}
   }
   // Keys are compared by content, not path. Hashes are never persisted or logged.
   validateInventory() {
