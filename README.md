@@ -1,4 +1,4 @@
-# Paseo-workflow — Coding Pipeline V2.2 mainline correction candidate
+> **R10 source-only remediation:** See [R10 evidence/reliability status](docs/R10_EVIDENCE_RELIABILITY_REMEDIATION.md). Unique Pro-Audit PRE/POST evidence sessions, independent execution-witness V2 and P0 witness V2 are now required. A read-only `p0-reconcile` command is available. Real host witness/cancel/recovery and full workflow integration are **NOT VERIFIED**. Do not deploy from this branch.\n\n# Paseo-workflow — Coding Pipeline V2.2 mainline correction candidate
 
 **Status (2026-11-10): source remediation + offline CI only; NOT approved for live Coding, paid Provider calls, deployment or production.** Existing historical R2–R8 documents are retained as evidence and do not supersede this README or current user decisions.
 
