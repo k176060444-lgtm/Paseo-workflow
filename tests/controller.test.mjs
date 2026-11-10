@@ -78,6 +78,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     const base={role:x.role,phase:x.phase,agentId,dispatchId,verdict,
       summary:'synthetic test runtime only',findings:verdict==='FAIL'?['needs fixing']:[],
       taskSpec:x.role==='planner'?'Build a tested feature using the approved specification and TDD.':null,
+      userAlignment:x.role==='planner'&&x.phase==='planner'? 'User-facing goal, strategy, constraints and acceptance results are explained plainly for the user before any coding decomposition.':null,
       model:x.task.frozen.roles[x.role].model,harness:x.task.frozen.roles[x.role].harness,
       soulSha256:x.task.frozen.souls[x.role].sha256,
       ...(x.auditBinding?{auditBinding:x.auditBinding}:{} )};
