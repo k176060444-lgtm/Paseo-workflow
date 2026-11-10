@@ -44,6 +44,19 @@ export class IndependentExecutionAttestor {
       req.end(data);
     });
   }
+  async attestReadiness({task,stateSha256,challenge}){
+    assert(task?.id&&task?.frozen?.digest&&
+      /^[a-f0-9-]{36}$/i.test(challenge)&&/^[a-f0-9]{64}$/.test(stateSha256),
+      'observer capability probe lacks original task/challenge identity');
+    // Independent OS observer must verify locally, rather than trusting
+    // claims in this request. It may refuse any unsupported capability.
+    return this.#ask({schema:1,source:'observer-readiness',
+      requiredProtocol:'P1_OBSERVER_READY_V1',taskId:task.id,
+      configSha:task.frozen.digest,stateSha256,challenge,
+      capabilities:['PASEO_AGENT_ORIGINAL_OUTPUT','OBSERVED_MODEL_HARNESS',
+        'FROZEN_SOUL_DIGEST','OS_READONLY_ISOLATION','ORIGINAL_TEST_LOGS'],
+      requestedAt:new Date().toISOString()});
+  }
   async attestPaseo({task,role,phase,commit,agentId,dispatchId,raw,serverId=null}){
     // The server must cross-check all these against the ACTUAL daemon session
     // and fetch raw result itself before signing. These values alone are untrusted.
