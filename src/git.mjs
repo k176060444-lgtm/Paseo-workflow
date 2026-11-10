@@ -1,7 +1,7 @@
 import {spawn,execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import {assert} from './policy.mjs';
+import {assert,sha256} from './policy.mjs';
 
 // Explicit minimum environment for Git, tests and SSH. Do not inherit the Hermes
 // gateway process (which may contain provider tokens and SSH/API credentials).
@@ -138,6 +138,27 @@ export async function commitWorktree(dir,tag) {
 export async function assertUnchanged(dir,sha){
   assert(await head(dir)===sha,'commit changed during read-only/test stage');
   assert(await isClean(dir),'worktree changed during read-only/test stage');
+}
+// Tester runs only in an isolated throwaway checkout. Preserve every tracked
+// file exactly; allow only NEW conventional test cases, never test harness config.
+export async function assertTestWorkspace(dir,commit){
+  assert(await head(dir)===commit,'Tester checkout HEAD changed');
+  const raw=await must('git',['status','--porcelain','-z','--untracked-files=all'],{cwd:dir,raw:true});
+  const files=[];
+  for(const field of raw.split('\0').filter(Boolean)){
+    assert(field.startsWith('?? '),'Tester changed a tracked/staged file; TEST_ONLY violation');
+    const p=field.slice(3);safeChange(dir,p);
+    assert(TEST_PATH.test(p)&&!PROTECTED_TEST_CONFIG.test(p)&&
+      /(?:^|\/)(?:[^/]+\.(?:test|spec)\.[cm]?[jt]sx?|test_[^/]+\.py)$/.test(p),
+      'Tester may add only new independent test case files: '+p);
+    const full=path.resolve(dir,p);
+    assert(fs.lstatSync(full).isFile()&&!fs.lstatSync(full).isSymbolicLink(),
+      'Tester added nonregular test file');
+    const content=fs.readFileSync(full,'utf8');
+    assert(Buffer.byteLength(content)<=512000,'Tester added oversized test case');
+    files.push({path:p,sha256:sha256(content)});
+  }
+  return files.sort((a,b)=>a.path.localeCompare(b.path));
 }
 export async function testRun(dir,commands,taskStore,taskId,prefix){
   const all=[];
