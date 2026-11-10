@@ -305,13 +305,15 @@ test('R6-004 direct Store final close independently checks real worktree HEAD',a
    const approvalFile='approval-5-9-'+proof.statement.nonce+'.json';
    const artifact=x.store.artifact('TASK1234',approvalFile,
      {gate:'5.9',digest:final.currentSha,actor:'user',receipt:message,proof,
-       at:new Date().toISOString()});
+       processProof:proof.processProof,at:new Date().toISOString()});
    const t=x.c.required('TASK1234');
    execFileSync('git',['-C',t.worktree,'checkout','--detach','-q',t.baseSha]);
    t.stage='CLOSED';t.status='APPROVED_FOR_SEPARATE_RELEASE_REVIEW';
    assert.throws(()=>x.store.save(t,'GATE_5.9_APPROVED',{
      digest:final.currentSha,actor:'user',approvalSha256:artifact.sha256,
-     approvalNonce:proof.statement.nonce,approvalFile}),/worktree HEAD|unverified/);
+     approvalNonce:proof.statement.nonce,approvalFile,
+     processNonce:proof.processProof.statement.nonce,
+     processProofSha256:sha256(proof.processProof)}),/worktree HEAD|unverified/);
    assert.equal(x.c.required('TASK1234').stage,'WAIT_GATE_59');
    x.store.verify('TASK1234');
  }finally{finish(x);}
