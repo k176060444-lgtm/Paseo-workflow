@@ -65,7 +65,7 @@ test('R7-003 identical nonce is rejected across distinct tasks and valid signatu
     const procedure=generateKeyPairSync('ed25519');
     const manifest=path.join(root,'trust.json');
     fs.writeFileSync(manifest,JSON.stringify({schema:1,human:{
-      'nonce-auditor':publicKey.export({format:'pem',type:'spki')}},
+      'nonce-auditor':publicKey.export({format:'pem',type:'spki'})},
       procedure:{'independent-process':procedure.publicKey.export({format:'pem',type:'spki'})}}));
     process.env.P1_TRUST_ROOTS_FILE=manifest;
     process.env.P1_TRUST_ROOTS_SHA256=sha256(fs.readFileSync(manifest,'utf8'));
