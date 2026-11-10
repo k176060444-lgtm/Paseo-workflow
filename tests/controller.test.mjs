@@ -62,7 +62,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       runner:'/runner',config:'/config'};
   });
   const matrix=path.join(tmp,'matrix.json');const intent=path.join(tmp,'intent.md');
-  fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']]},roles,p0:{transport:'legacy-hmac',nodes}}));
+  fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']],gateB:{smoke:[['node','--test','smoke']],canary:[['node','--test','canary']],regression:[['node','--test','regression']]}},roles,p0:{transport:'legacy-hmac',nodes}}));
   fs.writeFileSync(intent,'Implement a precise and approved programming feature with fully independent review.');
   const store=new Store(path.join(tmp,'state'));
   let workerCount=0,remCount=0,reportCount=0,modelCalls=[];
@@ -125,7 +125,8 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     verifyCommitEvidenceSync,
     testRun:async (dir,commands,store,id,phase)=>{
       const sha=g(dir,'rev-parse','HEAD');
-      const bare={pass:true,receipts:[{code:0,ok:true,argv:['node','--test'],logSha256:'0'.repeat(64)}]};
+      const bare={pass:true,receipts:commands.map(argv=>({
+        code:0,ok:true,argv,logSha256:sha256({argv,phase})}))};
       return {...bare,attestation:attest({taskId:id,role:'test_executor',phase,
         commit:sha,agentId:'',dispatchId:'',
         rawSha256:sha256({sha,tests:bare})})};
@@ -156,7 +157,12 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     return {commit,cycle,reports,findings,passed:findings.length===0&&!conflicting,
       dispute:conflicting,skipped:[],cancelled:[]};
   }};
-  const c=new WorkflowController({store,runtime,p0,gitOps});
+  const witness={attestTests:async({task,phase,sha,tests})=>{
+    const {attestation,...bare}=tests;
+    return attest({taskId:task.id,role:'test_executor',phase,commit:sha,
+      agentId:'',dispatchId:'',rawSha256:sha256({sha,tests:bare})});
+  }};
+  const c=new WorkflowController({store,runtime,p0,gitOps,attestor:witness});
   const create=c.create({id:'TASK1234',configFile:matrix,intentFile:intent});
   const receipt01='Explicit user approval of goal and role-matrix digest.';
   c.approve({id:'TASK1234',gate:'0.1',digest:create.digest,actor:'user',
@@ -257,7 +263,7 @@ test('real config/ and souls/ sibling layout freezes without path escape',async(
    if(!role.startsWith('blind_'))Object.assign(roles[role],{harness:'codex',model:'codex/approved-model'});
  }
  const cf=path.join(configdir,'matrix.json'),intent=path.join(configdir,'intent.md');
- fs.writeFileSync(cf,JSON.stringify({schema:1,project:{repo:'../source',baseRef:'HEAD'},tests:{commands:[['node','--test']]},roles}));
+ fs.writeFileSync(cf,JSON.stringify({schema:1,project:{repo:'../source',baseRef:'HEAD'},tests:{commands:[['node','--test']],gateB:{smoke:[['node','--test','smoke']],canary:[['node','--test','canary']],regression:[['node','--test','regression']]}},roles}));
  fs.writeFileSync(intent,'The human-approved intent is a documented test feature with independent review.');
  const store=new Store(path.join(tmp,'state'));
  try{
