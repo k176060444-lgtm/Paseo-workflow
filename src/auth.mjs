@@ -111,8 +111,12 @@ export function verifyHumanApproval(roots,envelope,{
       typeof evidenceRoot==='string'&&/^[0-9a-f]{64}$/.test(evidenceRoot)&&
       s.evidenceRoot===evidenceRoot,
       'Gate 5.9 signature must bind final compliance evidence SHA-256');
+  else if(gate==='incident')
+    assert(typeof evidenceSha256==='string'&&/^[a-f0-9]{64}$/.test(evidenceSha256)&&
+      s.evidenceSha256===evidenceSha256&&s.evidenceRoot===undefined,
+      'incident reconciliation approval must bind exact original incident evidence');
   else assert(s.evidenceSha256===undefined&&s.evidenceRoot===undefined,
-    'only final Gate 5.9 can carry compliance evidence binding');
+    'only final Gate 5.9 or incident review may bind evidence');
   assert(typeof s.nonce==='string'&&/^[a-f0-9-]{36}$/i.test(s.nonce),
     'human approval nonce missing');
   assert(typeof s.issuedAt==='string','human approval timestamp missing');
