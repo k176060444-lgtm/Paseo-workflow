@@ -7,7 +7,7 @@ import {execFileSync} from 'node:child_process';
 import {generateKeyPairSync,sign,createHmac,randomUUID} from 'node:crypto';
 import {Store} from '../src/store.mjs';
 import {WorkflowController} from '../src/controller.mjs';
-import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical} from '../src/policy.mjs';
+import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical,verifyGateBTests} from '../src/policy.mjs';
 import {verifyCommitEvidenceSync} from '../src/git.mjs';
 
 function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false}={}) {
@@ -439,4 +439,54 @@ test('unapproved WORK_PLAN drift fails independent scope review before any Worke
   assert(x.modelCalls.includes('spec_reviewer'));
   x.store.verify('TASK1234');
  }finally{finish(x);}
+});
+
+test('Tester B executes and preserves three separate exact approved command layers',async()=>{
+  const x=setup();try{
+    await movePastPlanning(x);
+    const visited=[],original=x.gitOps.testRun;
+    x.gitOps.testRun=async(dir,commands,store,id,phase)=>{
+      visited.push({phase,commands});
+      return original(dir,commands,store,id,phase);
+    };
+    const result=await x.c.run('TASK1234');
+    assert.equal(result.stage,'WAIT_GATE_59');
+    const last=x.c.required('TASK1234');
+    assert.equal(verifyGateBTests(last),true);
+    assert.deepEqual(visited.filter(v=>v.phase.startsWith('B1-test-')).map(v=>v.phase),
+      ['B1-test-smoke','B1-test-canary','B1-test-regression']);
+    for(const layer of ['smoke','canary','regression']){
+      const call=visited.find(v=>v.phase==='B1-test-'+layer);
+      assert.deepEqual(call.commands,last.frozen.tests.gateB[layer]);
+      assert.equal(last.lastB.tests.layers[layer].pass,true);
+    }
+    assert.equal(last.lastB.tests.receipts.length,3);
+  }finally{finish(x);}
+});
+test('Gate B cannot be certified if one layer is omitted, command is swapped, or receipt tampered',async()=>{
+  const x=setup();try{
+    await movePastPlanning(x);
+    await x.c.run('TASK1234');
+    const t=x.c.required('TASK1234'),original=structuredClone(t.lastB);
+    assert.equal(verifyGateBTests(t),true);
+    delete t.lastB.tests.layers.canary;
+    assert.throws(()=>verifyGateBTests(t),/Tester B canary/);
+    t.lastB=structuredClone(original);
+    t.lastB.tests.layers.regression.receipts[0].argv=['node','--test','weakened'];
+    assert.throws(()=>verifyGateBTests(t),/outside the approved matrix/);
+    t.lastB=structuredClone(original);
+    t.lastB.tests.receipts=[];
+    assert.throws(()=>verifyGateBTests(t),/flattened original receipts/);
+    t.lastB=structuredClone(original);
+    assert.equal(verifyGateBTests(t),true);
+    x.store.verify('TASK1234');
+  }finally{finish(x);}
+});
+test('unapproved test command cannot be exposed as an OpenCode tool permission',()=>{
+  const allowed=providerOptions('tester_gate_b','opencode',
+    [['git','diff','--check'],['npm','test'],['node','-e','console.log(1)']]).permission.bash;
+  assert.equal(allowed['git diff --check'],'allow');
+  assert.equal(allowed['npm test'],'allow');
+  assert.equal(allowed['node -e console.log(1)'],undefined);
+  assert.equal(allowed['*'],'deny');
 });
