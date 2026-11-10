@@ -125,7 +125,7 @@ async function main(){
         observations,manualReconciliationRequired:true};
     }
     else if(cmd==='approve')result=await store.withLock(need(a,'id'),()=>controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a),proof:approvalProof(a),processProof:processProof(a)}));
-    else if(cmd==='incident-close')result=await store.withLock(need(a,'id'),()=>controller.certifyIncident({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a)}));
+    else if(cmd==='incident-close')result=await store.withLock(need(a,'id'),()=>controller.certifyIncident({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a),processProof:processProof(a)}));
     else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a)}));
     else if(cmd==='run'){
       const task=controller.required(need(a,'id'));
