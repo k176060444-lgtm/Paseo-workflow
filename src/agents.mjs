@@ -41,7 +41,7 @@ export class PaseoAgentRuntime {
     store.recordIntent(task.id,phase,dispatchId);
     // A create ACK is not proof that the provider ran. A lost ACK is UNCERTAIN, not retryable.
     const agent=await this.client.agents.create({
-      config:{provider:cfg.model,systemPrompt:soul.text,options:providerOptions(role,cfg.harness)},
+      config:{provider:cfg.model,systemPrompt:soul.text,options:providerOptions(role,cfg.harness,task.frozen.tests?.commands??[])},
       cwd, title:`${task.id}:${phase}:${role}`, prompt,
       outputSchema:AGENT_SCHEMA,
       labels:{'p1-task':task.id,'p1-phase':phase,'p1-role':role,'p1-soul-sha':soul.sha256},
