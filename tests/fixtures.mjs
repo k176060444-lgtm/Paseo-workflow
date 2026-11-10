@@ -23,6 +23,22 @@ export function resealSyntheticState(store,state) {
   }catch(e){store.db.exec('ROLLBACK');throw e;}
   store.verify(id);
 }
+// Adversarial fixture ONLY: emulate the final event becoming uncertain after
+// all independently attested executions have already been registered.
+export function resealLastEventSyntheticState(store,state){
+  const id=state.id,last=store.db.prepare(
+    'SELECT * FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id);
+  assert(last,'synthetic incident reseal requires an existing completed event');
+  const body=canonical({...JSON.parse(last.payload),_state_sha256:sha256(state)});
+  const digest=sha256({id,type:last.type,body,previous:last.previous,at:last.at});
+  store.db.exec('BEGIN IMMEDIATE');
+  try{
+    store.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(canonical(state),id);
+    store.db.prepare('UPDATE events SET payload=?,digest=? WHERE seq=?').run(body,digest,last.seq);
+    store.db.exec('COMMIT');
+  }catch(e){store.db.exec('ROLLBACK');throw e;}
+  store.verify(id);
+}
 export function seedSyntheticTask(store,task) {
   const id=task.id;
   const frozen={...(task.frozen??{})};
