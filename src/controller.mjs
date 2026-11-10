@@ -78,6 +78,18 @@ export class WorkflowController {
     assert(process.env.P1_HOST_ISOLATION_ATTESTED==='YES','host isolation has not been attested');
     this.assertFrozenIntegrity(t);
     this.compliance(t);
+    assert(t.trustRootSha256!==null&&
+      t.trustRootSha256===this.store.trustRootDigest(),
+      'trusted signer manifest missing/drifted before first model dispatch');
+    if(t.frozen.p0?.transport==='paseo'){
+      assert(this.attestor&&this.runtime?.client,
+        'independent execution witness and local Paseo connection required before model dispatch');
+      assert(this.store.p0TrustRoots()?.size>=2,
+        'two independent P0 public signing keys must be pinned before model dispatch');
+      assert(typeof this.p0?.validateInventory==='function',
+        'P0 inventory verifier missing before model dispatch');
+      this.p0.validateInventory();
+    }
   }
   compliance(t){
     this.store.verify(t.id);
