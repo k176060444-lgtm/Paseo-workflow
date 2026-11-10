@@ -162,10 +162,11 @@ function finish(x){
   fs.rmSync(x.tmp,{recursive:true,force:true});
 }
 
-test('happy path uses exactly one Gate A and Gate B round, skips remediation and arbitration',async()=>{
+test('happy path skips unnecessary remediation but always runs final Arbitrator',async()=>{
  const x=setup();try{await movePastPlanning(x);const result=await x.c.run('TASK1234');
  assert.equal(result.stage,'WAIT_GATE_59');assert.equal(result.aRound,1);assert.equal(result.bRound,1);
- assert.equal(x.getP0Calls(),1);assert(!x.modelCalls.includes('worker_remediation'));assert(!x.modelCalls.includes('arbitrator'));
+ assert.equal(x.getP0Calls(),1);assert(!x.modelCalls.includes('worker_remediation'));assert(x.modelCalls.includes('arbitrator'));
+ assert(x.modelCalls.filter(q=>q==='pro_audit').length>10);
  const ledger=x.store.verify('TASK1234');assert(ledger.events>10);
  const msg='User authorizes closing P1; separate deployment remains out of scope.';
  x.c.approve({id:'TASK1234',gate:'5.9',digest:result.currentSha,actor:'user',
@@ -242,7 +243,7 @@ test('real config/ and souls/ sibling layout freezes without path escape',async(
    const c=new WorkflowController({store,runtime:null,p0:null});
    const res=c.create({id:'TASK5678',configFile:cf,intentFile:intent});
    assert.equal(res.stage,'WAIT_GATE_01');
-   assert.equal(Object.keys(c.required('TASK5678').frozen.souls).length,11);
+   assert.equal(Object.keys(c.required('TASK5678').frozen.souls).length,12);
  }finally{store.close();fs.rmSync(tmp,{recursive:true,force:true});}
 });
 
