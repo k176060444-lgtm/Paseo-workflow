@@ -1,42 +1,70 @@
-# Paseo-workflow — Hermes P1 Coding Pipeline V2.1
+# Paseo-workflow — Coding Pipeline V2.2 mainline correction candidate
 
-> **代码交付 / 待本地独立审计 / 默认禁止真实执行**。本仓库不是一键可投入生产的系统：尚未在用户的 Windows 21bao、Debian 5bao/9bao 或华为云 rusty 上联调；不得将离线测试 PASS 写成真实模型、OS 隔离或 P0 物理身份验收通过。
+**Status (2026-11-10): source remediation + offline CI only; NOT approved for live Coding, paid Provider calls, deployment or production.** Existing historical R2–R8 documents are retained as evidence and do not supersede this README or current user decisions.
 
-[Workflow 设计](docs/ARCHITECTURE.md) · [安全边界与未验证项目](docs/SECURITY.md) · [本地审计清单](docs/AUDIT_HANDOFF.md)
+## User-approved purpose
 
-## V2.1 确认的业务规则
+Correctly implement the **user's real Coding goal**, not merely pass tests. User approves actual requirements, important strategy and the **model + Harness assignment matrix**; technical implementation and file-level choices remain with professional agents. Do not broaden scope or allow incidental issues to derail the Coding mainline.
 
-- QQBot/Hermes 是人机入口，独立 Controller 是**唯一正式工作流调度方**，Paseo 是本机 Codex/OpenCode Agent 执行层。
-- Role Matrix 只决定模型、Harness、Soul；角色权限与 Gate 规则固定在代码，单个任务启动时快照+SHA256 冻结。
-- Gate 0.1 人工批准目标/角色配置；Planner 输出 TASK_SPEC；Gate 0.2 人工批准精确 SHA；Worker、Spec/Quality 双审、Tester A 构成 **Gate A 最多 10 轮（含首轮）**。
-- P0 至少 **2 台不同物理节点**有效盲审（5bao、9bao、rusty 三个候选；rusty 可不启用）；第三席在两份有效结果后最多再等 600 秒；每份报告必须绑定确切 Commit。
-- P0 无需整改时跳过 Worker Remediation；仍需 Tester B。否则 Worker Remediation → 重新审查改动 → Tester B → **修改后的最终 Commit 必须重新 P0 盲审**；构成 **Gate B 最多 10 轮**，重审不刷新预算。
-- Arbitrator 只在实质技术冲突时触发；不能替代真实测试或覆盖不合规的 P0 报告。
-- Compliance Gate 在关键阶段转换及最终汇总检查状态、身份、版本、证据。真实违规**停线 + 人工批准后的受控恢复**；不保留自动 2 次合规回溯。
-- 对账不清楚 **不自动重派**；Gate 5.9 等待人工批准，绝不自动 merge/push/deploy/restart/cleanup。
+Hermes → independent Workflow Controller → Paseo SDK → local Codex/OpenCode or remote OpenCode. The rusty optional Reviewer seat uses the **native Hermes A2A tool bridge**, not Paseo and not SSH.
 
-## 运行环境与技术选择
+## End-to-end Coding flow
 
-- Controller：Node.js **22+**（建议 24 LTS，Node 22 内置 `node:sqlite` 仍可能显示实验性警告）、SQLite 持久状态账本、原生 `git` 命令、Paseo TypeScript/JS SDK `@getpaseo/client@0.15.2`。
-- 21bao：Paseo Windows App 已可手动调用 Codex 与 OpenCode（用户 2026-11-08 确认）；**本 Controller 尚未完成 SDK/OS/身份实测**。本项目不自动安装、接管 App、修改已有 Harness 或调用收费 Provider。
-- 5bao/9bao：已安装 OpenCode，**无需安装 Paseo**。提供独立 `remote/p0_runner.py`，通过已有 SSH 连接进行持久 Job 执行与查询。
-- rusty：可选候选；远端执行器允许通过 `command`（argv + stdin JSON 请求/JSON 输出约定）运行 rusty 本身的 Native Harness，不强制 rusty 参加。未验证的命令不能填入后直接启用。
-- 角色 Soul：`souls/*.md` 取自用户现有 [Hermes-Coding-Role-Souls](https://github.com/k176060444-lgtm/Hermes-Coding-Role-Souls) 和原 P1 Blind 文件。版本来源见 [SOUL_PROVENANCE](docs/SOUL_PROVENANCE.md)，旧 Soul 对 Pro-Audit/常驻 Arbitrator 的历史用语，必须在独立审计时与 V2.1 优先规则协调。
+1. **Gate 0.1**: explicitly approve user intent, strategy bounds and frozen model/Harness matrix.
+2. **Planner alignment**: restate the user's objective, constraints, suggested method and decisions **in plain Chinese**, without inappropriate analogies or implementation minutiae. Form a high-level candidate TASK_SPEC only.
+3. **Gate 0.2**: human explicitly approves the *actual candidate alignment/spec SHA*. Prior to approval **no detailed Coding task decomposition**.
+4. **Planner Detail**: after approval, write and freeze `WORK_PLAN.md` and detailed TDD/atomic tasks without changing approved scope.
+5. **Gate A (up to 10 rounds)**: Worker → independent parallel Spec Reviewer and Quality Reviewer on exact Commit → independent Tester A and frozen command evidence.
+6. **P0 initial**: ≥2 physically independent verified Blind Review reports on exact Commit (5bao/9bao are the primary Paseo candidates; rusty is optional A2A).
+7. **Gate B (up to 10 rounds)**: when no confirmed remediation is required skip Worker Remediation; otherwise targeted remediation → changed Commit → two independent re-reviews; Tester B must verify Smoke/Canary/Regression. A modified final Commit requires renewed P0 evidence. Neither an unverified P0 result nor a technical disagreement becomes PASS by assumption.
+8. **Arbitrator — mandatory final technical acceptance**: even without disagreement, verify actual code completeness, unimplemented requirements, alignment to the **original user intent**, and consistency with exact final Commit evidence. On substantive technical disputes, Arbitrator gives the final technical ruling; it cannot waive missing verifiable P0, tests or compliance.
+9. **Final Compliance Gate**: confirm the complete *process* evidence, including authenticated Pro-Audit PRE/POST receipts and the final Arbitrator; no technical verdict.
+10. **Gate 5.9**: human decision, without automatic push/merge/deploy/restart.
 
-## 本地离线验收（不调用模型，不需要安装 Paseo）
+**At every individual role dispatch**, `pro_audit` executes PRE and POST checks and records independently signed original evidence, including both reviewers, the independent test execution, P0, and final Arbitrator. It checks **process only**: approved inputs, sequence, permissions, matrix, evidence, exact Commits and authorization; never code quality. The deterministic Store checks every transition too. Any material violation stops the line; manual approval and reconciliation are required before recovery. Do not retry uncertain provider/A2A calls automatically.
+
+## Twelve roles
+
+`planner`, `worker`, `spec_reviewer`, `quality_reviewer`, `tester_gate_a`, `worker_remediation`, `tester_gate_b`, `arbitrator`, `pro_audit`, and external `blind_a`, `blind_b`, `blind_c`. Frozen Soul sources and their changes are documented in `docs/SOUL_PROVENANCE.md`. Soul text is a **soft** behavioral contract; the Controller, operating system and independent witness must enforce actual boundaries.
+
+## Verified cluster facts, 2026-11-10
+
+| Node | Transport | Verified | NOT verified |
+|---|---|---|---|
+| 21bao | local Paseo daemon 0.15.3 at loopback `127.0.0.1:6767/ws` | SDK connection; Codex/OpenCode provider discovery | full production orchestration |
+| 5bao | authenticated direct Paseo SDK `ws://192.168.5.6:6767/ws` | daemon `srv_X18iC2z6z-sS`, OpenCode detected | paid remote Agent lifecycle, physical identity, signed P0 |
+| 9bao | authenticated direct Paseo SDK `ws://192.168.9.6:6767/ws` | daemon `srv_TjihQm2fgp_k`, OpenCode detected | same |
+| rusty | native Hermes peer `rustyhand` using Bearer + A2A | authenticated Agent Card discovery | A2A Task ID/results, independent remote Reviewer, signed third seat |
+
+The remote Paseo SDK connects **directly** with separately approved password environment variables `PASEO_5BAO_PASSWORD` and `PASEO_9BAO_PASSWORD`. No credentials are included in the repo, printed or uploaded. Direct daemon connections do **not** require local `hosts.list()` registration, which is currently empty on 21bao. `src/p0_paseo.mjs` supports both pinned direct SDK and historical native Connected Hosts routing without SSH fallback.
+
+`ws://` is **not encrypted**: using authenticated private-LAN endpoints is only a preliminary connection capability, not a substitute for independently approved encrypted transport, network boundary, credential security and OS isolation for real workloads.
+
+rusty: `src/p0_a2a.mjs` defines a strictly authenticated **native Hermes A2A tool bridge contract**, not an alternate protocol implementation. A2A task lifecycle and signed result are unverified; the standalone CLI refuses to enable rusty until a real native bridge, remote Task ID and independently pinned signing identity exist. No fabricated Task IDs or inferred model results.
+
+## Source organization
+
+- `src/controller.mjs` — gated Coding state machine, role PRE/POST, two-stage Planner, mandatory final Arbitrator.
+- `src/policy.mjs` — code-fixed role permissions and 10+10 budget.
+- `src/store.mjs` — immutable frozen context, SQLite ledger, signed execution and exact-Commit verification, final Pro-Audit coverage.
+- `src/agents.mjs` — Paseo native local SDK, Soul injection and Agent lifecycle.
+- `src/p0_paseo.mjs` — Paseo direct/Connected Hosts P0, authenticated per-node witness, 2 physical node quorum.
+- `src/p0_a2a.mjs` — optional native Hermes A2A bridge contract (not yet live wired).
+- `src/attestor.mjs` — client of **external independent** execution/OS witness service (not bundled).
+- `src/p0.mjs` and `remote/p0_runner.py` — quarantined legacy fixtures; `ssh()` always throws; not live transport.
+- `souls/*.md`, `config/role-matrix.example.json` — behavior and unapproved sample assignments.
+
+## Offline checks
 
 ```bash
-node --version
+npm run check
 npm test
 python3 -m unittest discover -s remote/tests -v
-npm run check
 ```
 
-预期：Node 状态机/权限/P0 模拟测试及 Python 远端原生 Harness 模拟测试均应 PASS；这只能证明离线行为。
+These tests use simulations and do not invoke paid models or validate a live cluster. The GitHub Actions workflow runs them on the isolated remediation branch.
 
-## 操作入口（**只读或初始化，不调用模型**）
-
-先备份本地配置，再把 `config/role-matrix.example.json` 复制为不入库的 `config/role-matrix.json`；将 `project.repo` 改为**真实的本地目标代码仓库**，替换所有模型为本机**实际发现且已获批准的 Provider/Model ID**，明确 Gate 0.1 需要批准的测试命令。`config/intent.example.md` 也只是示例。
+## Manual commands (do not use with real tasks until independently approved)
 
 ```bash
 node src/cli.mjs help
@@ -45,30 +73,8 @@ node src/cli.mjs status --id TASK1234
 node src/cli.mjs verify --id TASK1234
 ```
 
-`init` 会创建本地 `.p1-state/`；不调用任何模型。查看它输出的冻结配置 SHA。
+`init` creates local state files (not a paid model task). Signed human approval and `run` additionally require independent trust roots, signed gate receipts, real OS isolation, remote per-node witness and explicit authorization. `P1_LIVE_ALLOWED=YES` and `P1_HOST_ISOLATION_ATTESTED=YES` alone are **not** proof of readiness.
 
-正式 `approve` 需要独立的 Ed25519 签名凭据（`--approval-proof SIGNED_JSON`），以及 `--actor`、`--receipt`、准确 `--digest`。必须由独立于 Controller/Paseo 的密钥持有者签发。公开密钥清单通过 `P1_TRUST_ROOTS_FILE` 加载，并由从受保护配置提供的 `P1_TRUST_ROOTS_SHA256` 固定；没有合法签名**不能通过任何人工 Gate**。测试用私钥只能在离线临时测试中生成，不能作为生产身份。
- 
-本轮 R6 的完整信任设计、现阶段未完成事项及本机 Paseo SDK 测试分界见 [R6 信任边界说明](docs/R6_AUTHENTICATED_EVIDENCE_20261108.md)。
+**Current blockers**: real 21bao/rusty task execution not attested, independent execution/witness service not provisioned, full remote physical node/OS ACL identity not verified, standalone Hermes A2A bridge not attached, existing state DB migration unapproved, TEST_ONLY addition-of-test-files support not fully implemented. Never claim complete real integration from CI PASS.
 
-**`run` 默认硬阻断**：只有完成独立本地审计、OS 隔离与角色权限验收、Paseo/模型真实联调、P0 身份和双机验收，并且人为提供 `P1_LIVE_ALLOWED=YES` 与 `P1_HOST_ISOLATION_ATTESTED=YES` 后才可能启动。环境变量仅是操作员确认，不是安全沙箱本身。不要为了使测试通过而打开它们。
-
-## 文件导航
-
-| 路径 | 用途 |
-|---|---|
-| `src/controller.mjs` | Gate 0.1/0.2/5.9、10+10 状态机、合规阻断、受控恢复 |
-| `src/policy.mjs` | 固定角色权限、模型/Soul 冻结、Agent 输出契约 |
-| `src/agents.mjs` | Paseo SDK 适配器，Agent ID/派发日志/Soul 注入 |
-| `src/p0.mjs` | SSH/P0 Job Adapter、双节点认证、两席优先+第三席 600s |
-| `remote/p0_runner.py` | OpenCode 或 rusty 原生 Harness 的远端持久 Job |
-| `src/store.mjs` | SQLite 全事务阶段状态、哈希链、不可覆盖的证据文件 |
-| `src/git.mjs` | 安全 Git worktree、候选 Commit、独立测试命令与原始日志 |
-| `tests/`, `remote/tests/` | 完全离线、无付费 Provider 调用的自动化验证 |
-| `config/*.example.json` | **未批准**的配置示例，不含凭据 |
-
-## 出口边界
-
-`Gate 5.9` 用户批准只会把工作流标记为 `CLOSED`，**不会自动执行生产发布**。本项目没有 Deploy/Merge/Push 生产环境命令。
-
-本仓库在 Github 上可能公开；不要提交 Secret、HMAC 私钥、模型 API key、SSH 私钥或包含隐私的任务记录。P0 每台节点都需要独立的强随机本地密钥，5bao/9bao 的物理身份必须由部署人员独立核实。
+For binding and safety details see `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, and `docs/REMEDIATION_20261110.md`.
