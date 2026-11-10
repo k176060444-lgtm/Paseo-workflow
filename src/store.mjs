@@ -386,7 +386,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'authenticated recovery artifact missing');
     const data=JSON.parse(this.#requireArtifact(oldTask.id,name,payload.evidenceSha256));
     const basis=oldTask.currentSha??oldTask.taskSpecSha??oldTask.frozen.digest;
-    assert(data.origin==='BLOCKED'&&data.target===nextTask.stage&&
+    assert(data.origin===oldTask.stage&&data.target===nextTask.stage&&
       data.actor===payload.actor&&data.expectedSha===(oldTask.currentSha??null)&&
       data.expectedBasis===(oldTask.currentSha?null:oldTask.taskSpecSha??oldTask.frozen.digest),
       'recovery artifact/target/basis mismatch');
@@ -468,8 +468,13 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
          type==='P0_COMPLETE'||type==='REVIEW_PAIR_UNCERTAIN')
         assert(oldTask.status==='INFLIGHT',`event ${type} requires in-flight execution`);
     }else if(type==='HUMAN_CONTROLLED_RECOVERY'){
-      assert(oldTask.stage==='BLOCKED'&&oldTask.status==='BLOCKED'&&
-        ['PLANNER','PREPARE','A_WORKER','B_ENTER'].includes(t.stage)&&t.status==='READY',
+      assert(((oldTask.stage==='BLOCKED'&&['BLOCKED','WAITING_HUMAN'].includes(oldTask.status))||
+        (oldTask.stage==='WAIT_HUMAN'&&oldTask.status==='WAITING_HUMAN'))&&
+        ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST',
+          'B_ENTER','B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.stage)&&
+        t.status==='READY'&&!oldTask.inflight&&
+        (oldTask.blockedStage?oldTask.blockedStage===t.stage:
+          oldTask.stage==='BLOCKED'&&!oldTask.taskSpecSha&&t.stage==='PLANNER'),
         'recovery cannot skip a stage or clear unresolved state');
       this.#verifyRecoveryReceipt(oldTask,t,payload);
     }else if(type==='AWAITING_CLARIFICATION'||type==='COMPLIANCE_OR_INFRA_BLOCK'){
