@@ -127,8 +127,12 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     verifyCommitEvidenceSync,
     testRun:async (dir,commands,store,id,phase)=>{
       const sha=g(dir,'rev-parse','HEAD');
-      const bare={pass:true,receipts:commands.map(argv=>({
-        code:0,ok:true,argv,logSha256:sha256({argv,phase})}))};
+      const bare={pass:true,receipts:commands.map((argv,i)=>{
+        const log=store.artifact(id,phase+'-test-'+(i+1)+'.json',
+          {argv,code:0,stdout:'synthetic offline test output',stderr:'',
+            timedOut:false,truncated:false});
+        return {code:0,ok:true,argv,logSha256:log.sha256,logPath:log.path};
+      })};
       return {...bare,attestation:attest({taskId:id,role:'test_executor',phase,
         commit:sha,agentId:'',dispatchId:'',
         rawSha256:sha256({sha,tests:bare})})};
