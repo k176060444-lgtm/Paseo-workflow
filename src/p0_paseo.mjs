@@ -222,8 +222,18 @@ export class PaseoP0Adapter{
     }finally{await Promise.allSettled(ready.map(x=>closeClient(x.remote)));}
   }
   async reconcileByLabels(node,{taskId,cycle,jobId,commit}){
-    assert(this.client?.hosts?.client,'P0 Paseo connection unavailable');
-    const remote=await this.client.hosts.client(node.serverId);
+    let remote;
+    if(node.paseoUrl){
+      const url=validatedEndpoint(node);
+      const password=process.env[node.passwordEnv];
+      assert(password,'approved Paseo remote credential missing; no blind retry');
+      remote=await this.directClientFactory({url,password,node});
+      const identity=await remote.hosts.list();
+      assert(identity?.self?.serverId===node.serverId,'remote identity drift during reconciliation');
+    }else{
+      assert(this.client?.hosts?.client,'P0 Paseo connection unavailable');
+      remote=await this.client.hosts.client(node.serverId);
+    }
     try{
       const data=await remote.agents.list({includeBackground:true});
       const list=Array.isArray(data)?data:data?.entries??[];
