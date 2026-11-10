@@ -40,6 +40,17 @@ export function freezeConfig(configFile, intentFile) {
   for (const cmd of config.tests.commands) {
     assert(Array.isArray(cmd) && cmd.length >= 2 && cmd.every(x => typeof x === 'string' && x.length), 'test commands must be argv arrays');
   }
+  // Gate B MUST run three separately approved layers. A single repeated
+  // generic test command cannot be silently presented as Smoke/Canary/Regression.
+  const layers=config.tests.gateB;
+  assert(layers&&typeof layers==='object'&&!Array.isArray(layers),
+    'Gate B needs user-approved smoke/canary/regression command matrix');
+  for(const layer of ['smoke','canary','regression']){
+    const group=layers[layer];
+    assert(Array.isArray(group)&&group.length>0&&group.every(cmd=>
+      Array.isArray(cmd)&&cmd.length>=2&&cmd.every(a=>typeof a==='string'&&a.length>0)),
+      'Gate B '+layer+' must have independently approved argv commands');
+  }
   const souls = {};
   const resolvedRoles = {};
   for (const role of LOCAL_ROLES) {
@@ -72,6 +83,30 @@ export function freezeConfig(configFile, intentFile) {
   return frozen;
 }
 
+export const GATE_B_LAYERS=Object.freeze(['smoke','canary','regression']);
+export function verifyGateBTests(t){
+  const matrix=t?.frozen?.tests?.gateB,tests=t?.lastB?.tests;
+  assert(matrix&&tests?.pass===true&&tests.layers&&Array.isArray(tests.receipts),
+    'Tester B missing independently approved complete Smoke/Canary/Regression receipts');
+  const flattened=[];
+  for(const layer of GATE_B_LAYERS){
+    const approved=matrix[layer],recorded=tests.layers[layer];
+    assert(Array.isArray(approved)&&approved.length>0&&recorded?.pass===true&&
+      Array.isArray(recorded.receipts)&&recorded.receipts.length===approved.length,
+      'Tester B '+layer+' has missing or failed evidence');
+    for(let i=0;i<approved.length;i++){
+      const receipt=recorded.receipts[i];
+      assert(receipt?.ok===true&&receipt.code===0&&
+        sha256(receipt.argv)===sha256(approved[i])&&
+        /^[a-f0-9]{64}$/.test(receipt.logSha256??''),
+        'Tester B '+layer+' executed a command outside the approved matrix');
+      flattened.push({...receipt,layer});
+    }
+  }
+  assert(sha256(flattened)===sha256(tests.receipts),
+    'Tester B flattened original receipts do not match three authenticated layers');
+  return true;
+}
 function approvedTestBash(commands=[]){
   const allowed={'*':'deny','git status':'allow','git diff':'allow'};
   const binaries=new Set(['node','npm','pnpm','yarn','python','python3','pytest',
