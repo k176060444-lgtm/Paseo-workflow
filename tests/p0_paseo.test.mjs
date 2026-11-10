@@ -113,3 +113,65 @@ test('Paseo P0: duplicate physical node and SSH transport rejected',()=>{
   const y=mock();y.nodes[1].transport='ssh';
   assert.throws(()=>adapter(y).validateInventory(),/only permits pinned direct/);
 });
+
+
+test('Paseo P0: real-layout direct SDK path authenticates each daemon without registered Hosts',async()=>{
+  const x=mock();
+  x.nodes[2].enabled=false;
+  const observed=[];
+  for(const n of x.nodes.slice(0,2)){
+    n.paseoUrl=n.id==='5bao'?'ws://192.168.5.6:6767/ws':'ws://192.168.9.6:6767/ws';
+    n.passwordEnv='PASEO_'+n.id.toUpperCase()+'_PASSWORD';
+  }
+  const envs=x.nodes.slice(0,2).map(n=>[n.passwordEnv,process.env[n.passwordEnv]]);
+  for(const [name] of envs)process.env[name]='synthetic-test-only';
+  try{
+    const directClientFactory=async({url,password,node})=>{
+      observed.push({url,password:password==='synthetic-test-only',nodeId:node.id});
+      const remote=await x.client.hosts.client(node.serverId);
+      return {
+        ...remote,
+        hosts:{list:async()=>({self:{serverId:node.serverId}})},
+        providers:{listAvailable:async()=>({opencode:true})},
+        workspaces:{ref:id=>({refresh:async()=>({workspace:{workspaceDirectory:node.cwd,id}})})},
+        close:async()=>{},
+      };
+    };
+    const result=await adapter(x,{directClientFactory}).review({
+      task:x.task,commit:'a'.repeat(40),taskSpec:'Approved synthetic requirement',
+      store:x.store,cycle:'initial-A1'});
+    assert.equal(result.passed,true);
+    assert.equal(result.reports.length,2);
+    assert.equal(observed.length,2);
+    assert(observed.every(x=>x.password));
+    assert.deepEqual(new Set(observed.map(x=>x.nodeId)),new Set(['5bao','9bao']));
+  }finally{
+    for(const [name,old] of envs){
+      if(old===undefined)delete process.env[name];else process.env[name]=old;
+    }
+  }
+});
+test('Paseo P0: direct SDK mismatch of serverId fails closed before remote Agent creation',async()=>{
+  const x=mock();
+  x.nodes[2].enabled=false;
+  for(const n of x.nodes.slice(0,2)){
+    n.paseoUrl='ws://192.168.5.6:6767/ws';
+    n.passwordEnv='PASEO_TEST_PASSWORD';
+  }
+  const old=process.env.PASEO_TEST_PASSWORD;
+  process.env.PASEO_TEST_PASSWORD='synthetic-test-only';
+  try{
+    const directClientFactory=async({node})=>{
+      const remote=await x.client.hosts.client(node.serverId);
+      return {...remote,hosts:{list:async()=>({self:{serverId:'wrong-id'}})},
+        providers:{listAvailable:async()=>({opencode:true})},close:async()=>{}};
+    };
+    await assert.rejects(()=>adapter(x,{directClientFactory}).review({
+      task:x.task,commit:'a'.repeat(40),taskSpec:'Synthetic',store:x.store,
+      cycle:'initial-A1'}),/P0 requires 2 authenticated/);
+    assert.equal(x.seen.created.length,0);
+  }finally{
+    if(old===undefined)delete process.env.PASEO_TEST_PASSWORD;
+    else process.env.PASEO_TEST_PASSWORD=old;
+  }
+});
