@@ -61,6 +61,11 @@
       "model": "codex/gpt-5.5",
       "soul": "../souls/arbitrator.md"
     },
+    "pro_audit": {
+      "harness": "opencode",
+      "model": "opencode/approved-model",
+      "soul": "../souls/pro_audit.md"
+    },
     "blind_a": {
       "soul": "../souls/blind_a.md"
     },
