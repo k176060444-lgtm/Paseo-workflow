@@ -204,7 +204,7 @@ test('signed human recovery cannot re-run an apparently TERMINAL Agent whose ori
     w.store.recordTerminal('unrecorded-dispatch');
     const msg='Human explicitly approves recovery after independent incident review.';
     const basis=w.store.get(w.id).frozen.digest;
-    const proof=w.proof('recovery',basis,'human',msg);
+    const proof=w.proof('recovery',basis,'human',msg,w.store);
     assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'human',
       receipt:msg,expectedBasis:basis,proof}),
       /TERMINAL dispatch has no unique registered original signed execution/);
