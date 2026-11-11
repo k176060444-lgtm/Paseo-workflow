@@ -467,7 +467,11 @@ export class WorkflowController {
         this.next(t,'A_REVIEW','A_COMMIT_FROZEN',{sha:t.currentSha});return;
       }
       case 'A_REVIEW':{
-        const r=await this.invokePair(t,`A${t.aRound}-review`,t.currentSha);
+        // A signed recovery reuses both original reports; never dispatch twice.
+        const reused=t.blockedStage==='A_REVIEW';
+        if(reused)await this.git.assertUnchanged(t.worktree,t.currentSha);
+        const r=reused?this.store.readCompletedReviewerPair(t.id,'A_REVIEW',t.currentSha):
+          await this.invokePair(t,`A${t.aRound}-review`,t.currentSha);
         if(r.pause){this.paused(t,'Reviewer question or specialist needed');return;}
         if(!r.pass){t.aFindings=r.findings;this.next(t,'A_WORKER','A_REVIEW_FAIL',{findings:r.findings});return;}
         this.next(t,'A_TEST','A_REVIEW_PASS');return;
@@ -514,7 +518,10 @@ export class WorkflowController {
         this.next(t,'B_REVIEW','B_COMMIT_FROZEN',{sha:t.currentSha});return;
       }
       case 'B_REVIEW':{
-        const r=await this.invokePair(t,`B${t.bRound}-review`,t.currentSha);
+        const reused=t.blockedStage==='B_REVIEW';
+        if(reused)await this.git.assertUnchanged(t.worktree,t.currentSha);
+        const r=reused?this.store.readCompletedReviewerPair(t.id,'B_REVIEW',t.currentSha):
+          await this.invokePair(t,`B${t.bRound}-review`,t.currentSha);
         if(r.pause){this.paused(t,'B reviewer needs clarification');return;}
         if(!r.pass){t.bFindings=r.findings;this.next(t,'B_ENTER','B_REVIEW_FAIL');return;}
         this.next(t,'B_TEST','B_REVIEW_PASS');return;
@@ -650,8 +657,8 @@ export class WorkflowController {
     assert(t.stage==='NEEDS_RECONCILIATION'&&t.status==='NEEDS_RECONCILIATION',
       'incident certificate is only available for uncertain in-flight executions');
     assert(typeof t.blockedStage==='string'&&
-      ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST','B_ENTER',
-       'B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.blockedStage),
+      ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_REVIEW','A_TEST','B_ENTER',
+       'B_WORKER','B_REVIEW','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.blockedStage),
       'incident cannot close an unrecorded or unsafe original checkpoint');
     const original=this.store.dispatches(id);
     assert(original.length>0&&original.every(d=>d.state==='TERMINAL'),
@@ -726,13 +733,14 @@ export class WorkflowController {
     // An explicit human recovery returns to the *recorded failed checkpoint*, never
     // an inferred later Gate. Old synthetic pre-commit BLOCKED fixtures retain the
     // safe PLANNER fallback; real WAIT_HUMAN records require blockedStage.
-    const allowed=['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST',
-      'B_ENTER','B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'];
+    const allowed=['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_REVIEW','A_TEST',
+      'B_ENTER','B_WORKER','B_REVIEW','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'];
     const target=t.blockedStage??(t.stage==='BLOCKED'&&!t.taskSpecSha?'PLANNER':null);
     assert(allowed.includes(target),'recovery checkpoint missing/unsafe; manual reconciliation required');
-    // Do not replay parallel Reviewer phases: repeated reports on the same SHA
-    // would violate the independent reviewer-pair invariant.
-    assert(!['A_REVIEW','B_REVIEW'].includes(target),'review pair recovery requires source-aware reconciliation');
+    // Reviewer recovery must reuse the two independently witnessed original
+    // seats, or refuse the request. It must not send replacement model tasks.
+    if(['A_REVIEW','B_REVIEW'].includes(target))
+      this.store.readCompletedReviewerPair(id,target,t.currentSha);
     // Recovery is also a human Gate. Merely writing actor+receipt is not auth.
     this.store.verifyHumanProof(proof,{
       taskId:id,gate:'recovery',digest:basis,actor,receipt,
