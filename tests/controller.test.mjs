@@ -757,3 +757,30 @@ test('R13 D11: Arbitrator docket supplies original per-report SHA values directl
   x.store.verify(t.id);
  }finally{finish(x);}
 });
+
+test('R13 D03: signed recovery of fully witnessed reviewer pair reuses both reports with zero additional model calls',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  await assert.rejects(()=>x.c.run('TASK1234',{maxSteps:3}),
+    /maxStep guard reached/);
+  const inReview=x.c.required('TASK1234');
+  assert.equal(inReview.stage,'A_REVIEW');
+  const source=await x.c.invokePair(inReview,'A1-review',inReview.currentSha);
+  assert.equal(source.pass,true);
+  const originalReports=x.modelCalls.filter(r=>['spec_reviewer','quality_reviewer'].includes(r)).length;
+  x.c.paused(inReview,'Synthetic human clarification after both signed Reviewer POST receipts');
+  const stopped=x.c.required('TASK1234');
+  assert.equal(stopped.stage,'WAIT_HUMAN');
+  assert.equal(stopped.blockedStage,'A_REVIEW');
+  const msg='I authorize resuming the fully signed original reviewer pair without any replacement model tasks.';
+  const accepted=x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
+    expectedSha:stopped.currentSha,proof:x.proof('recovery',stopped.currentSha,msg)});
+  assert.equal(accepted.stage,'A_REVIEW');
+  assert.equal(x.store.readCompletedReviewerPair('TASK1234','A_REVIEW',stopped.currentSha).pass,true);
+  const result=await x.c.run('TASK1234');
+  assert.equal(result.stage,'WAIT_GATE_59');
+  assert.equal(x.modelCalls.filter(r=>['spec_reviewer','quality_reviewer'].includes(r)).length,
+    originalReports);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
