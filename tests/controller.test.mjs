@@ -11,7 +11,7 @@ import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical,verifyGate
 import {verifyCommitEvidenceSync} from '../src/git.mjs';
 import {resealLastEventSyntheticState} from './fixtures.mjs';
 
-function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false,preRejectRole=null}={}) {
+function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false,preRejectRole=null,p0ForgedPass=false}={}) {
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-case-'));
   const g=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
   const repo=path.join(tmp,'repo');fs.mkdirSync(repo);
@@ -177,8 +177,9 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       reports.push({...body,evidence});
     }
     const findings=reports.flatMap(r=>r.findings);
-    return {commit,cycle,reports,findings,passed:findings.length===0&&!conflicting,
-      dispute:conflicting,skipped:[],cancelled:[]};
+    return {commit,cycle,reports,findings,
+      passed:p0ForgedPass?true:findings.length===0&&!conflicting,
+      dispute:p0ForgedPass?false:conflicting,skipped:[],cancelled:[]};
   }};
   const testCommandWitness={attestTests:async({task,phase,sha,tests})=>{
     const {attestation,...bare}=tests;
@@ -653,6 +654,106 @@ test('incident certificate cannot turn an orphan TERMINAL ACK into a safe restar
     expectedSha:current.currentSha,proof:signed}),
     /TERMINAL dispatch has no unique registered original signed execution/);
   assert.equal(x.c.required(t.id).stage,'NEEDS_RECONCILIATION');
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+
+test('R13 D01: ordinary role lost ACK records exact uncertain stage and never auto-retries',async()=>{
+ const x=setup({ambiguous:true});try{
+  await assert.rejects(()=>x.c.run('TASK1234'),/provider lost connection/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.status,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'PLANNER');
+  assert.equal(t.inflight,null);
+  await assert.rejects(()=>x.c.run('TASK1234'),/reconcile before dispatch/);
+  assert.equal(x.modelCalls.filter(r=>r==='planner').length,1);
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+test('R13 D01: Pro-Audit lost ACK records original phase and cannot be skipped',async()=>{
+ const x=setup();try{
+  const original=x.c.runtime.execute;
+  x.c.runtime.execute=async fields=>{
+   const result=await original(fields);
+   if(fields.role==='pro_audit')throw Error('synthetic compliance lost ACK');
+   return result;
+  };
+  await assert.rejects(()=>x.c.run('TASK1234'),/synthetic compliance lost ACK/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'PLANNER');
+  assert.equal(t.inflight,null);
+  assert(t.pendingHuman.includes('pro_audit'));
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+test('R13 D01+D03: completed reviewer seat survives other seat loss without pair replay',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  const prior=x.c.runtime.execute;
+  x.c.runtime.execute=async fields=>{
+   const result=await prior(fields);
+   if(fields.role==='quality_reviewer'&&/review-quality_reviewer$/.test(fields.phase))
+     throw Error('synthetic reviewer provider loss');
+   return result;
+  };
+  await assert.rejects(()=>x.c.run('TASK1234'),/Reviewer call failed/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'A_REVIEW');
+  assert.equal(t.inflight,null);
+  assert.equal(t.history.filter(h=>h.role==='spec_reviewer'&&h.phase==='A1-review').length,1);
+  const before=x.modelCalls.filter(q=>q==='spec_reviewer').length;
+  await assert.rejects(()=>x.c.run('TASK1234'),/reconcile before dispatch/);
+  assert.equal(x.modelCalls.filter(q=>q==='spec_reviewer').length,before);
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+test('R13 D01: P0 partial unknown operation preserves review checkpoint and every dispatch',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  const prior=x.c.p0.review;
+  x.c.p0.review=async args=>{await prior(args);throw Error('synthetic P0 lost response ACK');};
+  await assert.rejects(()=>x.c.run('TASK1234'),/synthetic P0 lost response ACK/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'P0_INITIAL');
+  assert.equal(t.inflight,null);
+  assert.equal(x.getP0Calls(),1);
+  await assert.rejects(()=>x.c.run('TASK1234'),/reconcile before dispatch/);
+  assert.equal(x.getP0Calls(),1);
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+test('R13 D02: forged P0 passed:true with signed FAIL seat is rejected before Arbitrator and Gate 5.9',async()=>{
+ const x=setup({conflicting:true,p0ForgedPass:true});try{
+  await movePastPlanning(x);
+  await assert.rejects(()=>x.c.run('TASK1234'),
+    /P0 summary passed\/dispute\/findings contradict independently signed seat verdicts/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'P0_INITIAL');
+  assert.equal(t.finalArbitration,null);
+  assert(!x.modelCalls.includes('arbitrator'));
+  assert.equal(x.getP0Calls(),1);
+  x.store.verify(t.id);
+ }finally{finish(x);}
+});
+test('R13 D11: Arbitrator docket supplies original per-report SHA values directly',async()=>{
+ const x=setup({conflicting:true});try{
+  await movePastPlanning(x);
+  const r=await x.c.run('TASK1234');
+  assert.equal(r.stage,'WAIT_GATE_59');
+  const t=x.c.required('TASK1234');
+  const docket=JSON.parse(x.c.arbitrationDocket(t).serialized);
+  assert.equal(docket.p0Summary.reports.length,2);
+  for(let i=0;i<t.p0Final.reports.length;i++){
+   const source=t.p0Final.reports[i];
+   assert.equal(docket.p0Summary.reports[i].reportSha256,sha256(source));
+   assert.equal(docket.signedP0Originals[i].reportSha256,sha256(source));
+  }
+  assert.equal(docket.p0ReportSetSha256,sha256(t.p0Final.reports));
   x.store.verify(t.id);
  }finally{finish(x);}
 });
