@@ -616,7 +616,11 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         t.inflight===null&&oldTask.inflight?.role&&
         payload.originalRole===oldTask.inflight.role&&
         payload.originalPhase===oldTask.inflight.phase,
-        'uncertain execution must preserve the original checkpoint and in-flight identity');
+        'uncertain execution must preserve the original checkpoint and in-flight identity: '+
+        JSON.stringify({oldStage:oldTask.stage,oldStatus:oldTask.status,
+          oldInFlight:oldTask.inflight,stage:t.stage,status:t.status,
+          blocked:t.blockedStage,checkpoint:payload.checkpoint,
+          originalRole:payload.originalRole,originalPhase:payload.originalPhase}));
       assert(type==='REVIEW_PAIR_UNCERTAIN'?
         ['A_REVIEW','B_REVIEW'].includes(oldTask.stage):
         type==='P0_UNCERTAIN'?
