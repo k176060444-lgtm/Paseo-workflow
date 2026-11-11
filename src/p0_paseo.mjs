@@ -13,8 +13,11 @@ function signed(roots,node,proof,expected,{allowHistorical=false}={}){
   const age=Date.now()-Date.parse(s.issuedAt);
   // Freshness is enforced at first receipt/registration. Historical replay
   // validates immutable signed content and ledger linkage, not current age.
-  assert(Number.isFinite(age)&&(allowHistorical||age>=-120000&&age<=30*60000),
-    'P0 witness stale/future');
+  // Historical replay may exceed the original 30-minute receipt window,
+  // but it must never accept a timestamp beyond the same bounded clock-skew
+  // tolerance used for first receipt.
+  assert(Number.isFinite(age)&&age>=-120000&&
+    (allowHistorical||age<=30*60000),'P0 witness stale/future');
   const sig=Buffer.from(proof.signature??'','base64');
   assert(sig.length===64&&verify(null,Buffer.from(canonical(s)),key,sig),
     'P0 independent Ed25519 signature invalid');
