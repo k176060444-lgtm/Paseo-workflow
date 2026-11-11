@@ -83,7 +83,7 @@ test('R2-008 early blocked task recovers only on matching frozen basis',()=>{
     assert.throws(()=>c.authorizeRecovery({id:w.id,actor:'human',receipt:'Explicit local approval to recover.',expectedBasis:'0'.repeat(64)}),/basis/);
     const message='Explicit local approval to recover.',basis=w.store.get(w.id).frozen.digest;
     const r=c.authorizeRecovery({id:w.id,actor:'human',receipt:message,
-      expectedBasis:basis,proof:w.proof('recovery',basis,'human',message)});
+      expectedBasis:basis,proof:w.proof('recovery',basis,'human',message,w.store)});
     assert.equal(r.stage,'PLANNER');
     assert.equal(w.store.get(w.id).bRound,9);
     w.store.verify(w.id);
