@@ -1119,6 +1119,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     }
   }
   save(t,type,payload={}) {
+    assert(type!=='HUMAN_CONTROLLED_RECOVERY',
+      'human recovery must use one atomic Store.commitRecovery transaction');
     this.transaction(()=>{
       this.verify(t.id);
       const oldTask=this.get(t.id);
