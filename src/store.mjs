@@ -98,50 +98,93 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     return sha256(this.db.prepare('SELECT name,digest FROM artifacts WHERE task_id=? ORDER BY name').all(id));
   }
   artifact(id,name,content) {
+    return this.transaction(()=>this.#registerArtifactInTransaction(id,name,content));
+  }
+  // Only called within the Store's existing BEGIN IMMEDIATE boundary.
+  // The optional callback marks a uniquely created file for rollback cleanup,
+  // never a pre-existing file or a registered immutable evidence item.
+  #registerArtifactInTransaction(id,name,content,onFileCreated=null){
     assert(!this.readOnly,'store opened read-only');
     assert(/^[a-zA-Z0-9._-]{1,100}$/.test(name),'unsafe artifact filename');
     const data=typeof content==='string'?content:canonical(content);
     const digest=sha256(data);
-    // BEGIN IMMEDIATE spans verification, disk write/fsync and registration:
-    // no other SQLite writer can slip between the verified anchor and append.
-    // A file left by a failed registration is intentionally an orphan that
-    // requires manual reconciliation; never delete potentially useful evidence.
-    return this.transaction(()=>{
-      this.verify(id);
-      const anchor={
-        state:sha256(this.get(id)),
-        dispatch:this.dispatchHash(id),
-        artifacts:this.artifactHash(id),
-        head:this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest,
-      };
-      const base=path.join(this.dir(id),'evidence');
-      fs.mkdirSync(base,{recursive:true,mode:0o700});
-      const file=path.join(base,name);
-      const registered=this.db.prepare('SELECT digest FROM artifacts WHERE task_id=? AND name=?')
-        .get(id,name);
-      if(registered){
-        // A retry with identical bytes is safe: it creates NO new ledger event.
-        // Different bytes are never silently overwritten under a fixed name.
-        assert(registered.digest===digest&&fs.existsSync(file)&&
-          fs.lstatSync(file).isFile()&&sha256(fs.readFileSync(file,'utf8'))===digest,
-          'registered evidence conflict: immutable name or bytes mismatch');
-        return {path:file,sha256:digest,reused:true};
+    this.verify(id);
+    const anchor={
+      state:sha256(this.get(id)),
+      dispatch:this.dispatchHash(id),
+      artifacts:this.artifactHash(id),
+      head:this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest,
+    };
+    const base=path.join(this.dir(id),'evidence');
+    fs.mkdirSync(base,{recursive:true,mode:0o700});
+    const file=path.join(base,name);
+    const registered=this.db.prepare('SELECT digest FROM artifacts WHERE task_id=? AND name=?')
+      .get(id,name);
+    if(registered){
+      assert(registered.digest===digest&&fs.existsSync(file)&&
+        fs.lstatSync(file).isFile()&&sha256(fs.readFileSync(file,'utf8'))===digest,
+        'registered evidence conflict: immutable name or bytes mismatch');
+      return {path:file,sha256:digest,reused:true};
+    }
+    assert(!fs.existsSync(file),
+      'orphan evidence file requires independently authorized reconciliation: '+name);
+    const fd=fs.openSync(file,'wx',0o600);
+    try{
+      if(onFileCreated)onFileCreated({file,digest});
+      fs.writeFileSync(fd,data,'utf8');fs.fsyncSync(fd);
+    }finally{fs.closeSync(fd);}
+    assert(anchor.state===sha256(this.get(id)),'task state changed during evidence fsync');
+    assert(anchor.dispatch===this.dispatchHash(id),'dispatch changed during evidence fsync');
+    assert(anchor.artifacts===this.artifactHash(id),'manifest changed during evidence fsync');
+    assert(anchor.head===this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest,
+      'ledger changed during evidence fsync');
+    this.db.prepare('INSERT INTO artifacts(task_id,name,digest) VALUES(?,?,?)').run(id,name,digest);
+    this.#appendVerifiedMutation(id,'ARTIFACT_REGISTERED',{name,digest});
+    return {path:file,sha256:digest};
+  }
+  // A human recovery is one SQLite transaction: original signed evidence
+  // registration, Store-side validation, nonce consumption, state update, and
+  // the final ledger event. No partial successful recovery is ever persisted.
+  // The filesystem is not a SQLite table: after an ordinary rejected save we
+  // clean up ONLY an exclusive file this invocation created and whose exact
+  // digest remains intact. Unexpected hard crashes still require the existing
+  // conservative orphan-evidence reconciliation (never silently trust files).
+  commitRecovery(t,{name,content,payload}){
+    assert(typeof name==='string'&&/^recovery-[a-z0-9-]+\.json$/.test(name),
+      'recovery evidence must have a distinct immutable recovery filename');
+    let created=null;
+    try{
+      return this.transaction(()=>{
+        this.verify(t.id);
+        const before=this.get(t.id);
+        assert(before,'recovery requires persisted original task');
+        const evidence=this.#registerArtifactInTransaction(t.id,name,content,
+          marker=>{created=marker;});
+        assert(payload?.evidenceSha256===evidence.sha256,
+          'recovery event must bind the same signed original artifact');
+        this.#validateTaskTransition(before,t,'HUMAN_CONTROLLED_RECOVERY',payload);
+        this.db.prepare('UPDATE tasks SET data=? WHERE id=?').run(canonical(t),t.id);
+        this.#appendVerifiedMutation(t.id,'HUMAN_CONTROLLED_RECOVERY',{
+          stage:t.stage,status:t.status,...payload});
+        return evidence;
+      });
+    }catch(err){
+      if(created){
+        const registered=this.db.prepare(
+          'SELECT digest FROM artifacts WHERE task_id=? AND name=?')
+          .get(t.id,name);
+        // Do not delete anything registered, replaced, mutated or not ours.
+        // A partial write remains a visible orphan for manual reconciliation.
+        if(!registered&&fs.existsSync(created.file)&&
+          fs.lstatSync(created.file).isFile()&&
+          sha256(fs.readFileSync(created.file,'utf8'))===created.digest){
+          try{fs.unlinkSync(created.file);}
+          catch(cleanErr){throw new AggregateError([err,cleanErr],
+            'recovery rejected; exclusive evidence cleanup failed and requires reconciliation');}
+        }
       }
-      assert(!fs.existsSync(file),
-        'orphan evidence file requires independently authorized reconciliation: '+name);
-      const fd=fs.openSync(file,'wx',0o600);
-      try{fs.writeFileSync(fd,data,'utf8');fs.fsyncSync(fd);}finally{fs.closeSync(fd);}
-      // Recheck even under BEGIN IMMEDIATE: same-connection/monkeypatched
-      // synchronous callbacks must not re-anchor an altered state.
-      assert(anchor.state===sha256(this.get(id)),'task state changed during evidence fsync');
-      assert(anchor.dispatch===this.dispatchHash(id),'dispatch changed during evidence fsync');
-      assert(anchor.artifacts===this.artifactHash(id),'manifest changed during evidence fsync');
-      assert(anchor.head===this.db.prepare('SELECT digest FROM events WHERE task_id=? ORDER BY seq DESC LIMIT 1').get(id)?.digest,
-        'ledger changed during evidence fsync');
-      this.db.prepare('INSERT INTO artifacts(task_id,name,digest) VALUES(?,?,?)').run(id,name,digest);
-      this.#appendVerifiedMutation(id,'ARTIFACT_REGISTERED',{name,digest});
-      return {path:file,sha256:digest};
-    });
+      throw err;
+    }
   }
   #validateCreation(t){
     checkedId(t?.id);
