@@ -394,6 +394,85 @@ test('R7-002 final Gate rejects late evidence not covered by signed compliance r
  }finally{finish(x);}
 });
 
+test('R13.2: recovery signature rejects a state signed with the wrong status or checkpoint',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  x.c.paused(x.c.required('TASK1234'),'Synthetic human stop for recovery binding test');
+  const stopped=x.c.required('TASK1234');
+  const msg='Human authorizes only the exact persisted recovery checkpoint and state.';
+  const basis=stopped.alignmentApprovalSha;
+  const wrongStatus={...stopped,status:'BLOCKED'};
+  const statusProof=x.proof('recovery',basis,msg,'user',{stateSha256:sha256(wrongStatus)});
+  assert.throws(()=>x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
+    expectedBasis:basis,proof:statusProof}),
+    /recovery signature must bind exact blocked checkpoint and task state/);
+  const checkpointProof=x.proof('recovery',basis,msg,'user',{blockedStage:'A_REVIEW'});
+  assert.throws(()=>x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
+    expectedBasis:basis,proof:checkpointProof}),
+    /recovery signature must bind exact blocked checkpoint and task state/);
+  assert.equal(x.c.required('TASK1234').stage,'WAIT_HUMAN');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('R13.2: a previously consumed recovery nonce cannot authorize a later checkpoint',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  x.c.paused(x.c.required('TASK1234'),'First human stop');
+  const first=x.c.required('TASK1234');
+  const firstMessage='Human authorizes the first exact recovery checkpoint.';
+  const firstProof=x.proof('recovery',first.alignmentApprovalSha,firstMessage);
+  x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:firstMessage,
+    expectedBasis:first.alignmentApprovalSha,proof:firstProof});
+  x.c.paused(x.c.required('TASK1234'),'Second human stop at the resumed checkpoint');
+  const second=x.c.required('TASK1234');
+  const secondMessage='Human attempts to reuse an already consumed recovery nonce.';
+  const replay=x.proof('recovery',second.alignmentApprovalSha,secondMessage,'user',
+    {nonce:firstProof.statement.nonce});
+  const evidenceBefore=x.store.evidenceRoot('TASK1234');
+  assert.throws(()=>x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:secondMessage,
+    expectedBasis:second.alignmentApprovalSha,proof:replay}),
+    /recovery approval nonce already consumed/);
+  assert.equal(x.store.evidenceRoot('TASK1234'),evidenceBefore,
+    'replayed nonce must be rejected before writing a recovery artifact');
+  assert.equal(x.c.required('TASK1234').stage,'WAIT_HUMAN');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('R13.2: Reviewer recovery rejects duplicate Agent identities and never treats them as two seats',async()=>{
+ const x=setup({duplicateReviewerAgent:true});try{
+  await movePastPlanning(x);
+  await assert.rejects(()=>x.c.run('TASK1234',{maxSteps:3}),/maxStep guard reached/);
+  await assert.rejects(()=>x.c.run('TASK1234'),/Reviewer call failed or identity invalid/);
+  const task=x.c.required('TASK1234');
+  const reviewers=task.history.filter(h=>['spec_reviewer','quality_reviewer'].includes(h.role));
+  assert.equal(reviewers.length,2);
+  assert.equal(reviewers[0].agentId,reviewers[1].agentId);
+  assert.throws(()=>x.store.readCompletedReviewerPair('TASK1234','A_REVIEW',task.currentSha),
+    /Reviewer recovery cannot reuse a seat or Agent ID/);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('R13.2: recovery rejects a wrong Commit SHA and a human signature for a different SHA',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  await assert.rejects(()=>x.c.run('TASK1234',{maxSteps:3}),/maxStep guard reached/);
+  x.c.paused(x.c.required('TASK1234'),'Human stop at the exact committed Reviewer checkpoint');
+  const stopped=x.c.required('TASK1234');
+  const msg='Human authorizes recovery only for this exact frozen Commit.';
+  const validProof=x.proof('recovery',stopped.currentSha,msg);
+  assert.throws(()=>x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
+    expectedSha:'f'.repeat(40),proof:validProof}),/Git SHA not the approved recovery basis/);
+  const wrongDigestProof=x.proof('recovery','0'.repeat(64),msg);
+  assert.throws(()=>x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
+    expectedSha:stopped.currentSha,proof:wrongDigestProof}),/human approval signed statement mismatch/);
+  assert.equal(x.c.required('TASK1234').stage,'WAIT_HUMAN');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
 test('signed human recovery resumes a WAIT_HUMAN checkpoint without skipping Gate',async()=>{
  const x=setup();try{
   await movePastPlanning(x);
