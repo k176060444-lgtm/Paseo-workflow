@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateKeyPairSync,randomUUID,sign} from 'node:crypto';
-import {PaseoP0Adapter} from '../src/p0_paseo.mjs';
+import {PaseoP0Adapter,verifyPaseoP0Envelope} from '../src/p0_paseo.mjs';
 import {canonical,sha256} from '../src/policy.mjs';
 
-function mock({badKey=false,createUnknown=false,thirdRunning=true}={}){
+function mock({badKey=false,createUnknown=false,thirdRunning=true,signedAgeMs=0}={}){
   const nodes=['5bao','9bao','rusty'].map((id,i)=>({
     id,physicalId:'physical-'+id,serverId:'srv_'+id,registrationId:'hst_'+id,
     workspaceId:'ws_'+id,cwd:'/srv/p0/'+id,transport:'direct',enabled:true,
@@ -17,7 +17,8 @@ function mock({badKey=false,createUnknown=false,thirdRunning=true}={}){
   const states=new Map();
   const raw=JSON.stringify({verdict:'PASS',summary:'Synthetic evidence only',findings:[]});
   function signed(node,statement){
-    const body={...statement,nonce:randomUUID(),issuedAt:new Date().toISOString()};
+    const body={...statement,nonce:randomUUID(),
+      issuedAt:new Date(Date.now()-signedAgeMs).toISOString()};
     const pair=pairs.get(badKey&&node.id!=='rusty'?'rusty':node.id);
     return {schema:1,keyId:node.id,statement:body,
       signature:sign(null,Buffer.from(canonical(body)),pair.privateKey).toString('base64')};
@@ -255,4 +256,34 @@ test('P0 signed V2 request binding rejects altered user intent even when node id
    taskSpec:'Approved synthetic requirement',store:x.store,cycle:'initial-A1'}),
    /signed P0 result does not bind/);
  assert.equal(x.seen.created.length,2);
+});
+
+test('R13 follow-up P0: fresh first registration is mandatory but verified original may be replayed 31 minutes later',async()=>{
+ const x=mock({signedAgeMs:31*60*1000});
+ const node=x.nodes[0],commit='a'.repeat(40),cycle='initial-A1',
+   jobId='3'.repeat(40),agentId='original-agent-5bao';
+ const binding={role:node.role,workspaceId:node.workspaceId,cwd:node.cwd,
+   soulSha256:'1'.repeat(64),promptSha256:'2'.repeat(64),
+   taskSpecSha256:'3'.repeat(64),intentSha256:'4'.repeat(64)};
+ const raw=JSON.stringify({verdict:'PASS',summary:'Original frozen blind review',findings:[]});
+ const envelope=await x.attestor.attestP0Result({
+   node,task:x.task,cycle,commit,jobId,agentId,raw,binding});
+ const expected={taskId:x.task.id,cycle,jobId,commit,binding};
+ assert.throws(()=>verifyPaseoP0Envelope(x.roots,node,envelope,expected),
+   /P0 witness stale\/future/);
+ assert.equal(verifyPaseoP0Envelope(x.roots,node,envelope,{
+   ...expected,allowHistorical:true}).verdict,'PASS');
+ const tampered=structuredClone(envelope);
+ tampered.report.summary='changed without remote signature';
+ assert.throws(()=>verifyPaseoP0Envelope(x.roots,node,tampered,{
+   ...expected,allowHistorical:true}),/reportSha256 mismatch/);
+ const wrongBinding={...binding,promptSha256:'f'.repeat(64)};
+ assert.throws(()=>verifyPaseoP0Envelope(x.roots,node,envelope,{
+   ...expected,binding:wrongBinding,allowHistorical:true}),
+   /signed P0 result does not bind/);
+ const future=mock({signedAgeMs:-3*60*1000});
+ const e2=await future.attestor.attestP0Result({
+   node:future.nodes[0],task:future.task,cycle,commit,jobId,agentId,raw,binding});
+ assert.throws(()=>verifyPaseoP0Envelope(future.roots,future.nodes[0],e2,expected),
+   /P0 witness stale\/future/);
 });
