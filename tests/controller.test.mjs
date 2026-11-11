@@ -394,6 +394,19 @@ test('R7-002 final Gate rejects late evidence not covered by signed compliance r
  }finally{finish(x);}
 });
 
+test('A direct Store.save cannot bypass transactional human recovery',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  x.c.paused(x.c.required('TASK1234'),'Synthetic human stop for direct-save protection');
+  const t=x.c.required('TASK1234');
+  assert.throws(()=>x.store.save({...t,stage:'PLAN_DETAIL',status:'READY'},
+    'HUMAN_CONTROLLED_RECOVERY',{}),
+    /human recovery must use one atomic Store.commitRecovery transaction/);
+  assert.equal(x.c.required('TASK1234').stage,'WAIT_HUMAN');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
 test('Recovery CLI status supplies one signed-state snapshot and real CLI consumes it without database access',async()=>{
  const x=setup();try{
   await movePastPlanning(x);
