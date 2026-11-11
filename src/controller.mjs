@@ -74,6 +74,19 @@ export class WorkflowController {
     return {id,stage:t.stage,approvalSha256:approval.sha256};
   }
   required(id){const t=this.store.get(id);assert(t,`unknown task ${id}`);return t;}
+  markUncertain(t,type,payload={}){
+    const interruptedStage=t.stage==='NEEDS_RECONCILIATION'?t.blockedStage:t.stage;
+    assert(typeof interruptedStage==='string'&&interruptedStage.length>0&&
+      interruptedStage!=='NEEDS_RECONCILIATION',
+      'uncertain execution has no original workflow checkpoint');
+    t.blockedStage=interruptedStage;
+    t.stage='NEEDS_RECONCILIATION';
+    t.status='NEEDS_RECONCILIATION';
+    t.inflight=null;
+    t.pendingHuman='External execution outcome is uncertain at '+interruptedStage+
+      ': '+String(payload.error??payload.message??'manual reconciliation required');
+    this.store.save(t,type,{...payload,interruptedStage});
+  }
   assertFrozenIntegrity(t){
     assert(t.frozen&&typeof t.frozen.digest==='string','frozen config missing');
     const {digest,...snapshot}=t.frozen;
@@ -127,10 +140,14 @@ export class WorkflowController {
       verifyGateBTests(t);
       assert(t.lastB?.commit===t.currentSha,'Tester B commit mismatch');
       const p0=t.p0Final??t.p0Initial;
-      assert(p0?.commit===t.currentSha&&(p0.passed===true||acceptedP0Dispute(t)),
-        'final P0 must pass or have an authenticated evidence-bound technical dispute ruling');
-      assert(p0.reports.length>=2&&new Set(p0.reports.map(r=>r.physicalId)).size>=2,'insufficient physical P0 seats');
-      assert(p0.reports.every(r=>r.commit===t.currentSha&&Array.isArray(r.findings))&&
+      assert(p0?.commit===t.currentSha&&Array.isArray(p0.reports)&&p0.reports.length>=2,
+        'final P0 must bind the exact final SHA and contain a multi-seat report set');
+      const reportsAllCleanPass=p0.reports.every(r=>PASS(r.verdict)&&
+        Array.isArray(r.findings)&&r.findings.length===0);
+      assert(p0.passed===reportsAllCleanPass,
+        'P0 summary passed flag contradicts its signed node reports');
+      assert(new Set(p0.reports.map(r=>r.physicalId)).size>=2&&
+        p0.reports.every(r=>r.commit===t.currentSha&&Array.isArray(r.findings))&&
         (p0.passed===true||acceptedP0Dispute(t)),
         'P0 quorum does not match final SHA or has unresolved findings');
       assert(!t.bFindings.length,'unresolved P0 findings');
@@ -191,8 +208,8 @@ export class WorkflowController {
       result=await this.runtime.execute({task:t,role:'pro_audit',phase:auditPhase,
         cwd:cwd??t.frozen.project.repo,prompt,store:this.store,auditBinding:binding});
     }catch(e){
-      t.status='NEEDS_RECONCILIATION';t.pendingHuman='Pro-Audit execution unknown: '+e.message;
-      this.store.save(t,'EXECUTION_UNCERTAIN',{role:'pro_audit',phase:auditPhase,error:String(e.message)});
+      this.markUncertain(t,'EXECUTION_UNCERTAIN',
+        {role:'pro_audit',phase:auditPhase,error:String(e.message)});
       throw e;
     }
     const artifact=this.store.artifact(t.id,'compliance-'+sha256(auditPhase).slice(0,20)+
@@ -218,7 +235,10 @@ export class WorkflowController {
     this.store.save(t,'INFLIGHT',{role,phase});
     let result;
     try{result=await this.runtime.execute({task:t,role,phase,cwd,prompt:`${ROLE_PROMPT}\n${prompt}`,store:this.store});}
-    catch(e){t.status='NEEDS_RECONCILIATION';t.pendingHuman=String(e.message);this.store.save(t,'EXECUTION_UNCERTAIN',{role,phase,error:String(e.message)});throw e;}
+    catch(e){
+      this.markUncertain(t,'EXECUTION_UNCERTAIN',{role,phase,error:String(e.message)});
+      throw e;
+    }
     assert(!PASS(result.verdict)||!hasBlockingFinding(result.findings??[])&&
       (result.verdict!=='PASS'||!(result.findings??[]).length),
       `${role}: contradictory PASS/findings; reconcile manually`);
@@ -239,44 +259,94 @@ export class WorkflowController {
   }
   async invokePair(t,prefix,sha){
     const seats=['spec_reviewer','quality_reviewer'];
-    const preAudits=new Map();
-    for(const role of seats) preAudits.set(role,
-      await this.auditRole(t,role,`${prefix}-${role}`,'PRE',t.worktree));
+    const recorded=new Map(),historyByRole=new Map(),preAudits=new Map();
+
+    // A signed incident recovery may resume a pair only by reusing an already
+    // registered seat result and dispatching the missing seat. Never replay a
+    // completed reviewer merely because its peer failed.
+    for(const role of seats){
+      const entries=t.history.filter(h=>h.role===role&&h.phase===prefix&&h.sha===sha&&
+        typeof h.evidenceSha256==='string');
+      assert(entries.length<=1,'duplicate original Reviewer evidence for '+role);
+      if(!entries.length)continue;
+      const h=entries[0];
+      assert(typeof h.auditSessionId==='string'&&/^[a-f0-9-]{36}$/i.test(h.auditSessionId),
+        'recorded Reviewer seat lacks its original PRE audit session');
+      const evidence=this.store.readEvidenceByDigest(t.id,h.evidenceSha256);
+      const result=JSON.parse(evidence.content);
+      assert(result.role===role&&result.agentId===h.agentId&&
+        result.verdict===h.verdict&&Array.isArray(result.findings),
+        'recorded Reviewer result does not match its immutable execution receipt');
+      const pres=t.history.filter(a=>a.role==='pro_audit'&&
+        a.auditSessionId===h.auditSessionId&&a.auditBinding?.checkpoint==='PRE');
+      assert(pres.length===1&&pres[0].verdict==='PASS',
+        'recorded Reviewer seat lacks exactly one passing original PRE audit');
+      recorded.set(role,result);
+      historyByRole.set(role,h);
+      preAudits.set(role,{auditSessionId:h.auditSessionId});
+    }
+
+    for(const role of seats){
+      if(!recorded.has(role))
+        preAudits.set(role,await this.auditRole(t,role,`${prefix}-${role}`,'PRE',t.worktree));
+    }
+
     t.status='INFLIGHT';t.inflight={role:'review_pair',phase:prefix,sha};
-    this.store.save(t,'REVIEW_PAIR_STARTED',{sha});
-    const run=async(role)=>this.runtime.execute({task:t,role,phase:`${prefix}-${role}`,cwd:t.worktree,
+    this.store.save(t,'REVIEW_PAIR_STARTED',{sha,resuming:[...recorded.keys()]});
+    const run=async role=>this.runtime.execute({task:t,role,phase:`${prefix}-${role}`,cwd:t.worktree,
       prompt:`${ROLE_PROMPT}\nTASK_SPEC:\n${t.taskSpec}\nReview exactly commit ${sha}. No edits. Independent report; do not see the other reviewer's findings.`,store:this.store});
-    const settled=await Promise.allSettled(seats.map(run));
-    const successful=new Map(), errors=[];
-    // Save EACH finished seat before handling its peer's failure (R2-010).
-    for(let i=0;i<seats.length;i++){
-      const role=seats[i], result=settled[i];
-      if(result.status==='rejected'){errors.push({role,error:String(result.reason)});continue;}
+    const missing=seats.filter(role=>!recorded.has(role));
+    const settled=await Promise.allSettled(missing.map(run));
+    const errors=[];
+    for(let i=0;i<missing.length;i++){
+      const role=missing[i],result=settled[i];
+      if(result.status==='rejected'){
+        errors.push({role,error:String(result.reason)});
+        continue;
+      }
       const r=result.value;
-      if(r?.role!==role||typeof r.agentId!=='string'||!r.agentId){
-        errors.push({role,error:'invalid or mismatched reviewer identity'});continue;
+      if(r?.role!==role||typeof r.agentId!=='string'||!r.agentId||
+         !Array.isArray(r.findings)){
+        errors.push({role,error:'invalid or mismatched reviewer identity/result'});
+        continue;
       }
       const artifact=this.store.artifact(t.id,`${prefix}-${role}-${randomUUID().slice(0,8)}.json`,r);
-      t.history.push({role,phase:prefix,agentId:r.agentId,verdict:r.verdict,
-        evidenceSha256:artifact.sha256,sha,auditSessionId:preAudits.get(role).auditSessionId});
-      this.store.save(t,'REVIEW_SEAT_RECORDED',{role,sha,agentId:r.agentId,evidenceSha256:artifact.sha256});
-      successful.set(role,r);
+      const h={role,phase:prefix,agentId:r.agentId,verdict:r.verdict,
+        evidenceSha256:artifact.sha256,sha,auditSessionId:preAudits.get(role).auditSessionId};
+      t.history.push(h);
+      this.store.save(t,'REVIEW_SEAT_RECORDED',
+        {role,sha,agentId:r.agentId,evidenceSha256:artifact.sha256});
+      recorded.set(role,r);
+      historyByRole.set(role,h);
     }
-    if(errors.length || successful.size!==2 ||
-       successful.get('spec_reviewer').agentId===successful.get('quality_reviewer').agentId){
-      t.status='NEEDS_RECONCILIATION';t.pendingHuman='Concurrent reviewer execution uncertain or invalid';
-      this.store.save(t,'REVIEW_PAIR_UNCERTAIN',{sha,completed:[...successful.keys()],errors});
+    if(errors.length||recorded.size!==2||
+       recorded.get('spec_reviewer').agentId===recorded.get('quality_reviewer').agentId){
+      this.markUncertain(t,'REVIEW_PAIR_UNCERTAIN',{
+        sha,completed:[...recorded.keys()],errors,
+        error:'Concurrent reviewer execution uncertain or invalid'
+      });
       throw new Error('Reviewer call failed or identity invalid; saved finished seats; reconcile before continuing');
     }
+
     await this.git.assertUnchanged(t.worktree,sha);
-    const spec=successful.get('spec_reviewer'),quality=successful.get('quality_reviewer');
-    t.inflight=null;t.status='READY';this.store.save(t,'REVIEW_PAIR_TERMINAL',{sha,spec:spec.verdict,quality:quality.verdict});
-    await this.auditRole(t,'spec_reviewer',`${prefix}-spec_reviewer`,'POST',t.worktree,spec,
-      preAudits.get('spec_reviewer').auditSessionId);
-    await this.auditRole(t,'quality_reviewer',`${prefix}-quality_reviewer`,'POST',t.worktree,quality,
-      preAudits.get('quality_reviewer').auditSessionId);
-    // Local reviews are TWO independent, source-attested assessments, not
-    // external blind P0 seats. Never collapse their opinions into one PASS.
+    const spec=recorded.get('spec_reviewer'),quality=recorded.get('quality_reviewer');
+    t.inflight=null;t.status='READY';
+    this.store.save(t,'REVIEW_PAIR_TERMINAL',{sha,spec:spec.verdict,quality:quality.verdict});
+
+    // A recovery can finish a missing POST for a previously recorded seat.
+    // Existing passing POST evidence is reused; a failed POST is never replaced.
+    for(const role of seats){
+      const h=historyByRole.get(role);
+      const posts=t.history.filter(a=>a.role==='pro_audit'&&
+        a.auditSessionId===h.auditSessionId&&a.auditBinding?.checkpoint==='POST');
+      assert(posts.length<=1,'duplicate POST process audit for '+role);
+      if(posts.length===0){
+        await this.auditRole(t,role,`${prefix}-${role}`,'POST',t.worktree,
+          recorded.get(role),h.auditSessionId);
+      }else assert(posts[0].verdict==='PASS',
+        'previous Reviewer POST audit did not pass; human compliance review required');
+    }
+
     const individual=Object.fromEntries([['spec_reviewer',spec],['quality_reviewer',quality]]
       .map(([role,r])=>[role,{
         agentId:r.agentId,verdict:r.verdict,findings:r.findings,
@@ -351,16 +421,17 @@ export class WorkflowController {
       return {role:h.role,phase:h.phase,commit:h.sha??null,
         evidenceSha256:record.sha256,artifact:record.name,original:JSON.parse(record.content)};
     });
+    const p0Summary={...p0,reports:p0.reports.map(r=>({...r,reportSha256:sha256(r)}))};
     const p0Originals=p0.reports.map(r=>{
       assert(r.evidence?.sha256,'P0 signed node report missing');
       const record=this.store.readEvidenceByDigest(t.id,r.evidence.sha256);
-      return {nodeId:r.nodeId,physicalId:r.physicalId,sha256:record.sha256,
-        signedOriginal:JSON.parse(record.content)};
+      return {nodeId:r.nodeId,physicalId:r.physicalId,reportSha256:sha256(r),
+        envelopeSha256:record.sha256,signedOriginal:JSON.parse(record.content)};
     });
     const docket={schema:1,finalCommit:t.currentSha,originalIntent:t.frozen.intent,
       originalIntentSha256:t.frozen.intentSha256,approvedSpec:t.taskSpec,
       approvedSpecSha256:t.taskSpecSha,workPlan:t.workPlan,workPlanSha256:t.workPlanSha,
-      p0Summary:p0,p0ReportSetSha256:sha256(p0.reports),
+      p0Summary,p0ReportSetSha256:sha256(p0.reports),
       signedP0Originals:p0Originals,roleAndComplianceEvidence:history,
       testedCommit:t.lastB?.commit,passedTests:t.lastB?.tests?.receipts??[],
       outstandingFindings:t.bFindings};
@@ -375,7 +446,10 @@ export class WorkflowController {
     this.store.save(t,'P0_STARTED',{cycle,sha:t.currentSha});
     let p;
     try{p=await this.p0.review({task:t,commit:t.currentSha,taskSpec:t.taskSpec,store:this.store,cycle});}
-    catch(e){t.status='NEEDS_RECONCILIATION';t.pendingHuman=String(e.message);this.store.save(t,'P0_UNCERTAIN',{cycle,error:String(e.message)});throw e;}
+    catch(e){
+      this.markUncertain(t,'P0_UNCERTAIN',{cycle,error:String(e.message)});
+      throw e;
+    }
     const ev=this.store.artifact(t.id,`p0-${cycle}-summary.json`,p);
     t.status='READY';t.inflight=null;
     t.history.push({role:'P0',phase:cycle,sha:t.currentSha,passed:p.passed,
@@ -588,11 +662,14 @@ export class WorkflowController {
           const latest=this.required(id);
           if(latest.status==='INFLIGHT'||latest.status==='READY'){
             const uncertain=Boolean(latest.inflight) || this.store.dispatches(id).some(d=>d.state!=='TERMINAL');
-            latest.blockedStage=t.stage;
+            const interruptedStage=latest.stage;
+            latest.blockedStage=interruptedStage;
             latest.stage=uncertain?'NEEDS_RECONCILIATION':'BLOCKED';
             latest.status=uncertain?'NEEDS_RECONCILIATION':'BLOCKED';
-            latest.pendingHuman=`Stage ${t.stage} failed: ${e.message}`;
-            this.store.save(latest,'UNEXPECTED_STAGE_ERROR',{error:e.message,uncertain});
+            latest.inflight=null;
+            latest.pendingHuman=`Stage ${interruptedStage} failed: ${e.message}`;
+            this.store.save(latest,'UNEXPECTED_STAGE_ERROR',
+              {error:e.message,uncertain,interruptedStage});
           }
           throw e;
         }
@@ -622,8 +699,8 @@ export class WorkflowController {
     assert(t.stage==='NEEDS_RECONCILIATION'&&t.status==='NEEDS_RECONCILIATION',
       'incident certificate is only available for uncertain in-flight executions');
     assert(typeof t.blockedStage==='string'&&
-      ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST','B_ENTER',
-       'B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.blockedStage),
+      ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_REVIEW','A_TEST','B_ENTER',
+       'B_WORKER','B_REVIEW','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.blockedStage),
       'incident cannot close an unrecorded or unsafe original checkpoint');
     const original=this.store.dispatches(id);
     assert(original.length>0&&original.every(d=>d.state==='TERMINAL'),
@@ -669,7 +746,7 @@ export class WorkflowController {
     return {id,stage:t.stage,status:t.status,allowedToRedispatch:false};
   }
   // Noncompliance recovery deliberately has no generic skip-a-gate operation.
-  authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null}){
+  authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null,processProof=null}){
     this.store.verify(id);
     const t=this.required(id);
     this.assertFrozenIntegrity(t);
@@ -698,24 +775,38 @@ export class WorkflowController {
     // An explicit human recovery returns to the *recorded failed checkpoint*, never
     // an inferred later Gate. Old synthetic pre-commit BLOCKED fixtures retain the
     // safe PLANNER fallback; real WAIT_HUMAN records require blockedStage.
-    const allowed=['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST',
-      'B_ENTER','B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'];
+    const allowed=['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_REVIEW','A_TEST',
+      'B_ENTER','B_WORKER','B_REVIEW','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'];
     const target=t.blockedStage??(t.stage==='BLOCKED'&&!t.taskSpecSha?'PLANNER':null);
     assert(allowed.includes(target),'recovery checkpoint missing/unsafe; manual reconciliation required');
-    // Do not replay parallel Reviewer phases: repeated reports on the same SHA
-    // would violate the independent reviewer-pair invariant.
-    assert(!['A_REVIEW','B_REVIEW'].includes(target),'review pair recovery requires source-aware reconciliation');
-    // Recovery is also a human Gate. Merely writing actor+receipt is not auth.
-    this.store.verifyHumanProof(proof,{
-      taskId:id,gate:'recovery',digest:basis,actor,receipt,
-    });
+    if(['A_REVIEW','B_REVIEW'].includes(target))
+      assert(t.stage==='BLOCKED'&&
+        typeof t.pendingHuman==='string'&&t.pendingHuman.startsWith('Incident independently reconciled'),
+        'Reviewer pair recovery requires separately certified incident closure');
+    // invokePair is source-aware: it reuses completed exact-SHA seats and only
+    // dispatches a missing seat after signed incident closure and human recovery.
+    // Recovery is a human Gate: an independent process witness must observe
+    // the exact stopped state before the human countersigns that procedure.
     assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
       'recovery trust roots have changed');
+    const procedure=processProof??proof?.processProof;
+    this.store.verifyGateProcessProof(procedure,{
+      taskId:id,gate:'recovery',digest:basis,actor,receipt,
+      stateSha256:sha256(t),evidenceRoot:this.store.evidenceRoot(id)});
+    assert(!this.store.approvalNonceUsed(procedure.keyId,procedure.statement.nonce),
+      'recovery process nonce already consumed');
+    this.store.verifyHumanProof(proof,{
+      taskId:id,gate:'recovery',digest:basis,actor,receipt,
+      processProofSha256:sha256(procedure),
+    });
+    assert(!this.store.approvalNonceUsed(proof.keyId,proof.statement.nonce),
+      'recovery human nonce already consumed');
     const ev=this.store.artifact(id,`recovery-${randomUUID().slice(0,10)}.json`,
-      {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,proof});
+      {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,proof,processProof:procedure});
     t.pendingHuman=null;t.status='READY';t.stage=target;
     this.store.save(t,'HUMAN_CONTROLLED_RECOVERY',{
-      actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce});
+      actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce,
+      processNonce:procedure.statement.nonce,processProofSha256:sha256(procedure)});
     return {id,stage:t.stage};
   }
 }

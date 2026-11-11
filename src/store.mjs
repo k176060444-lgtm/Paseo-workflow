@@ -275,6 +275,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true&&
       t.lastB?.commit===t.currentSha,'Gate 5.9 missing independent Tester B pass');
     const p0=t.p0Final??t.p0Initial;
+    this.#verifyP0Nodes(t,p0);
     assert(p0?.commit===t.currentSha&&(p0.passed===true||acceptedP0Dispute(t)),
       'Gate 5.9 requires passing P0 or an authenticated evidence-bound final dispute ruling');
     assert(Array.isArray(p0.reports)&&p0.reports.length>=2&&
@@ -289,7 +290,6 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       h.agentId===t.finalArbitration.agentId&&PASS(h.verdict)),
       'Gate 5.9 missing authenticated final Arbitrator execution');
     verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
-    this.#verifyP0Nodes(t,p0);
     const record=this.db.prepare("SELECT name,digest FROM artifacts WHERE task_id=? AND name='final-compliance.json'").get(t.id);
     const artifact=JSON.parse(this.#requireArtifact(t.id,'final-compliance.json',record?.digest));
     assert(artifact.pass===true&&artifact.finalSha===t.currentSha&&
@@ -424,6 +424,16 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       distinct.add(node.physicalId);
     }
     assert(distinct.size>=2,'P0 authenticated physical quorum incomplete');
+    const cleanPasses=summary.reports.every(r=>PASS(r.verdict)&&
+      Array.isArray(r.findings)&&r.findings.length===0);
+    const hasPositive=summary.reports.some(r=>PASS(r.verdict));
+    const hasFail=summary.reports.some(r=>r.verdict==='FAIL');
+    const hasQuestion=summary.reports.some(r=>['QUESTION','NEEDS_SPECIALIST'].includes(r.verdict));
+    const derivedDispute=hasQuestion||(hasPositive&&hasFail);
+    const derivedFindings=summary.reports.flatMap(r=>r.findings);
+    assert(summary.passed===cleanPasses&&summary.dispute===derivedDispute&&
+      Array.isArray(summary.findings)&&canonical(summary.findings)===canonical(derivedFindings),
+      'P0 summary flags/findings contradict independently verified signed node reports');
   }
   #verifyReviewerPair(t){
     const prefix=t.stage==='A_REVIEW'? 'A'+t.aRound:'B'+t.bRound;
@@ -556,11 +566,20 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       data.actor===payload.actor&&data.expectedSha===(oldTask.currentSha??null)&&
       data.expectedBasis===(oldTask.currentSha?null:oldTask.alignmentApprovalSha??oldTask.taskSpecSha??oldTask.frozen.digest),
       'recovery artifact/target/basis mismatch');
+    assert(data.processProof?.schema===1&&
+      payload.processProofSha256===sha256(data.processProof)&&
+      payload.processNonce===data.processProof.statement?.nonce,
+      'recovery requires separately signed independent process evidence');
+    this.verifyGateProcessProof(data.processProof,{
+      taskId:oldTask.id,gate:'recovery',digest:basis,actor:data.actor,receipt:data.receipt,
+      stateSha256:sha256(oldTask),evidenceRoot:this.evidenceRoot(oldTask.id,{exclude:name})});
     this.verifyHumanProof(data.proof,{taskId:oldTask.id,gate:'recovery',
-      digest:basis,actor:data.actor,receipt:data.receipt});
+      digest:basis,actor:data.actor,receipt:data.receipt,
+      processProofSha256:payload.processProofSha256});
     assert(payload.recoveryNonce===data.proof.statement.nonce,
       'recovery signed nonce mismatch');
     this.#consumeApproval(oldTask.id,'recovery',data.proof);
+    this.#consumeApproval(oldTask.id,'procedure-recovery',data.processProof);
     for(const row of this.db.prepare(
       "SELECT payload FROM events WHERE task_id=? AND type='HUMAN_CONTROLLED_RECOVERY'"
     ).all(oldTask.id))
@@ -601,11 +620,23 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'ARBITRATION_NEEDS_REMEDIATION':['ARBITRATOR','B_ENTER'],
       'WAITING_HUMAN_GATE_5_9':['READY_FINAL','WAIT_GATE_59'],
     };
-    const same=new Set(['INFLIGHT','EXECUTION_UNCERTAIN','ROLE_TERMINAL','REVIEW_PAIR_STARTED',
-      'REVIEW_SEAT_RECORDED','REVIEW_PAIR_UNCERTAIN','REVIEW_PAIR_TERMINAL',
-      'TEST_RECEIPTS','P0_STARTED','P0_UNCERTAIN','P0_COMPLETE',
+    const same=new Set(['INFLIGHT','ROLE_TERMINAL','REVIEW_PAIR_STARTED',
+      'REVIEW_SEAT_RECORDED','REVIEW_PAIR_TERMINAL',
+      'TEST_RECEIPTS','P0_STARTED','P0_COMPLETE',
       'GATE_A_ROUND_START','GATE_B_ROUND_START','WORKER_TECHNICAL_FAIL','AUDIT_NOTE']);
-    if(moves[type]){
+    const uncertainEvents=new Set(['EXECUTION_UNCERTAIN','P0_UNCERTAIN','REVIEW_PAIR_UNCERTAIN']);
+    if(uncertainEvents.has(type)){
+      assert(oldTask.status==='INFLIGHT'&&oldTask.inflight!==null&&
+        t.stage==='NEEDS_RECONCILIATION'&&t.status==='NEEDS_RECONCILIATION'&&
+        t.blockedStage===oldTask.stage&&t.inflight===null,
+        'uncertain execution must preserve the original checkpoint and clear the local in-flight marker');
+      if(type==='P0_UNCERTAIN')
+        assert(['P0_INITIAL','P0_FINAL'].includes(oldTask.stage),
+          'P0 uncertainty recorded outside a P0 stage');
+      if(type==='REVIEW_PAIR_UNCERTAIN')
+        assert(['A_REVIEW','B_REVIEW'].includes(oldTask.stage),
+          'Reviewer-pair uncertainty recorded outside a review stage');
+    }else if(moves[type]){
       assert(oldTask.stage===moves[type][0]&&t.stage===moves[type][1],
         `illegal workflow stage transition ${type}: ${oldTask.stage} -> ${t.stage}`);
       const status=type==='GATE_5.9_APPROVED'?'APPROVED_FOR_SEPARATE_RELEASE_REVIEW':
@@ -615,8 +646,6 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       assert(t.stage===oldTask.stage,`event ${type} cannot change stage`);
       const status={
         INFLIGHT:'INFLIGHT',P0_STARTED:'INFLIGHT',REVIEW_PAIR_STARTED:'INFLIGHT',
-        EXECUTION_UNCERTAIN:'NEEDS_RECONCILIATION',
-        P0_UNCERTAIN:'NEEDS_RECONCILIATION',REVIEW_PAIR_UNCERTAIN:'NEEDS_RECONCILIATION',
         ROLE_TERMINAL:'READY',P0_COMPLETE:'READY',REVIEW_PAIR_TERMINAL:'READY',
       }[type];
       if(status)assert(t.status===status,`unexpected status for ${type}`);
@@ -624,26 +653,30 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       const scoped={
         GATE_A_ROUND_START:['A_WORKER'],GATE_B_ROUND_START:['B_WORKER'],
         REVIEW_PAIR_STARTED:['A_REVIEW','B_REVIEW'],REVIEW_SEAT_RECORDED:['A_REVIEW','B_REVIEW'],
-        REVIEW_PAIR_UNCERTAIN:['A_REVIEW','B_REVIEW'],REVIEW_PAIR_TERMINAL:['A_REVIEW','B_REVIEW'],
-        P0_STARTED:['P0_INITIAL','P0_FINAL'],P0_UNCERTAIN:['P0_INITIAL','P0_FINAL'],
+        REVIEW_PAIR_TERMINAL:['A_REVIEW','B_REVIEW'],
+        P0_STARTED:['P0_INITIAL','P0_FINAL'],
         P0_COMPLETE:['P0_INITIAL','P0_FINAL'],
       };
       if(scoped[type])assert(scoped[type].includes(oldTask.stage),
         `event ${type} not allowed at stage ${oldTask.stage}`);
-      if(type==='ROLE_TERMINAL'||type==='EXECUTION_UNCERTAIN'||type==='REVIEW_PAIR_TERMINAL'||
-         type==='P0_COMPLETE'||type==='REVIEW_PAIR_UNCERTAIN')
+      if(type==='ROLE_TERMINAL'||type==='REVIEW_PAIR_TERMINAL'||type==='P0_COMPLETE')
         assert(oldTask.status==='INFLIGHT',`event ${type} requires in-flight execution`);
     }else if(type==='INCIDENT_RECONCILED_BLOCK'){
       this.#verifyIncidentReceipt(oldTask,t,payload);
     }else if(type==='HUMAN_CONTROLLED_RECOVERY'){
       assert(((oldTask.stage==='BLOCKED'&&['BLOCKED','WAITING_HUMAN'].includes(oldTask.status))||
         (oldTask.stage==='WAIT_HUMAN'&&oldTask.status==='WAITING_HUMAN'))&&
-        ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST',
-          'B_ENTER','B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.stage)&&
+        ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_REVIEW','A_TEST',
+          'B_ENTER','B_WORKER','B_REVIEW','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.stage)&&
         t.status==='READY'&&!oldTask.inflight&&
         (oldTask.blockedStage?oldTask.blockedStage===t.stage:
           oldTask.stage==='BLOCKED'&&!oldTask.taskSpecSha&&t.stage==='PLANNER'),
         'recovery cannot skip a stage or clear unresolved state');
+      if(['A_REVIEW','B_REVIEW'].includes(t.stage))
+        assert(oldTask.stage==='BLOCKED'&&
+          typeof oldTask.pendingHuman==='string'&&
+          oldTask.pendingHuman.startsWith('Incident independently reconciled'),
+          'reviewer-pair recovery requires an independently certified incident');
       this.#verifyRecoveryReceipt(oldTask,t,payload);
     }else if(type==='AWAITING_CLARIFICATION'||type==='COMPLIANCE_OR_INFRA_BLOCK'){
       assert(t.stage===(type==='AWAITING_CLARIFICATION'?'WAIT_HUMAN':'BLOCKED')&&
@@ -652,8 +685,10 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       assert(oldTask.status==='READY'&&t.stage==='BLOCKED'&&t.status==='BLOCKED',
         'invalid preflight block');
     }else if(type==='UNEXPECTED_STAGE_ERROR'){
-      assert(['BLOCKED','NEEDS_RECONCILIATION'].includes(t.stage)&&
-        t.status===t.stage,'invalid unexpected error reconciliation');
+      assert(['INFLIGHT','READY'].includes(oldTask.status)&&
+        t.stage===(payload.uncertain?'NEEDS_RECONCILIATION':'BLOCKED')&&
+        t.status===t.stage&&t.blockedStage===oldTask.stage&&t.inflight===null,
+        'unexpected stage error must preserve the failed checkpoint and clear in-flight state');
     }else{
       throw new Error(`unrecognized workflow state transition: ${type}`);
     }

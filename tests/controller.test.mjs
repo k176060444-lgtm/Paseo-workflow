@@ -40,7 +40,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       signature:sign(null,Buffer.from(canonical(statement)),witness.privateKey).toString('base64')};
   }
   function proof(gate,digest,receipt,actor='user'){
-    const signedProcess=['0.1','0.2','5.9','incident'].includes(gate);
+    const signedProcess=['0.1','0.2','5.9','incident','recovery'].includes(gate);
     const processStatement=signedProcess?{purpose:'P1_PROCESS_GATE_V1',
       taskId:'TASK1234',gate,digest,actor,receiptSha256:sha256(receipt),
       stateSha256:sha256(store.get('TASK1234')),evidenceRoot:store.evidenceRoot('TASK1234'),
@@ -368,6 +368,11 @@ test('Arbitrator may dismiss authenticated disputed P0 FALSE_POSITIVE only with 
   const t=x.c.required('TASK1234');
   assert.equal(t.p0Final.passed,false);
   assert.equal(t.finalArbitration.disputeResolution.reportSetSha256,sha256(t.p0Final.reports));
+  const docket=JSON.parse(x.c.arbitrationDocket(t).serialized);
+  for(const report of t.p0Final.reports){
+    assert.equal(docket.p0Summary.reports.find(r=>r.nodeId===report.nodeId).reportSha256,sha256(report));
+    assert.equal(docket.signedP0Originals.find(r=>r.nodeId===report.nodeId).reportSha256,sha256(report));
+  }
   assert.equal(t.bFindings.length,0);
   assert.equal(x.getP0Calls(),2);
   x.store.verify('TASK1234');
@@ -654,5 +659,101 @@ test('incident certificate cannot turn an orphan TERMINAL ACK into a safe restar
     /TERMINAL dispatch has no unique registered original signed execution/);
   assert.equal(x.c.required(t.id).stage,'NEEDS_RECONCILIATION');
   x.store.verify(t.id);
+ }finally{finish(x);}
+});
+
+
+test('uncertain execution records a canonical NEEDS_RECONCILIATION checkpoint',async()=>{
+ const x=setup({ambiguous:true});
+ try{
+  await assert.rejects(()=>x.c.run('TASK1234'),/provider lost connection/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.status,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'PLANNER');
+  assert.equal(t.inflight,null);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('P0 Store rejects a summary PASS that contradicts a signed FAIL report',async()=>{
+ const x=setup({conflicting:true});
+ try{
+  await movePastPlanning(x);
+  const original=x.c.p0.review.bind(x.c.p0);
+  x.c.p0.review=async args=>{
+    const result=await original(args);
+    return {...result,passed:true,dispute:false};
+  };
+  await assert.rejects(()=>x.c.run('TASK1234'),
+    /P0 summary flags\/findings contradict independently verified signed node reports/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'P0_INITIAL');
+  assert.equal(t.inflight,null);
+  assert.notEqual(t.stage,'WAIT_GATE_59');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('reviewer-pair incident recovery reuses the completed seat and dispatches only the missing seat',async()=>{
+ const x=setup();
+ try{
+  await movePastPlanning(x);
+  const original=x.c.runtime.execute;
+  let failQuality=true,specCalls=0,qualityCalls=0;
+  x.c.runtime.execute=async fields=>{
+    if(fields.role==='spec_reviewer'&&fields.phase==='A1-review-spec_reviewer')specCalls++;
+    if(fields.role==='quality_reviewer'&&fields.phase==='A1-review-quality_reviewer'){
+      qualityCalls++;
+      if(failQuality){failQuality=false;throw new Error('simulated reviewer provider disconnect');}
+    }
+    return original(fields);
+  };
+  await assert.rejects(()=>x.c.run('TASK1234'),/Reviewer call failed/);
+  let t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'A_REVIEW');
+  assert.equal(t.inflight,null);
+  assert.equal(t.history.filter(h=>h.role==='spec_reviewer'&&h.phase==='A1-review'&&h.sha===t.currentSha).length,1);
+  assert.equal(t.history.filter(h=>h.role==='quality_reviewer'&&h.phase==='A1-review'&&h.sha===t.currentSha).length,0);
+  const incidentReceipt='I reviewed the terminal original dispatch evidence and authorize incident closure only.';
+  const incidentProof=x.proof('incident',t.currentSha,incidentReceipt);
+  x.c.certifyIncident({id:t.id,actor:'user',receipt:incidentReceipt,
+    expectedSha:t.currentSha,proof:incidentProof});
+  t=x.c.required('TASK1234');
+  assert.equal(t.stage,'BLOCKED');
+  const recoveryReceipt='I authorize resuming the same review checkpoint without replaying the completed seat.';
+  const recoveryProof=x.proof('recovery',t.currentSha,recoveryReceipt);
+  x.c.authorizeRecovery({id:t.id,actor:'user',receipt:recoveryReceipt,
+    expectedSha:t.currentSha,proof:recoveryProof});
+  const result=await x.c.run('TASK1234');
+  assert.equal(result.stage,'WAIT_GATE_59');
+  assert.equal(specCalls,1,'completed Spec Reviewer must not be dispatched again');
+  assert.equal(qualityCalls,2,'only the missing Quality Reviewer seat may be retried');
+  const final=x.c.required('TASK1234');
+  assert.equal(final.history.filter(h=>h.role==='spec_reviewer'&&h.phase==='A1-review'&&h.sha===final.currentSha).length,1);
+  assert.equal(final.history.filter(h=>h.role==='quality_reviewer'&&h.phase==='A1-review'&&h.sha===final.currentSha).length,1);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+
+test('human recovery requires an independent process witness and exact state binding',async()=>{
+ const x=setup();
+ try{
+  await movePastPlanning(x);
+  const task=x.c.required('TASK1234');
+  x.c.paused(task,'Synthetic user clarification required before resuming the approved checkpoint.');
+  const stopped=x.c.required('TASK1234');
+  const message='Human authorizes this exact recovery after reviewing the stopped workflow state.';
+  const signed=x.proof('recovery',stopped.alignmentApprovalSha,message);
+  assert.throws(()=>x.c.authorizeRecovery({id:stopped.id,actor:'user',receipt:message,
+    expectedBasis:stopped.alignmentApprovalSha,proof:{...signed,processProof:undefined}}),
+    /independent Gate procedure envelope required/);
+  const accepted=x.c.authorizeRecovery({id:stopped.id,actor:'user',receipt:message,
+    expectedBasis:stopped.alignmentApprovalSha,proof:signed});
+  assert.equal(accepted.stage,'PLAN_DETAIL');
+  x.store.verify(stopped.id);
  }finally{finish(x);}
 });
