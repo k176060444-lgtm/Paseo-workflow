@@ -17,7 +17,8 @@ export class WorkflowController {
       userAlignment:null,alignmentSha:null,alignmentApprovalSha:null,
       lastA:null,lastB:null,p0Initial:null,p0Final:null,changesInB:false,
       bFindings:[],pendingHuman:null,history:[],workPlan:null,workPlanSha:null,
-      finalArbitration:null,created:new Date().toISOString()};
+      finalArbitration:null,blockedStage:null,reviewerReuse:null,
+      created:new Date().toISOString()};
     this.store.init(t);
     const snapshot=this.store.artifact(id,'frozen-manifest.json',frozen);
     this.store.event(id,'CONFIG_FROZEN',{sha256:frozen.digest,artifactSha256:snapshot.sha256});
@@ -407,7 +408,12 @@ export class WorkflowController {
       verdict:p.passed?'PASS':'FAIL',evidenceSha256:ev.sha256},preP0.auditSessionId);
     return p;
   }
-  next(t,stage,type,payload={}){t.stage=stage;t.status=TERMINAL.has(stage)?'WAITING_HUMAN':'READY';this.store.save(t,type,payload);}
+  next(t,stage,type,payload={}){
+    if(['A_REVIEW','B_REVIEW'].includes(t.stage)&&stage!==t.stage)
+      t.reviewerReuse=null; // recovered review tokens are single-use
+    t.stage=stage;t.status=TERMINAL.has(stage)?'WAITING_HUMAN':'READY';
+    this.store.save(t,type,payload);
+  }
   paused(t,message){t.pendingHuman=message;t.blockedStage=t.stage;this.next(t,'WAIT_HUMAN','AWAITING_CLARIFICATION',{message});}
   failed(t,message){t.pendingHuman=message;t.blockedStage=t.stage;this.next(t,'BLOCKED','COMPLIANCE_OR_INFRA_BLOCK',{message});}
   async step(t){
@@ -468,7 +474,8 @@ export class WorkflowController {
       }
       case 'A_REVIEW':{
         // A signed recovery reuses both original reports; never dispatch twice.
-        const reused=t.blockedStage==='A_REVIEW';
+        const reused=t.reviewerReuse?.checkpoint==='A_REVIEW'&&
+          t.reviewerReuse.sha===t.currentSha;
         if(reused)await this.git.assertUnchanged(t.worktree,t.currentSha);
         const r=reused?this.store.readCompletedReviewerPair(t.id,'A_REVIEW',t.currentSha):
           await this.invokePair(t,`A${t.aRound}-review`,t.currentSha);
@@ -518,7 +525,8 @@ export class WorkflowController {
         this.next(t,'B_REVIEW','B_COMMIT_FROZEN',{sha:t.currentSha});return;
       }
       case 'B_REVIEW':{
-        const reused=t.blockedStage==='B_REVIEW';
+        const reused=t.reviewerReuse?.checkpoint==='B_REVIEW'&&
+          t.reviewerReuse.sha===t.currentSha;
         if(reused)await this.git.assertUnchanged(t.worktree,t.currentSha);
         const r=reused?this.store.readCompletedReviewerPair(t.id,'B_REVIEW',t.currentSha):
           await this.invokePair(t,`B${t.bRound}-review`,t.currentSha);
@@ -750,6 +758,9 @@ export class WorkflowController {
     const ev=this.store.artifact(id,`recovery-${randomUUID().slice(0,10)}.json`,
       {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,proof});
     t.pendingHuman=null;t.status='READY';t.stage=target;
+    t.blockedStage=null; // clear the failed checkpoint on authorized recovery
+    t.reviewerReuse=['A_REVIEW','B_REVIEW'].includes(target)?
+      {checkpoint:target,sha:t.currentSha,nonce:proof.statement.nonce}:null;
     this.store.save(t,'HUMAN_CONTROLLED_RECOVERY',{
       actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce});
     return {id,stage:t.stage};
