@@ -93,7 +93,7 @@ export function verifyGateProcess(roots,envelope,{
 
 export function verifyHumanApproval(roots,envelope,{
   taskId,gate,digest,actor,receipt,evidenceSha256=null,evidenceRoot=null,
-  processProofSha256
+  processProofSha256,blockedStage,stateSha256
 }){
   assert(roots&&roots.keys.size>0,'authenticated human approval not provisioned; BLOCKED');
   assert(envelope&&envelope.schema===1&&typeof envelope.keyId==='string',
@@ -115,8 +115,14 @@ export function verifyHumanApproval(roots,envelope,{
     assert(typeof evidenceSha256==='string'&&/^[a-f0-9]{64}$/.test(evidenceSha256)&&
       s.evidenceSha256===evidenceSha256&&s.evidenceRoot===undefined,
       'incident reconciliation approval must bind exact original incident evidence');
-  else assert(s.evidenceSha256===undefined&&s.evidenceRoot===undefined,
-    'only final Gate 5.9 or incident review may bind evidence');
+  else if(gate==='recovery')
+    assert((blockedStage===null||typeof blockedStage==='string')&&
+      typeof stateSha256==='string'&&/^[a-f0-9]{64}$/.test(stateSha256)&&
+      s.blockedStage===blockedStage&&s.stateSha256===stateSha256,
+      'recovery signature must bind exact blocked checkpoint and task state');
+  else assert(s.evidenceSha256===undefined&&s.evidenceRoot===undefined&&
+    s.blockedStage===undefined&&s.stateSha256===undefined,
+    'only recovery may bind a checkpoint/state snapshot; only final Gate 5.9 or incident review may bind evidence');
   assert(typeof s.nonce==='string'&&/^[a-f0-9-]{36}$/i.test(s.nonce),
     'human approval nonce missing');
   assert(typeof s.issuedAt==='string','human approval timestamp missing');
