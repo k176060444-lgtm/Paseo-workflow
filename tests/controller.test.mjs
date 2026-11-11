@@ -394,6 +394,40 @@ test('R7-002 final Gate rejects late evidence not covered by signed compliance r
  }finally{finish(x);}
 });
 
+test('Recovery CLI status supplies one signed-state snapshot and real CLI consumes it without database access',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  x.c.paused(x.c.required('TASK1234'),'Question at approved planning detail checkpoint');
+  const before=x.c.required('TASK1234'),basis=before.alignmentApprovalSha;
+  const stateRoot=path.join(x.tmp,'state');
+  const invoke=(command,args)=>JSON.parse(execFileSync(process.execPath,
+    [path.resolve('src/cli.mjs'),command,'--id','TASK1234','--state',stateRoot,...args],
+    {encoding:'utf8',cwd:process.cwd()}));
+  const status=invoke('status',[]);
+  assert.equal(status.blockedStage,'PLAN_DETAIL');
+  assert.equal(status.stateSha256,sha256(before));
+  assert.equal(status.recovery.blockedStage,'PLAN_DETAIL');
+  assert.equal(status.recovery.stateSha256,status.stateSha256);
+  assert.equal(status.recovery.digest,basis);
+  assert.equal(status.recovery.expectedSha,null);
+  assert.equal(status.recovery.expectedBasis,basis);
+  const msg='Human accepts precisely this persisted, independently inspected recovery checkpoint and state.';
+  const receipt=path.join(x.tmp,'recovery-receipt.txt');
+  const signed=path.join(x.tmp,'recovery-human-signature.json');
+  fs.writeFileSync(receipt,msg);
+  fs.writeFileSync(signed,JSON.stringify(x.proof('recovery',status.recovery.digest,msg)));
+  const recovered=invoke('recover',['--actor','user','--receipt',receipt,
+    '--approval-proof',signed,'--basis',status.recovery.expectedBasis]);
+  assert.equal(recovered.stage,'PLAN_DETAIL');
+  const after=invoke('status',[]);
+  assert.equal(after.stage,'PLAN_DETAIL');
+  assert.equal(after.blockedStage,null);
+  assert.equal(after.recovery,null);
+  assert.notEqual(after.stateSha256,status.stateSha256);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
 test('R13.2: recovery signature rejects a state signed with the wrong status or checkpoint',async()=>{
  const x=setup();try{
   await movePastPlanning(x);
