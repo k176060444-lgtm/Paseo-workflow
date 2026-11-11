@@ -746,7 +746,7 @@ export class WorkflowController {
     return {id,stage:t.stage,status:t.status,allowedToRedispatch:false};
   }
   // Noncompliance recovery deliberately has no generic skip-a-gate operation.
-  authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null}){
+  authorizeRecovery({id,actor,receipt,expectedSha=null,expectedBasis=null,proof=null,processProof=null}){
     this.store.verify(id);
     const t=this.required(id);
     this.assertFrozenIntegrity(t);
@@ -785,17 +785,28 @@ export class WorkflowController {
         'Reviewer pair recovery requires separately certified incident closure');
     // invokePair is source-aware: it reuses completed exact-SHA seats and only
     // dispatches a missing seat after signed incident closure and human recovery.
-    // Recovery is also a human Gate. Merely writing actor+receipt is not auth.
-    this.store.verifyHumanProof(proof,{
-      taskId:id,gate:'recovery',digest:basis,actor,receipt,
-    });
+    // Recovery is a human Gate: an independent process witness must observe
+    // the exact stopped state before the human countersigns that procedure.
     assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
       'recovery trust roots have changed');
+    const procedure=processProof??proof?.processProof;
+    this.store.verifyGateProcessProof(procedure,{
+      taskId:id,gate:'recovery',digest:basis,actor,receipt,
+      stateSha256:sha256(t),evidenceRoot:this.store.evidenceRoot(id)});
+    assert(!this.store.approvalNonceUsed(procedure.keyId,procedure.statement.nonce),
+      'recovery process nonce already consumed');
+    this.store.verifyHumanProof(proof,{
+      taskId:id,gate:'recovery',digest:basis,actor,receipt,
+      processProofSha256:sha256(procedure),
+    });
+    assert(!this.store.approvalNonceUsed(proof.keyId,proof.statement.nonce),
+      'recovery human nonce already consumed');
     const ev=this.store.artifact(id,`recovery-${randomUUID().slice(0,10)}.json`,
-      {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,proof});
+      {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,proof,processProof:procedure});
     t.pendingHuman=null;t.status='READY';t.stage=target;
     this.store.save(t,'HUMAN_CONTROLLED_RECOVERY',{
-      actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce});
+      actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce,
+      processNonce:procedure.statement.nonce,processProofSha256:sha256(procedure)});
     return {id,stage:t.stage};
   }
 }

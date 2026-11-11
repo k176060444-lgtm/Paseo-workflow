@@ -40,7 +40,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       signature:sign(null,Buffer.from(canonical(statement)),witness.privateKey).toString('base64')};
   }
   function proof(gate,digest,receipt,actor='user'){
-    const signedProcess=['0.1','0.2','5.9','incident'].includes(gate);
+    const signedProcess=['0.1','0.2','5.9','incident','recovery'].includes(gate);
     const processStatement=signedProcess?{purpose:'P1_PROCESS_GATE_V1',
       taskId:'TASK1234',gate,digest,actor,receiptSha256:sha256(receipt),
       stateSha256:sha256(store.get('TASK1234')),evidenceRoot:store.evidenceRoot('TASK1234'),
@@ -368,6 +368,11 @@ test('Arbitrator may dismiss authenticated disputed P0 FALSE_POSITIVE only with 
   const t=x.c.required('TASK1234');
   assert.equal(t.p0Final.passed,false);
   assert.equal(t.finalArbitration.disputeResolution.reportSetSha256,sha256(t.p0Final.reports));
+  const docket=JSON.parse(x.c.arbitrationDocket(t).serialized);
+  for(const report of t.p0Final.reports){
+    assert.equal(docket.p0Summary.reports.find(r=>r.nodeId===report.nodeId).reportSha256,sha256(report));
+    assert.equal(docket.signedP0Originals.find(r=>r.nodeId===report.nodeId).reportSha256,sha256(report));
+  }
   assert.equal(t.bFindings.length,0);
   assert.equal(x.getP0Calls(),2);
   x.store.verify('TASK1234');
@@ -730,5 +735,25 @@ test('reviewer-pair incident recovery reuses the completed seat and dispatches o
   assert.equal(final.history.filter(h=>h.role==='spec_reviewer'&&h.phase==='A1-review'&&h.sha===final.currentSha).length,1);
   assert.equal(final.history.filter(h=>h.role==='quality_reviewer'&&h.phase==='A1-review'&&h.sha===final.currentSha).length,1);
   x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+
+test('human recovery requires an independent process witness and exact state binding',async()=>{
+ const x=setup();
+ try{
+  await movePastPlanning(x);
+  const task=x.c.required('TASK1234');
+  x.c.paused(task,'Synthetic user clarification required before resuming the approved checkpoint.');
+  const stopped=x.c.required('TASK1234');
+  const message='Human authorizes this exact recovery after reviewing the stopped workflow state.';
+  const signed=x.proof('recovery',stopped.alignmentApprovalSha,message);
+  assert.throws(()=>x.c.authorizeRecovery({id:stopped.id,actor:'user',receipt:message,
+    expectedBasis:stopped.alignmentApprovalSha,proof:{...signed,processProof:undefined}}),
+    /independent Gate procedure envelope required/);
+  const accepted=x.c.authorizeRecovery({id:stopped.id,actor:'user',receipt:message,
+    expectedBasis:stopped.alignmentApprovalSha,proof:signed});
+  assert.equal(accepted.stage,'PLAN_DETAIL');
+  x.store.verify(stopped.id);
  }finally{finish(x);}
 });

@@ -426,11 +426,10 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(distinct.size>=2,'P0 authenticated physical quorum incomplete');
     const cleanPasses=summary.reports.every(r=>PASS(r.verdict)&&
       Array.isArray(r.findings)&&r.findings.length===0);
-    const hasCleanPositive=summary.reports.some(r=>PASS(r.verdict)&&
-      Array.isArray(r.findings)&&r.findings.length===0);
+    const hasPositive=summary.reports.some(r=>PASS(r.verdict));
     const hasFail=summary.reports.some(r=>r.verdict==='FAIL');
     const hasQuestion=summary.reports.some(r=>['QUESTION','NEEDS_SPECIALIST'].includes(r.verdict));
-    const derivedDispute=hasQuestion||(hasCleanPositive&&hasFail);
+    const derivedDispute=hasQuestion||(hasPositive&&hasFail);
     const derivedFindings=summary.reports.flatMap(r=>r.findings);
     assert(summary.passed===cleanPasses&&summary.dispute===derivedDispute&&
       Array.isArray(summary.findings)&&canonical(summary.findings)===canonical(derivedFindings),
@@ -567,11 +566,20 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       data.actor===payload.actor&&data.expectedSha===(oldTask.currentSha??null)&&
       data.expectedBasis===(oldTask.currentSha?null:oldTask.alignmentApprovalSha??oldTask.taskSpecSha??oldTask.frozen.digest),
       'recovery artifact/target/basis mismatch');
+    assert(data.processProof?.schema===1&&
+      payload.processProofSha256===sha256(data.processProof)&&
+      payload.processNonce===data.processProof.statement?.nonce,
+      'recovery requires separately signed independent process evidence');
+    this.verifyGateProcessProof(data.processProof,{
+      taskId:oldTask.id,gate:'recovery',digest:basis,actor:data.actor,receipt:data.receipt,
+      stateSha256:sha256(oldTask),evidenceRoot:this.evidenceRoot(oldTask.id,{exclude:name})});
     this.verifyHumanProof(data.proof,{taskId:oldTask.id,gate:'recovery',
-      digest:basis,actor:data.actor,receipt:data.receipt});
+      digest:basis,actor:data.actor,receipt:data.receipt,
+      processProofSha256:payload.processProofSha256});
     assert(payload.recoveryNonce===data.proof.statement.nonce,
       'recovery signed nonce mismatch');
     this.#consumeApproval(oldTask.id,'recovery',data.proof);
+    this.#consumeApproval(oldTask.id,'procedure-recovery',data.processProof);
     for(const row of this.db.prepare(
       "SELECT payload FROM events WHERE task_id=? AND type='HUMAN_CONTROLLED_RECOVERY'"
     ).all(oldTask.id))
@@ -664,6 +672,11 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         (oldTask.blockedStage?oldTask.blockedStage===t.stage:
           oldTask.stage==='BLOCKED'&&!oldTask.taskSpecSha&&t.stage==='PLANNER'),
         'recovery cannot skip a stage or clear unresolved state');
+      if(['A_REVIEW','B_REVIEW'].includes(t.stage))
+        assert(oldTask.stage==='BLOCKED'&&
+          typeof oldTask.pendingHuman==='string'&&
+          oldTask.pendingHuman.startsWith('Incident independently reconciled'),
+          'reviewer-pair recovery requires an independently certified incident');
       this.#verifyRecoveryReceipt(oldTask,t,payload);
     }else if(type==='AWAITING_CLARIFICATION'||type==='COMPLIANCE_OR_INFRA_BLOCK'){
       assert(t.stage===(type==='AWAITING_CLARIFICATION'?'WAIT_HUMAN':'BLOCKED')&&
