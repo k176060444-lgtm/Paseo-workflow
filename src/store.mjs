@@ -462,13 +462,22 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       const audits=t.history.filter(a=>a.role==='pro_audit'&&
         a.auditSessionId===h.auditSessionId);
       assert(audits.length===2,'reviewer recovery requires paired original PRE/POST compliance');
+      const sourceIndex=t.history.indexOf(h);
       for(const kind of ['PRE','POST']){
         const audit=audits.find(a=>a.phase==='audit-'+kind+'-'+role+'-'+phase+'-'+role);
-        assert(audit?.verdict==='PASS'&&audit.auditBinding?.checkpoint===kind&&
+        const auditIndex=t.history.indexOf(audit);
+        assert(audit?.verdict==='PASS'&&
+          (kind==='PRE'?auditIndex>=0&&auditIndex<sourceIndex:
+            auditIndex>sourceIndex)&&
+          audit.auditBinding?.checkpoint===kind&&
           audit.auditBinding?.sessionId===h.auditSessionId&&
+          audit.auditBinding?.targetRole===role&&
+          audit.auditBinding?.approvedHarness===(t.frozen.roles?.[role]?.harness??null)&&
+          audit.auditBinding?.approvedModel===(t.frozen.roles?.[role]?.model??null)&&
+          audit.auditBinding?.approvedSoulSha256===(t.frozen.souls?.[role]?.sha256??null)&&
           audit.auditBinding?.targetEvidenceSha256===(kind==='POST'?h.evidenceSha256:null)&&
           audit.auditBinding?.targetAgentId===(kind==='POST'?h.agentId:null),
-          'reviewer recovery missing exact original process audit evidence');
+          'reviewer recovery missing ordered role-bound original process audit evidence');
         this.#verifyHistoryExecution(t,audit);
       }
       originals[role]=raw;
