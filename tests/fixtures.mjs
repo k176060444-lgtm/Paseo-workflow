@@ -80,9 +80,12 @@ export function syntheticHumanAuthority(dir,taskId) {
     },
     proof(gate,digest,actor,receipt,store=null){
       const isGate=['0.1','0.2','5.9'].includes(gate);
-      assert(!isGate||store,'synthetic Gate process proof requires exact store snapshot');
+      const isRecovery=gate==='recovery';
+      assert(!isGate&&!isRecovery||store,
+        'synthetic Gate/recovery proof requires exact store snapshot');
+      const snapshot=store?store.get(taskId):null;
       const pStatement=isGate?{purpose:'P1_PROCESS_GATE_V1',taskId,gate,digest,actor,
-        receiptSha256:sha256(receipt),stateSha256:sha256(store.get(taskId)),
+        receiptSha256:sha256(receipt),stateSha256:sha256(snapshot),
         evidenceRoot:store.evidenceRoot(taskId),scope:'PROCESS_ONLY',verdict:'COMPLIANT',
         checks:['GATE_BASIS','HUMAN_AUTHORITY','PROCESS_EVIDENCE'],
         nonce:randomUUID(),issuedAt:new Date().toISOString()}:null;
@@ -91,6 +94,8 @@ export function syntheticHumanAuthority(dir,taskId) {
           procedure.privateKey).toString('base64')}:null;
       const statement={purpose:'P1_HUMAN_GATE_V1',taskId,gate,digest,actor,
         receipt,...(processProof?{processProofSha256:sha256(processProof)}:{}),
+        ...(isRecovery?{blockedStage:snapshot.blockedStage??null,
+          stateSha256:sha256(snapshot)}:{}),
         nonce:randomUUID(),issuedAt:new Date().toISOString()};
       return {schema:1,keyId:'synthetic-operator',statement,
         signature:sign(null,Buffer.from(canonical(statement)),pair.privateKey).toString('base64'),
