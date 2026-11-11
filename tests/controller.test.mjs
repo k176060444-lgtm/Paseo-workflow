@@ -458,6 +458,9 @@ test('R13.2: Store independently rejects a changed recovery state digest after a
   const proof=x.proof('recovery',stopped.alignmentApprovalSha,msg);
   const commit=x.store.commitRecovery.bind(x.store);
   const beforeSnapshot=x.c.inspect('TASK1234'),beforeArtifacts=x.store.artifactHash('TASK1234');
+  const evidenceDir=path.join(x.tmp,'state','tasks','TASK1234','evidence');
+  const originalRecoveryFiles=fs.readdirSync(evidenceDir)
+    .filter(name=>name.startsWith('recovery-'));
   x.store.commitRecovery=(task,params)=>commit(task,{
     ...params,payload:{...params.payload,stateSha256:'0'.repeat(64)}});
   assert.throws(()=>x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
@@ -467,6 +470,8 @@ test('R13.2: Store independently rejects a changed recovery state digest after a
   assert.equal(x.c.required('TASK1234').stage,'WAIT_HUMAN');
   assert.equal(x.store.artifactHash('TASK1234'),beforeArtifacts,
     'atomic rejection must not register any evidence artifact');
+  assert.deepEqual(fs.readdirSync(evidenceDir).filter(name=>name.startsWith('recovery-')),
+    originalRecoveryFiles,'rejected recovery must not leave a new orphaned evidence file');
   assert.equal(x.store.approvalNonceUsed(proof.keyId,proof.statement.nonce),false,
     'atomic rejection must not consume human approval nonce');
   assert.equal(x.c.inspect('TASK1234').stateSha256,beforeSnapshot.stateSha256);
