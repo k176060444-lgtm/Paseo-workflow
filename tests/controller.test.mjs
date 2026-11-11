@@ -11,7 +11,7 @@ import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical,verifyGate
 import {verifyCommitEvidenceSync} from '../src/git.mjs';
 import {resealLastEventSyntheticState} from './fixtures.mjs';
 
-function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false,preRejectRole=null,p0ForgedPass=false,p0SignedHistorical=false}={}) {
+function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false,preRejectRole=null,p0ForgedPass=false,p0SignedHistorical=false,duplicateReviewerAgent=false}={}) {
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-case-'));
   const g=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
   const repo=path.join(tmp,'repo');fs.mkdirSync(repo);
@@ -42,7 +42,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     return {schema:1,keyId:'offline-execution-witness',statement,
       signature:sign(null,Buffer.from(canonical(statement)),witness.privateKey).toString('base64')};
   }
-  function proof(gate,digest,receipt,actor='user'){
+  function proof(gate,digest,receipt,actor='user',statementOverrides={}){
     const signedProcess=['0.1','0.2','5.9','incident'].includes(gate);
     const processStatement=signedProcess?{purpose:'P1_PROCESS_GATE_V1',
       taskId:'TASK1234',gate,digest,actor,receiptSha256:sha256(receipt),
@@ -53,15 +53,20 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
     const processProof=signedProcess?{schema:1,keyId:'offline-process-witness',
       statement:processStatement,signature:sign(null,Buffer.from(canonical(processStatement)),
         processWitness.privateKey).toString('base64')}:null;
+    const recoveryTask=gate==='recovery'?store.get('TASK1234'):null;
+    assert(gate!=='recovery'||recoveryTask,'recovery proof requires exact persisted task snapshot');
     const statement={purpose:'P1_HUMAN_GATE_V1',taskId:'TASK1234',gate,digest,
-      actor,receipt,nonce:randomUUID(),issuedAt:new Date().toISOString(),
+      actor,receipt,
+      ...(recoveryTask?{blockedStage:recoveryTask.blockedStage??null,
+        stateSha256:sha256(recoveryTask)}:{}),
+      nonce:randomUUID(),issuedAt:new Date().toISOString(),
       ...(processProof?{processProofSha256:sha256(processProof)}:{}),
       ...(gate==='incident'?{evidenceSha256:store.incidentEvidenceDigest(
         'TASK1234',store.get('TASK1234'))}:{}),
       ...(gate==='5.9'?{
         evidenceSha256:store.evidenceDigest('TASK1234','final-compliance.json'),
         evidenceRoot:store.evidenceRoot('TASK1234')
-      }:{})};
+      }:{}),...statementOverrides};
     return {schema:1,keyId:'offline-auditor',statement,
       signature:sign(null,Buffer.from(canonical(statement)),keys.privateKey).toString('base64'),
       ...(processProof?{processProof}:{})};
@@ -93,7 +98,7 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
   let workerCount=0,remCount=0,reportCount=0,modelCalls=[];
   const runtime={execute:async x=>{
     modelCalls.push(x.role);
-    const number=modelCalls.length,dispatchId='mock-'+number,agentId='fake-agent-'+number;
+    const number=modelCalls.length,dispatchId='mock-'+number,agentId=duplicateReviewerAgent&&['spec_reviewer','quality_reviewer'].includes(x.role)?'duplicate-reviewer-agent':'fake-agent-'+number;
     x.store.recordIntent(x.task.id,x.phase,dispatchId);
     if(ambiguous&&x.role==='planner')throw Error('provider lost connection after request');
     x.store.recordAck(dispatchId,agentId);
