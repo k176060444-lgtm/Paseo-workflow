@@ -780,8 +780,11 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         (oldTask.blockedStage?oldTask.blockedStage===t.stage:
           oldTask.stage==='BLOCKED'&&!oldTask.taskSpecSha&&t.stage==='PLANNER'),
         'recovery cannot skip a stage or clear unresolved state');
-      if(['A_REVIEW','B_REVIEW'].includes(t.stage))
-        this.readCompletedReviewerPair(oldTask.id,t.stage,oldTask.currentSha);
+      const isPair=['A_REVIEW','B_REVIEW'].includes(t.stage);
+      assert(t.blockedStage===null&&canonical(t.reviewerReuse??null)===
+        canonical(isPair?{checkpoint:t.stage,sha:t.currentSha,nonce:payload.recoveryNonce}:null),
+        'signed recovery must clear stale blockedStage and bind one-shot reviewer reuse');
+      if(isPair)this.readCompletedReviewerPair(oldTask.id,t.stage,oldTask.currentSha);
       this.#verifyRecoveryReceipt(oldTask,t,payload);
     }else if(type==='AWAITING_CLARIFICATION'||type==='COMPLIANCE_OR_INFRA_BLOCK'){
       assert(t.stage===(type==='AWAITING_CLARIFICATION'?'WAIT_HUMAN':'BLOCKED')&&
@@ -982,6 +985,24 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     else if(nextTask.workPlan!==undefined&&nextTask.workPlan!==null)
       assert(type==='PLAN_DETAIL_COMPLETE'&&nextTask.workPlanSha===sha256(nextTask.workPlan),
         'detailed work plan may only be frozen after Gate 0.2');
+    const prevReuse=oldTask.reviewerReuse??null,nextReuse=nextTask.reviewerReuse??null;
+    if(type==='HUMAN_CONTROLLED_RECOVERY'){
+      // The exact token is checked together with the original signed nonce
+      // in #validateStageTransition; it cannot be fabricated by normal save().
+    }else if(prevReuse!==null&&nextReuse===null){
+      assert(['A_REVIEW_PASS','A_REVIEW_FAIL','B_REVIEW_PASS','B_REVIEW_FAIL',
+        'AWAITING_CLARIFICATION','COMPLIANCE_OR_INFRA_BLOCK',
+        'UNEXPECTED_STAGE_ERROR'].includes(type),
+        'reviewer reuse authorization can only be consumed on leaving its checkpoint');
+    }else assert(canonical(prevReuse)===canonical(nextReuse),
+      'reviewer reuse token cannot change without signed human recovery');
+    if(type!=='HUMAN_CONTROLLED_RECOVERY'&&
+       type!=='AWAITING_CLARIFICATION'&&type!=='COMPLIANCE_OR_INFRA_BLOCK'&&
+       type!=='PREFLIGHT_BLOCKED'&&type!=='INCIDENT_RECONCILED_BLOCK'&&
+       type!=='EXECUTION_UNCERTAIN'&&type!=='REVIEW_PAIR_UNCERTAIN'&&
+       type!=='P0_UNCERTAIN'&&type!=='UNEXPECTED_STAGE_ERROR')
+      assert((oldTask.blockedStage??null)===(nextTask.blockedStage??null),
+        'blockedStage cannot mutate without an authorized failure/recovery event');
     if(oldTask.finalArbitration!==undefined&&oldTask.finalArbitration!==null)
       assert(canonical(oldTask.finalArbitration)===canonical(nextTask.finalArbitration),
         'final Arbitrator conclusion cannot be replaced or erased');
