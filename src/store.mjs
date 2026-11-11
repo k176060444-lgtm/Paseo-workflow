@@ -677,12 +677,18 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'authenticated recovery artifact missing');
     const data=JSON.parse(this.#requireArtifact(oldTask.id,name,payload.evidenceSha256));
     const basis=oldTask.currentSha??oldTask.alignmentApprovalSha??oldTask.taskSpecSha??oldTask.frozen.digest;
+    const blockedStage=oldTask.blockedStage??null;
+    const stateSha256=sha256(oldTask);
     assert(data.origin===oldTask.stage&&data.target===nextTask.stage&&
       data.actor===payload.actor&&data.expectedSha===(oldTask.currentSha??null)&&
       data.expectedBasis===(oldTask.currentSha?null:oldTask.alignmentApprovalSha??oldTask.taskSpecSha??oldTask.frozen.digest),
       'recovery artifact/target/basis mismatch');
+    assert(data.blockedStage===blockedStage&&data.stateSha256===stateSha256&&
+      payload.blockedStage===blockedStage&&payload.stateSha256===stateSha256,
+      'recovery checkpoint/state snapshot changed after human signature');
     this.verifyHumanProof(data.proof,{taskId:oldTask.id,gate:'recovery',
-      digest:basis,actor:data.actor,receipt:data.receipt});
+      digest:basis,actor:data.actor,receipt:data.receipt,
+      blockedStage,stateSha256});
     assert(payload.recoveryNonce===data.proof.statement.nonce,
       'recovery signed nonce mismatch');
     this.#consumeApproval(oldTask.id,'recovery',data.proof);
