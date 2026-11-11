@@ -42,7 +42,10 @@ function fixture(withAuthority=false){
       nonce:randomUUID(),issuedAt:new Date().toISOString()};
     const processProof={schema:1,keyId:'local-procedure-key',statement:pStatement,
       signature:sign(null,Buffer.from(canonical(pStatement)),procedure.privateKey).toString('base64')};
+    const recoverySnapshot=gate==='recovery'?store.get(id):null;
     const statement={purpose:'P1_HUMAN_GATE_V1',taskId:id,gate,digest,actor,receipt,
+      ...(recoverySnapshot?{blockedStage:recoverySnapshot.blockedStage??null,
+        stateSha256:sha256(recoverySnapshot)}:{}),
       processProofSha256:sha256(processProof),
       nonce:randomUUID(),issuedAt:new Date().toISOString()};
     return {schema:1,keyId:'local-test-key',statement,
