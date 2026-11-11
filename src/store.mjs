@@ -259,6 +259,26 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       }
     }
   }
+  #verifyFinalArbitratorEvidence(t){
+    const final=t.finalArbitration;
+    assert(final?.sha===t.currentSha&&PASS(final.verdict)&&
+      typeof final.agentId==='string'&&final.agentId,
+      'final technical adjudication requires exact signed Arbitrator identity');
+    const matches=t.history.filter(h=>h.role==='arbitrator'&&
+      h.sha===final.sha&&h.agentId===final.agentId&&
+      h.phase===final.phase&&PASS(h.verdict));
+    assert(matches.length===1,'final technical ruling must have one original independent Arbitrator result');
+    const record=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+      .get(t.id,matches[0].evidenceSha256);
+    assert(record,'final Arbitrator signed original result missing');
+    const raw=JSON.parse(this.#requireArtifact(t.id,record.name,matches[0].evidenceSha256));
+    assert(raw.role==='arbitrator'&&raw.phase===final.phase&&
+      raw.agentId===final.agentId&&PASS(raw.verdict)&&
+      canonical(raw.disputeResolution??null)===canonical(final.disputeResolution??null),
+      'finalArbitration.disputeResolution contradicts original independently signed Arbitrator result');
+    this.#verifyHistoryExecution(t,matches[0]);
+    return true;
+  }
   #validateFinalGate(t){
     assert(t.stage==='WAIT_GATE_59'&&t.status==='WAITING_HUMAN',
       'Gate 5.9 requires waiting human stage');
@@ -286,9 +306,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(!t.bFindings?.length,'Gate 5.9 unresolved findings');
     assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
       'Gate 5.9 requires final Arbitrator acceptance of original user intent and code completeness');
-    assert(t.history.some(h=>h.role==='arbitrator'&&h.sha===t.currentSha&&
-      h.agentId===t.finalArbitration.agentId&&PASS(h.verdict)),
-      'Gate 5.9 missing authenticated final Arbitrator execution');
+    this.#verifyFinalArbitratorEvidence(t);
     verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
     this.#verifyP0Nodes(t,p0,{allowHistorical:true});
     const record=this.db.prepare("SELECT name,digest FROM artifacts WHERE task_id=? AND name='final-compliance.json'").get(t.id);
@@ -854,9 +872,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       assert(verdict.passed===true||acceptedP0Dispute(t),
         'final arbitration cannot waive unverifiable P0 evidence');
       assert(!t.bFindings?.length,'arbitration did not close outstanding findings');
-      assert(t.history.some(h=>h.role==='arbitrator'&&h.sha===t.currentSha&&
-        h.agentId===t.finalArbitration.agentId&&PASS(h.verdict)),
-        'final Arbitrator execution receipt missing');
+      this.#verifyFinalArbitratorEvidence(t);
     }
     if(type==='TASK_SPEC_CANDIDATE'){
       assert(t.taskSpecSha===payload.sha256,'Planner TASK_SPEC digest missing from transition');
