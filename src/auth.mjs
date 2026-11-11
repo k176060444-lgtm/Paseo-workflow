@@ -116,7 +116,8 @@ export function verifyHumanApproval(roots,envelope,{
       s.evidenceSha256===evidenceSha256&&s.evidenceRoot===undefined,
       'incident reconciliation approval must bind exact original incident evidence');
   else if(gate==='recovery')
-    assert((blockedStage===null||typeof blockedStage==='string')&&
+    assert(s.evidenceSha256===undefined&&s.evidenceRoot===undefined&&
+      (blockedStage===null||typeof blockedStage==='string')&&
       typeof stateSha256==='string'&&/^[a-f0-9]{64}$/.test(stateSha256)&&
       s.blockedStage===blockedStage&&s.stateSha256===stateSha256,
       'recovery signature must bind exact blocked checkpoint and task state');
