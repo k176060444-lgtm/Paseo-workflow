@@ -35,22 +35,23 @@ function fixture(withAuthority=false){
     taskSpec:null,taskSpecSha:null,baseSha:null,currentSha:null,
     lastA:null,lastB:null,p0Initial:null,p0Final:null,history:[],pendingHuman:null};
   function proof(gate,digest,actor='human',receipt='Human approves the exact task digest at this gate.'){
-    const pStatement={purpose:'P1_PROCESS_GATE_V1',taskId:id,gate,digest,actor,
+    const signedProcess=['0.1','0.2','5.9','incident'].includes(gate);
+    const pStatement=signedProcess?{purpose:'P1_PROCESS_GATE_V1',taskId:id,gate,digest,actor,
       receiptSha256:sha256(receipt),stateSha256:sha256(store.get(id)),
       evidenceRoot:store.evidenceRoot(id),scope:'PROCESS_ONLY',verdict:'COMPLIANT',
       checks:['GATE_BASIS','HUMAN_AUTHORITY','PROCESS_EVIDENCE'],
-      nonce:randomUUID(),issuedAt:new Date().toISOString()};
-    const processProof={schema:1,keyId:'local-procedure-key',statement:pStatement,
-      signature:sign(null,Buffer.from(canonical(pStatement)),procedure.privateKey).toString('base64')};
+      nonce:randomUUID(),issuedAt:new Date().toISOString()}:null;
+    const processProof=pStatement?{schema:1,keyId:'local-procedure-key',statement:pStatement,
+      signature:sign(null,Buffer.from(canonical(pStatement)),procedure.privateKey).toString('base64')}:null;
     const recoverySnapshot=gate==='recovery'?store.get(id):null;
     const statement={purpose:'P1_HUMAN_GATE_V1',taskId:id,gate,digest,actor,receipt,
       ...(recoverySnapshot?{blockedStage:recoverySnapshot.blockedStage??null,
         stateSha256:sha256(recoverySnapshot)}:{}),
-      processProofSha256:sha256(processProof),
+      ...(processProof?{processProofSha256:sha256(processProof)}:{}),
       nonce:randomUUID(),issuedAt:new Date().toISOString()};
     return {schema:1,keyId:'local-test-key',statement,
       signature:sign(null,Buffer.from(canonical(statement)),pair.privateKey).toString('base64'),
-      processProof};
+      ...(processProof?{processProof}:{})};
   }
   return {root,store,id,boot,proof,close(){
     store.close();
