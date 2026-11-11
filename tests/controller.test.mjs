@@ -459,6 +459,8 @@ test('R13.2: recovery rejects a wrong Commit SHA and a human signature for a dif
  const x=setup();try{
   await movePastPlanning(x);
   await assert.rejects(()=>x.c.run('TASK1234',{maxSteps:3}),/maxStep guard reached/);
+  const reviewTask=x.c.required('TASK1234');
+  await x.c.invokePair(reviewTask,'A1-review',reviewTask.currentSha);
   x.c.paused(x.c.required('TASK1234'),'Human stop at the exact committed Reviewer checkpoint');
   const stopped=x.c.required('TASK1234');
   const msg='Human authorizes recovery only for this exact frozen Commit.';
