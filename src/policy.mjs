@@ -204,6 +204,19 @@ export function parseAgentOutput(raw, role) {
     (output.verdict==='APPROVE_WITH_COMMENTS' && output.findings.some(f =>
       !/^\s*(?:[-*]\s*)?\[?(?:LOW|MEDIUM|INFO|ADVISORY)\]?\s*[:：-]/i.test(f)))
   )) throw new Error(`${role}: inconsistent PASS/findings severity; manual reconciliation required`);
+  if(output.disputeResolution!==undefined&&output.disputeResolution!==null){
+    assert(role==='arbitrator'&&output.verdict==='PASS',
+      'only final Arbitrator PASS may supply a P0 technical ruling');
+    const resolution=output.disputeResolution;
+    assert(resolution&&/^[a-f0-9]{64}$/.test(resolution.reportSetSha256??'')&&
+      Array.isArray(resolution.decisions)&&resolution.decisions.length>0&&
+      resolution.decisions.every(d=>d&&typeof d.nodeId==='string'&&
+        /^[a-f0-9]{64}$/.test(d.reportSha256??'')&&
+        d.disposition==='FALSE_POSITIVE'&&typeof d.rationale==='string'&&
+        d.rationale.trim().length>=40&&Array.isArray(d.codeRefs)&&
+        d.codeRefs.length>0&&d.codeRefs.every(ref=>typeof ref==='string'&&ref.length>=3)),
+      'Arbitrator evidence-bound per-report technical ruling is malformed');
+  }
   if (role === 'planner') assert(typeof output.taskSpec === 'string' && output.taskSpec.length > 20, 'planner TASK_SPEC absent');
   if(output.userAlignment!==undefined)
     assert(typeof output.userAlignment==='string'&&output.userAlignment.length>40,
@@ -271,4 +284,4 @@ export function acceptedP0Dispute(t){
   });
 }
 
-export const AGENT_SCHEMA = {type:'object',properties:{verdict:{type:'string',enum:['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS','APPROVE','REQUEST_CHANGES']},summary:{type:'string'},findings:{type:'array',items:{type:'string'}},taskSpec:{type:'string'},userAlignment:{type:'string'}},required:['verdict','summary','findings'],additionalProperties:false};
+export const AGENT_SCHEMA = {type:'object',properties:{verdict:{type:'string',enum:['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS','APPROVE','REQUEST_CHANGES']},summary:{type:'string'},findings:{type:'array',items:{type:'string'}},taskSpec:{type:'string'},userAlignment:{type:'string'},disputeResolution:{type:'object',properties:{reportSetSha256:{type:'string'},decisions:{type:'array',items:{type:'object',properties:{nodeId:{type:'string'},reportSha256:{type:'string'},disposition:{type:'string',enum:['FALSE_POSITIVE']},rationale:{type:'string'},codeRefs:{type:'array',items:{type:'string'}}},required:['nodeId','reportSha256','disposition','rationale','codeRefs'],additionalProperties:false}}},required:['reportSetSha256','decisions'],additionalProperties:false}},required:['verdict','summary','findings'],additionalProperties:false};
