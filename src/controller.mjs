@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import * as git from './git.mjs';
-import {assert,checkedId,freezeConfig,MAX_A,MAX_B,sha256,PASS,PAUSE,hasBlockingFinding,TERMINAL,ROLE_PERMISSIONS,acceptedP0Dispute,verifyGateBTests,GATE_B_LAYERS} from './policy.mjs';
+import {assert,checkedId,freezeConfig,MAX_A,MAX_B,sha256,PASS,PAUSE,hasBlockingFinding,TERMINAL,ROLE_PERMISSIONS,acceptedP0Dispute,assertP0Summary,deriveP0Verdict,verifyGateBTests,GATE_B_LAYERS} from './policy.mjs';
 
 const canonicalAuditBinding = value=>JSON.stringify(value,Object.keys(value??{}).sort());
 const ROLE_PROMPT = `Obey the frozen Soul, approved TASK_SPEC, stage constraints and exact SHA. Do NOT claim tests passed without evidence. End with one JSON object matching {"verdict":"PASS|FAIL|QUESTION|NEEDS_SPECIALIST|APPROVE_WITH_COMMENTS","summary":"...","findings":["..."]}. Planner must also include taskSpec string.`;
@@ -127,11 +127,12 @@ export class WorkflowController {
       verifyGateBTests(t);
       assert(t.lastB?.commit===t.currentSha,'Tester B commit mismatch');
       const p0=t.p0Final??t.p0Initial;
-      assert(p0?.commit===t.currentSha&&(p0.passed===true||acceptedP0Dispute(t)),
+      const outcome=assertP0Summary(p0);
+      assert(p0?.commit===t.currentSha&&(outcome.passed===true||acceptedP0Dispute(t)),
         'final P0 must pass or have an authenticated evidence-bound technical dispute ruling');
       assert(p0.reports.length>=2&&new Set(p0.reports.map(r=>r.physicalId)).size>=2,'insufficient physical P0 seats');
       assert(p0.reports.every(r=>r.commit===t.currentSha&&Array.isArray(r.findings))&&
-        (p0.passed===true||acceptedP0Dispute(t)),
+        (outcome.passed===true||acceptedP0Dispute(t)),
         'P0 quorum does not match final SHA or has unresolved findings');
       assert(!t.bFindings.length,'unresolved P0 findings');
       assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
@@ -140,6 +141,22 @@ export class WorkflowController {
     return true;
   }
 
+  // Persist a fail-closed transition from the exact active checkpoint.
+  // Never infer a completed provider outcome from an exception or auto-retry.
+  markExecutionUncertain(t,{type,role,phase,error,details={}}){
+    assert(t.status==='INFLIGHT'&&t.inflight?.role&&t.inflight?.phase,
+      'uncertain execution requires original in-flight identity');
+    const checkpoint=t.stage,originalRole=t.inflight.role,
+      originalPhase=t.inflight.phase;
+    t.stage='NEEDS_RECONCILIATION';
+    t.status='NEEDS_RECONCILIATION';
+    t.blockedStage=checkpoint;
+    t.inflight=null;
+    t.pendingHuman='Original '+originalRole+'/'+originalPhase+
+      ' outcome unknown; reconcile signed original evidence: '+String(error);
+    this.store.save(t,type,{checkpoint,originalRole,originalPhase,
+      requestedRole:role,requestedPhase:phase,error:String(error),...details});
+  }
   // Process compliance only. Each individual role dispatch is checked BEFORE
   // and AFTER, including both independent reviewers and the final Arbitrator.
   // The auditor itself is not recursively audited.
@@ -191,8 +208,8 @@ export class WorkflowController {
       result=await this.runtime.execute({task:t,role:'pro_audit',phase:auditPhase,
         cwd:cwd??t.frozen.project.repo,prompt,store:this.store,auditBinding:binding});
     }catch(e){
-      t.status='NEEDS_RECONCILIATION';t.pendingHuman='Pro-Audit execution unknown: '+e.message;
-      this.store.save(t,'EXECUTION_UNCERTAIN',{role:'pro_audit',phase:auditPhase,error:String(e.message)});
+      this.markExecutionUncertain(t,{type:'EXECUTION_UNCERTAIN',
+        role:'pro_audit',phase:auditPhase,error:e});
       throw e;
     }
     const artifact=this.store.artifact(t.id,'compliance-'+sha256(auditPhase).slice(0,20)+
@@ -218,7 +235,7 @@ export class WorkflowController {
     this.store.save(t,'INFLIGHT',{role,phase});
     let result;
     try{result=await this.runtime.execute({task:t,role,phase,cwd,prompt:`${ROLE_PROMPT}\n${prompt}`,store:this.store});}
-    catch(e){t.status='NEEDS_RECONCILIATION';t.pendingHuman=String(e.message);this.store.save(t,'EXECUTION_UNCERTAIN',{role,phase,error:String(e.message)});throw e;}
+    catch(e){this.markExecutionUncertain(t,{type:'EXECUTION_UNCERTAIN',role,phase,error:e});throw e;}
     assert(!PASS(result.verdict)||!hasBlockingFinding(result.findings??[])&&
       (result.verdict!=='PASS'||!(result.findings??[]).length),
       `${role}: contradictory PASS/findings; reconcile manually`);
@@ -264,8 +281,9 @@ export class WorkflowController {
     }
     if(errors.length || successful.size!==2 ||
        successful.get('spec_reviewer').agentId===successful.get('quality_reviewer').agentId){
-      t.status='NEEDS_RECONCILIATION';t.pendingHuman='Concurrent reviewer execution uncertain or invalid';
-      this.store.save(t,'REVIEW_PAIR_UNCERTAIN',{sha,completed:[...successful.keys()],errors});
+      this.markExecutionUncertain(t,{type:'REVIEW_PAIR_UNCERTAIN',role:'review_pair',
+        phase:prefix,error:'Concurrent reviewer execution uncertain or invalid',
+        details:{sha,completed:[...successful.keys()],errors}});
       throw new Error('Reviewer call failed or identity invalid; saved finished seats; reconcile before continuing');
     }
     await this.git.assertUnchanged(t.worktree,sha);
@@ -354,13 +372,15 @@ export class WorkflowController {
     const p0Originals=p0.reports.map(r=>{
       assert(r.evidence?.sha256,'P0 signed node report missing');
       const record=this.store.readEvidenceByDigest(t.id,r.evidence.sha256);
-      return {nodeId:r.nodeId,physicalId:r.physicalId,sha256:record.sha256,
+      return {nodeId:r.nodeId,physicalId:r.physicalId,
+        reportSha256:sha256(r),sha256:record.sha256,
         signedOriginal:JSON.parse(record.content)};
     });
     const docket={schema:1,finalCommit:t.currentSha,originalIntent:t.frozen.intent,
       originalIntentSha256:t.frozen.intentSha256,approvedSpec:t.taskSpec,
       approvedSpecSha256:t.taskSpecSha,workPlan:t.workPlan,workPlanSha256:t.workPlanSha,
-      p0Summary:p0,p0ReportSetSha256:sha256(p0.reports),
+      p0Summary:{...p0,reports:p0.reports.map(r=>({...r,reportSha256:sha256(r)}))},
+      p0ReportSetSha256:sha256(p0.reports),
       signedP0Originals:p0Originals,roleAndComplianceEvidence:history,
       testedCommit:t.lastB?.commit,passedTests:t.lastB?.tests?.receipts??[],
       outstandingFindings:t.bFindings};
@@ -375,7 +395,9 @@ export class WorkflowController {
     this.store.save(t,'P0_STARTED',{cycle,sha:t.currentSha});
     let p;
     try{p=await this.p0.review({task:t,commit:t.currentSha,taskSpec:t.taskSpec,store:this.store,cycle});}
-    catch(e){t.status='NEEDS_RECONCILIATION';t.pendingHuman=String(e.message);this.store.save(t,'P0_UNCERTAIN',{cycle,error:String(e.message)});throw e;}
+    catch(e){this.markExecutionUncertain(t,{type:'P0_UNCERTAIN',role:'P0',phase:cycle,
+      error:e,details:{cycle}});throw e;}
+    assertP0Summary(p); // A forged Adapter PASS cannot be frozen into evidence.
     const ev=this.store.artifact(t.id,`p0-${cycle}-summary.json`,p);
     t.status='READY';t.inflight=null;
     t.history.push({role:'P0',phase:cycle,sha:t.currentSha,passed:p.passed,
@@ -531,7 +553,8 @@ export class WorkflowController {
         const candidate={sha:t.currentSha,verdict:r.verdict,agentId:r.agentId,
           phase:r.phase,docketSha256:docket.sha256,disputeResolution:r.disputeResolution??null};
         const p0=t.p0Final??t.p0Initial;
-        if(!p0.passed){
+        const outcome=assertP0Summary(p0);
+        if(!outcome.passed){
           if(!acceptedP0Dispute({...t,finalArbitration:candidate})){
             this.paused(t,'P0 disagreement lacks complete evidence-bound final technical ruling; human clarification required');
             return;
