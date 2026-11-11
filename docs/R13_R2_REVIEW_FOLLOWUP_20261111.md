@@ -19,6 +19,7 @@ These are review-process observations. **This source patch does not retroactivel
 3. **Final Arbitrator original evidence**: Store now checks the actual independently signed original Arbitrator result against `t.finalArbitration.disputeResolution`, agent ID, exact phase and final Commit, both at `ARBITRATION_FINALIZED` and Gate 5.9. Changing a rationale after signing cannot be authenticated by a Controller-only assertion.
 4. **Post-recovery state**: successful signed human recovery clears `blockedStage` and, solely for fully completed two-seat Reviewer recovery, creates a one-use `reviewerReuse` token bound to exact SHA, checkpoint and human nonce. Source-aware replay reads the original independently witnessed reports; the token is cleared when leaving the review checkpoint. Missing or mismatched original PRE/POST blocks.
 5. **Regression**: timestamp 31-minute and future witness cases, signed-report tampering, unexpected checkpoint/phase forgery, signed Arbitrator ruling change, Reviewer POST absence, successful zero-redispatch reviewer recovery and token cleanup.
+6. **Integrated delayed Gate test**: a test-only two-seat native Paseo P0 signer registers original Ed25519 envelopes, task/workspace/prompt bindings and terminal dispatches in the real SQLite Store. The normal Controller/Store stages advance to READY_FINAL; the test advances the clock 31 minutes and exercises WAITING_HUMAN_GATE_5_9, a freshly signed human approval and the Gate 5.9 Store validation to CLOSED. Real network/model preflight alone is stubbed in the isolated test; no remote task was created.
 
 ## Known remaining blockers (not changed)
 
@@ -31,6 +32,6 @@ These are review-process observations. **This source patch does not retroactivel
 
 ## Next controlled review
 
-Freeze SHA, confirm source and CI, then **only after genuine Pro-Audit PRE and user-approved C model availability** re-run a single independent scope-limited Spec/Quality/Arbitrator/Pro-Audit review. Reproduce the original 31-minute historical verification at the persisted Store/Gate (not just verifier unit), unwanted UNKNOWN-stage transition, signed arbitrary decision tampering and Reviewer missing POST. Store full original logs, call IDs and usage; do not use a master fallback as independent report.
+Freeze SHA, confirm source and CI, then **only after genuine Pro-Audit PRE and user-approved C model availability** re-run a single independent scope-limited Spec/Quality/Arbitrator/Pro-Audit review. Inspect and independently reproduce the newly added 31-minute SQLite Store/Gate integration regression as well as unwanted UNKNOWN-stage transitions, signed Arbitrator decision tampering and Reviewer missing POST. Store full original logs, call IDs and usage; do not use a master fallback as independent report.
 
 **No repository main mutation, deployment, SSH, remote model execution, paid calls or key upload occurred in this remediation.**
