@@ -415,6 +415,25 @@ test('R13.2: recovery signature rejects a state signed with the wrong status or 
  }finally{finish(x);}
 });
 
+test('R13.2: Store independently rejects a changed recovery state digest after artifact registration',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  x.c.paused(x.c.required('TASK1234'),'Synthetic stop for Store-side recovery proof validation');
+  const stopped=x.c.required('TASK1234');
+  const msg='Human signs the exact original recovery state and checkpoint.';
+  const proof=x.proof('recovery',stopped.alignmentApprovalSha,msg);
+  const save=x.store.save.bind(x.store);
+  x.store.save=(task,type,payload={})=>type==='HUMAN_CONTROLLED_RECOVERY'?
+    save(task,type,{...payload,stateSha256:'0'.repeat(64)}):save(task,type,payload);
+  assert.throws(()=>x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
+    expectedBasis:stopped.alignmentApprovalSha,proof}),
+    /recovery checkpoint\/state snapshot changed after human signature/);
+  x.store.save=save;
+  assert.equal(x.c.required('TASK1234').stage,'WAIT_HUMAN');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
 test('R13.2: a previously consumed recovery nonce cannot authorize a later checkpoint',async()=>{
  const x=setup();try{
   await movePastPlanning(x);
