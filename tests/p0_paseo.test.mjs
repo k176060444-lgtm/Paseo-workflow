@@ -286,4 +286,12 @@ test('R13 follow-up P0: fresh first registration is mandatory but verified origi
    node:future.nodes[0],task:future.task,cycle,commit,jobId,agentId,raw,binding});
  assert.throws(()=>verifyPaseoP0Envelope(future.roots,future.nodes[0],e2,expected),
    /P0 witness stale\/future/);
+ // Historical mode relaxes only the maximum age, never the future-clock bound.
+ assert.throws(()=>verifyPaseoP0Envelope(future.roots,future.nodes[0],e2,{
+   ...expected,allowHistorical:true}),/P0 witness stale\/future/);
+ const clockSkew=mock({signedAgeMs:-90*1000});
+ const e3=await clockSkew.attestor.attestP0Result({
+   node:clockSkew.nodes[0],task:clockSkew.task,cycle,commit,jobId,agentId,raw,binding});
+ assert.equal(verifyPaseoP0Envelope(clockSkew.roots,clockSkew.nodes[0],e3,{
+   ...expected,allowHistorical:true}).verdict,'PASS');
 });
