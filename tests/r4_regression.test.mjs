@@ -69,7 +69,7 @@ test('R4-002 frozen snapshot and digest cannot be replaced together',()=>{
     const message='Human explicitly permits recovery of original task basis';
     const r=c.authorizeRecovery({id:w.id,actor:'human',receipt:message,
       expectedBasis:old.frozen.digest,
-      proof:w.proof('recovery',old.frozen.digest,'human',message)});
+      proof:w.proof('recovery',old.frozen.digest,'human',message,w.store)});
     assert.equal(r.stage,'PLANNER');
     assert.equal(w.store.get(w.id).frozen.digest,old.frozen.digest);
   }finally{w.close();}
