@@ -527,6 +527,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
           audit.auditBinding?.checkpoint===kind&&
           audit.auditBinding?.sessionId===h.auditSessionId&&
           audit.auditBinding?.targetRole===role&&
+          audit.auditBinding?.targetPhase===phase+'-'+role&&
           audit.auditBinding?.approvedHarness===(t.frozen.roles?.[role]?.harness??null)&&
           audit.auditBinding?.approvedModel===(t.frozen.roles?.[role]?.model??null)&&
           audit.auditBinding?.approvedSoulSha256===(t.frozen.souls?.[role]?.sha256??null)&&
