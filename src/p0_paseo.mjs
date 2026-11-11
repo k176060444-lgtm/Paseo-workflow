@@ -1,7 +1,7 @@
 import {verify} from 'node:crypto';
 import {assert,canonical,sha256,parseAgentOutput,normalizeVerdict,PASS,providerOptions} from './policy.mjs';
 
-function signed(roots,node,proof,expected){
+function signed(roots,node,proof,expected,{allowHistorical=false}={}){
   const key=roots instanceof Map?roots.get(node.id):roots?.p0?.get(node.id);
   assert(key,'P0 independently pinned public key missing');
   assert(proof?.schema===1&&proof.keyId===node.id&&proof.statement,
@@ -11,7 +11,10 @@ function signed(roots,node,proof,expected){
   const s=proof.statement;
   assert(/^[a-f0-9-]{36}$/i.test(s.nonce??''),'P0 witness nonce invalid');
   const age=Date.now()-Date.parse(s.issuedAt);
-  assert(Number.isFinite(age)&&age>=-120000&&age<=30*60000,'P0 witness stale/future');
+  // Freshness is enforced at first receipt/registration. Historical replay
+  // validates immutable signed content and ledger linkage, not current age.
+  assert(Number.isFinite(age)&&(allowHistorical||age>=-120000&&age<=30*60000),
+    'P0 witness stale/future');
   const sig=Buffer.from(proof.signature??'','base64');
   assert(sig.length===64&&verify(null,Buffer.from(canonical(s)),key,sig),
     'P0 independent Ed25519 signature invalid');
@@ -21,7 +24,7 @@ export function verifyPaseoP0Preflight(roots,node,proof,taskId,commit){
     nodeId:node.id,physicalId:node.physicalId,serverId:node.serverId,
     workspaceId:node.workspaceId,cwd:node.cwd,commit,head:commit,clean:true});
 }
-export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,commit,binding=null}){
+export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,commit,binding=null,allowHistorical=false}){
   assert(envelope?.report&&envelope?.proof,'P0 signed original result missing');
   const r=envelope.report;
   assert(r.taskId===taskId&&r.cycle===cycle&&r.jobId===jobId&&r.commit===commit&&
@@ -52,7 +55,8 @@ export function verifyPaseoP0Envelope(roots,node,envelope,{taskId,cycle,jobId,co
   signed(roots,node,envelope.proof,{purpose:binding?'P1_P0_NODE_RESULT_V2':'P1_P0_NODE_RESULT_V1',taskId,cycle,
     jobId,commit,nodeId:node.id,physicalId:node.physicalId,
     serverId:node.serverId,agentId:r.agentId,model:r.model,harness:r.harness,
-    ...(binding?{bindingSha256:sha256(binding)}:{}),reportSha256:sha256(r)});
+    ...(binding?{bindingSha256:sha256(binding)}:{}),reportSha256:sha256(r)},
+    {allowHistorical});
   return {...r,verdict:parsed.verdict};
 }
 async function makeDirectClient({url,password}) {
