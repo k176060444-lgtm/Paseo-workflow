@@ -493,14 +493,23 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(t?.currentSha===sha,'Reviewer recovery requires frozen exact Commit');
     const cycle=checkpoint==='A_REVIEW'?'A'+t.aRound:'B'+t.bRound;
     const phase=cycle+'-review',roles=['spec_reviewer','quality_reviewer'];
-    const originals={};const identities=new Set();
+    const originals={};
+    const entriesByRole=Object.fromEntries(roles.map(role=>[role,
+      t.history.filter(h=>h.role===role&&h.phase===phase&&h.sha===sha)]));
+    // Establish the two-seat identity boundary before inspecting either seat's
+    // detailed evidence, so a duplicate Agent is never masked by a later
+    // missing-PRE/POST error from the first seat.
+    const identities=new Set();
     for(const role of roles){
-      const entries=t.history.filter(h=>h.role===role&&h.phase===phase&&h.sha===sha);
-      assert(entries.length===1,'source-aware recovery requires exactly one original '+role+' report');
-      const h=entries[0];
+      assert(entriesByRole[role].length===1,
+        'source-aware recovery requires exactly one original '+role+' report');
+      const h=entriesByRole[role][0];
       assert(typeof h.agentId==='string'&&h.agentId&&!identities.has(h.agentId),
         'Reviewer recovery cannot reuse a seat or Agent ID');
       identities.add(h.agentId);
+    }
+    for(const role of roles){
+      const h=entriesByRole[role][0];
       this.#verifyHistoryExecution(t,h);
       const record=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
         .get(id,h.evidenceSha256);
