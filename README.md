@@ -1,3 +1,5 @@
+> **R13 targeted source remediation:** [R13 fixed-SHA audit handoff](docs/R13_TARGETED_REMEDIATION.md) resolves the reported uncertain-state mismatch, forged P0 summary trust, safe two-seat Reviewer re-use and actual Arbitrator dispute output contract at offline code level. Historical R12 verdict FAIL and all live-integration blockers remain; **do not deploy/merge this branch**.
+
 > **R12 source-only security gate:** Independent process signers are required for Gates 0.1/0.2/5.9 and safe incident closure. Signed OS/Paseo observer capability preflight is mandatory before the first paid model dispatch. See [R12 review and witness handoff](docs/R12_GATE_WITNESS_INCIDENT_REVIEW.md). CI simulation does not authorize live deployment.
 
 > **V2.3 source-only continuation:** [R11 Coding mainline remediation](docs/R11_CODING_MAINLINE_REMEDIATION.md) adds original-dispatch read-only reconciliation, three mandatory Tester B layers with verified original logs, exact signed-terminal recovery checks and technical budget allocation after compliant PRE. **Not cleared for live execution or release.**
