@@ -5,7 +5,7 @@ import { verifyCommitEvidenceSync } from './git.mjs';
 import {loadTrustRoots,verifyHumanApproval,verifyGateProcess,verifyExecutionAttestation,verifyObserverReadiness} from './auth.mjs';
 import {SshP0Adapter} from './p0.mjs';
 import {verifyPaseoP0Envelope} from './p0_paseo.mjs';
-import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, acceptedP0Dispute, verifyGateBTests } from './policy.mjs';
+import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, acceptedP0Dispute, assertP0Summary, deriveP0Verdict, verifyGateBTests } from './policy.mjs';
 
 export class Store {
   // Only the Store's own verified, synchronous mutation methods may append
@@ -275,12 +275,13 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true&&
       t.lastB?.commit===t.currentSha,'Gate 5.9 missing independent Tester B pass');
     const p0=t.p0Final??t.p0Initial;
-    assert(p0?.commit===t.currentSha&&(p0.passed===true||acceptedP0Dispute(t)),
+    const verdict=assertP0Summary(p0);
+    assert(p0?.commit===t.currentSha&&(verdict.passed===true||acceptedP0Dispute(t)),
       'Gate 5.9 requires passing P0 or an authenticated evidence-bound final dispute ruling');
     assert(Array.isArray(p0.reports)&&p0.reports.length>=2&&
       new Set(p0.reports.map(r=>r.physicalId)).size>=2&&
       p0.reports.every(r=>r.commit===t.currentSha&&Array.isArray(r.findings))&&
-      (p0.passed===true||acceptedP0Dispute(t)),
+      (verdict.passed===true||acceptedP0Dispute(t)),
       'Gate 5.9 P0 physical quorum/commit/unresolved disputes invalid');
     assert(!t.bFindings?.length,'Gate 5.9 unresolved findings');
     assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
@@ -381,6 +382,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         new Set(inventory.map(x=>x.physicalId)).size===inventory.length,
         'Paseo remote daemon/physical identity collision');
     }
+    const computed=assertP0Summary(summary);
     const distinct=new Set();
     for(const report of summary.reports){
       const node=inventory.find(n=>n.id===report.nodeId);
@@ -424,6 +426,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       distinct.add(node.physicalId);
     }
     assert(distinct.size>=2,'P0 authenticated physical quorum incomplete');
+    return computed;
   }
   #verifyReviewerPair(t){
     const prefix=t.stage==='A_REVIEW'? 'A'+t.aRound:'B'+t.bRound;
@@ -601,11 +604,25 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'ARBITRATION_NEEDS_REMEDIATION':['ARBITRATOR','B_ENTER'],
       'WAITING_HUMAN_GATE_5_9':['READY_FINAL','WAIT_GATE_59'],
     };
-    const same=new Set(['INFLIGHT','EXECUTION_UNCERTAIN','ROLE_TERMINAL','REVIEW_PAIR_STARTED',
-      'REVIEW_SEAT_RECORDED','REVIEW_PAIR_UNCERTAIN','REVIEW_PAIR_TERMINAL',
-      'TEST_RECEIPTS','P0_STARTED','P0_UNCERTAIN','P0_COMPLETE',
+    const same=new Set(['INFLIGHT','ROLE_TERMINAL','REVIEW_PAIR_STARTED',
+      'REVIEW_SEAT_RECORDED','REVIEW_PAIR_TERMINAL',
+      'TEST_RECEIPTS','P0_STARTED','P0_COMPLETE',
       'GATE_A_ROUND_START','GATE_B_ROUND_START','WORKER_TECHNICAL_FAIL','AUDIT_NOTE']);
-    if(moves[type]){
+    const uncertainEvents=new Set(['EXECUTION_UNCERTAIN','REVIEW_PAIR_UNCERTAIN','P0_UNCERTAIN']);
+    if(uncertainEvents.has(type)){
+      assert(oldTask.status==='INFLIGHT'&&oldTask.stage!=='NEEDS_RECONCILIATION'&&
+        t.stage==='NEEDS_RECONCILIATION'&&t.status==='NEEDS_RECONCILIATION'&&
+        t.blockedStage===oldTask.stage&&payload.checkpoint===oldTask.stage&&
+        t.inflight===null&&oldTask.inflight?.role&&
+        payload.originalRole===oldTask.inflight.role&&
+        payload.originalPhase===oldTask.inflight.phase,
+        'uncertain execution must preserve the original checkpoint and in-flight identity');
+      assert(type==='REVIEW_PAIR_UNCERTAIN'?
+        ['A_REVIEW','B_REVIEW'].includes(oldTask.stage):
+        type==='P0_UNCERTAIN'?
+          ['P0_INITIAL','P0_FINAL'].includes(oldTask.stage):
+          true,'uncertain event type is wrong for original stage');
+    }else if(moves[type]){
       assert(oldTask.stage===moves[type][0]&&t.stage===moves[type][1],
         `illegal workflow stage transition ${type}: ${oldTask.stage} -> ${t.stage}`);
       const status=type==='GATE_5.9_APPROVED'?'APPROVED_FOR_SEPARATE_RELEASE_REVIEW':
@@ -615,8 +632,6 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       assert(t.stage===oldTask.stage,`event ${type} cannot change stage`);
       const status={
         INFLIGHT:'INFLIGHT',P0_STARTED:'INFLIGHT',REVIEW_PAIR_STARTED:'INFLIGHT',
-        EXECUTION_UNCERTAIN:'NEEDS_RECONCILIATION',
-        P0_UNCERTAIN:'NEEDS_RECONCILIATION',REVIEW_PAIR_UNCERTAIN:'NEEDS_RECONCILIATION',
         ROLE_TERMINAL:'READY',P0_COMPLETE:'READY',REVIEW_PAIR_TERMINAL:'READY',
       }[type];
       if(status)assert(t.status===status,`unexpected status for ${type}`);
@@ -715,7 +730,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       assert(t.finalArbitration?.sha===t.currentSha&&PASS(t.finalArbitration.verdict),
         'final Arbitrator must bind current commit');
       const p0=t.p0Final??t.p0Initial;
-      assert(p0?.passed===true||acceptedP0Dispute(t),
+      const verdict=assertP0Summary(p0);
+      assert(verdict.passed===true||acceptedP0Dispute(t),
         'final arbitration cannot waive unverifiable P0 evidence');
       assert(!t.bFindings?.length,'arbitration did not close outstanding findings');
       assert(t.history.some(h=>h.role==='arbitrator'&&h.sha===t.currentSha&&
