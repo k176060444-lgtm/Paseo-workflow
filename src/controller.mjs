@@ -750,19 +750,28 @@ export class WorkflowController {
     if(['A_REVIEW','B_REVIEW'].includes(target))
       this.store.readCompletedReviewerPair(id,target,t.currentSha);
     // Recovery is also a human Gate. Merely writing actor+receipt is not auth.
+    // The human signature covers the exact persisted state being resumed,
+    // including the checkpoint that recovery is authorized to reopen.
+    const recoveryStateSha256=sha256(t);
+    const recoveryBlockedStage=t.blockedStage??null;
     this.store.verifyHumanProof(proof,{
       taskId:id,gate:'recovery',digest:basis,actor,receipt,
+      blockedStage:recoveryBlockedStage,stateSha256:recoveryStateSha256,
     });
+    assert(!this.store.approvalNonceUsed(proof.keyId,proof.statement.nonce),
+      'recovery approval nonce already consumed');
     assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
       'recovery trust roots have changed');
     const ev=this.store.artifact(id,`recovery-${randomUUID().slice(0,10)}.json`,
-      {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,proof});
+      {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,
+        blockedStage:recoveryBlockedStage,stateSha256:recoveryStateSha256,proof});
     t.pendingHuman=null;t.status='READY';t.stage=target;
     t.blockedStage=null; // clear the failed checkpoint on authorized recovery
     t.reviewerReuse=['A_REVIEW','B_REVIEW'].includes(target)?
       {checkpoint:target,sha:t.currentSha,nonce:proof.statement.nonce}:null;
     this.store.save(t,'HUMAN_CONTROLLED_RECOVERY',{
-      actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce});
+      actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce,
+      blockedStage:recoveryBlockedStage,stateSha256:recoveryStateSha256});
     return {id,stage:t.stage};
   }
 }
