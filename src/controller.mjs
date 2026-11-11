@@ -776,16 +776,19 @@ export class WorkflowController {
       'recovery approval nonce already consumed');
     assert(t.trustRootSha256!==null&&t.trustRootSha256===this.store.trustRootDigest(),
       'recovery trust roots have changed');
-    const ev=this.store.artifact(id,`recovery-${randomUUID().slice(0,10)}.json`,
-      {actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,
-        blockedStage:recoveryBlockedStage,stateSha256:recoveryStateSha256,proof});
+    const name=`recovery-${randomUUID().slice(0,10)}.json`;
+    const content={actor,receipt,expectedSha,expectedBasis,origin:t.stage,target,
+      blockedStage:recoveryBlockedStage,stateSha256:recoveryStateSha256,proof};
     t.pendingHuman=null;t.status='READY';t.stage=target;
     t.blockedStage=null; // clear the failed checkpoint on authorized recovery
     t.reviewerReuse=['A_REVIEW','B_REVIEW'].includes(target)?
       {checkpoint:target,sha:t.currentSha,nonce:proof.statement.nonce}:null;
-    this.store.save(t,'HUMAN_CONTROLLED_RECOVERY',{
-      actor,evidenceSha256:ev.sha256,target,recoveryNonce:proof.statement.nonce,
-      blockedStage:recoveryBlockedStage,stateSha256:recoveryStateSha256});
+    // Registration, original signed-receipt verification, nonce consumption,
+    // state mutation and the final event must succeed or roll back together.
+    this.store.commitRecovery(t,{name,content,payload:{
+      actor,evidenceSha256:sha256(content),target,
+      recoveryNonce:proof.statement.nonce,
+      blockedStage:recoveryBlockedStage,stateSha256:recoveryStateSha256}});
     return {id,stage:t.stage};
   }
 }
