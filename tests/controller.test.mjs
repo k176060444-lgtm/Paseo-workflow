@@ -776,11 +776,74 @@ test('R13 D03: signed recovery of fully witnessed reviewer pair reuses both repo
   const accepted=x.c.authorizeRecovery({id:'TASK1234',actor:'user',receipt:msg,
     expectedSha:stopped.currentSha,proof:x.proof('recovery',stopped.currentSha,msg)});
   assert.equal(accepted.stage,'A_REVIEW');
+  assert.equal(x.c.required('TASK1234').blockedStage,null);
+  assert.equal(x.c.required('TASK1234').reviewerReuse.checkpoint,'A_REVIEW');
   assert.equal(x.store.readCompletedReviewerPair('TASK1234','A_REVIEW',stopped.currentSha).pass,true);
   const result=await x.c.run('TASK1234');
   assert.equal(result.stage,'WAIT_GATE_59');
+  assert.equal(x.c.required('TASK1234').blockedStage,null);
+  assert.equal(x.c.required('TASK1234').reviewerReuse,null);
   assert.equal(x.modelCalls.filter(r=>['spec_reviewer','quality_reviewer'].includes(r)).length,
     originalReports);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('R13 follow-up: unexpected generic error cannot invent next checkpoint or original in-flight phase',async()=>{
+ const x=setup();try{
+  const task=x.c.required('TASK1234');
+  assert.equal(task.stage,'PLANNER');
+  task.stage='BLOCKED';task.status='BLOCKED';task.blockedStage='PLAN_DETAIL';
+  task.pendingHuman='Synthetic stage failure with forged checkpoint';
+  task.inflight=null;
+  assert.throws(()=>x.store.save(task,'UNEXPECTED_STAGE_ERROR',{
+    uncertain:false,checkpoint:'PLANNER',originalRole:null,originalPhase:null}),
+    /cannot invent a checkpoint or skip a Gate/);
+  assert.equal(x.c.required('TASK1234').stage,'PLANNER');
+  const active=x.c.required('TASK1234');
+  active.status='INFLIGHT';active.inflight={role:'planner',phase:'planner'};
+  x.store.save(active,'INFLIGHT',{role:'planner',phase:'planner'});
+  const fake=x.c.required('TASK1234');
+  fake.stage='NEEDS_RECONCILIATION';fake.status='NEEDS_RECONCILIATION';
+  fake.blockedStage='PLANNER';fake.inflight=null;
+  fake.pendingHuman='Synthetic interrupted Planner with forged original phase';
+  assert.throws(()=>x.store.save(fake,'UNEXPECTED_STAGE_ERROR',{
+    uncertain:true,checkpoint:'PLANNER',originalRole:'planner',
+    originalPhase:'tampered-phase'}),/must bind the original in-flight role and phase/);
+  assert.equal(x.c.required('TASK1234').status,'INFLIGHT');
+  const good=x.c.required('TASK1234');
+  good.stage='NEEDS_RECONCILIATION';good.status='NEEDS_RECONCILIATION';
+  good.blockedStage='PLANNER';good.inflight=null;
+  good.pendingHuman='Synthetic genuine unknown Planner execution';
+  x.store.save(good,'UNEXPECTED_STAGE_ERROR',{
+    uncertain:true,checkpoint:'PLANNER',originalRole:'planner',originalPhase:'planner'});
+  assert.equal(x.c.required('TASK1234').blockedStage,'PLANNER');
+  assert.equal(x.c.required('TASK1234').stage,'NEEDS_RECONCILIATION');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('R13 follow-up: Store rejects final P0 dispute ruling mutated after independent Arbitrator signed result',async()=>{
+ const x=setup({conflicting:true});try{
+  await movePastPlanning(x);
+  const real=x.c.invoke.bind(x.c);
+  x.c.invoke=async(...args)=>{
+    const result=await real(...args);
+    if(args[1]==='arbitrator'){
+      assert(result.disputeResolution?.decisions?.length);
+      result.disputeResolution={
+        ...result.disputeResolution,
+        decisions:result.disputeResolution.decisions.map(d=>({
+          ...d,rationale:d.rationale+' This sentence was added after signature.'}))};
+    }
+    return result;
+  };
+  await assert.rejects(()=>x.c.run('TASK1234'),
+    /finalArbitration\.disputeResolution contradicts original independently signed Arbitrator result/);
+  const task=x.c.required('TASK1234');
+  assert.equal(task.stage,'BLOCKED');
+  assert.equal(task.finalArbitration,null);
+  assert.equal(task.status,'BLOCKED');
   x.store.verify('TASK1234');
  }finally{finish(x);}
 });
