@@ -645,12 +645,26 @@ export class WorkflowController {
   }
   inspect(id){return this.store.readSnapshot(()=>{
     this.store.verify(id);
-    const t=this.required(id);return {id,stage:t.stage,status:t.status,aRound:t.aRound,bRound:t.bRound,sha:t.currentSha,
+    const t=this.required(id);
+    // All fields needed for an external human recovery signer come from one
+    // verified, read-only SQLite snapshot. Never make the operator hash a
+    // separately queried mutable task or infer the failed checkpoint.
+    const stateSha256=sha256(t),blockedStage=t.blockedStage??null;
+    const stopped=(t.stage==='BLOCKED'&&['BLOCKED','WAITING_HUMAN'].includes(t.status))||
+      (t.stage==='WAIT_HUMAN'&&t.status==='WAITING_HUMAN');
+    const basis=t.currentSha??t.alignmentApprovalSha??t.taskSpecSha??t.frozen.digest;
+    const recovery=stopped?{taskId:id,gate:'recovery',digest:basis,
+      blockedStage,stateSha256,expectedSha:t.currentSha??null,
+      expectedBasis:t.currentSha?null:basis,
+      // A signature still does not waive outstanding dispatch checks.
+      requiresSignedHumanApproval:true,requiresDispatchReconciliation:true}:null;
+    return {id,stage:t.stage,status:t.status,aRound:t.aRound,bRound:t.bRound,sha:t.currentSha,
       specSha:t.taskSpecSha,alignmentSha:t.alignmentSha,
       approvalSha:t.alignmentApprovalSha,
       alignment:t.stage==='WAIT_GATE_02'?t.userAlignment:undefined,
       workPlanSha:t.workPlanSha,finalArbitration:t.finalArbitration,
       configSha:t.frozen.digest,inflight:t.inflight,pendingHuman:t.pendingHuman,
+      blockedStage,stateSha256,recovery,
       dispatches:this.store.dispatches(id),ledger:this.store.verify(id)};
   });}
   // This operation does NOT resume execution, reconstruct missing Agent reports,
