@@ -391,15 +391,28 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         ['P0_INITIAL_COLLECTED']:
         ['P0_FINAL_PASS','P0_CONFLICT_NEEDS_ARBITRATION',
          'P0_FINAL_REQUIRES_REMEDIATION'];
-      const historic=this.db.prepare(
-        'SELECT type,payload FROM events WHERE task_id=? AND type IN ('+
+      const originalSummaryName='p0-'+summary.cycle+'-summary.json';
+      const originalSummary=this.db.prepare(
+        'SELECT digest FROM artifacts WHERE task_id=? AND name=?'
+      ).get(t.id,originalSummaryName);
+      assert(originalSummary&&
+        canonical(JSON.parse(this.#requireArtifact(t.id,originalSummaryName,originalSummary.digest)))===
+          canonical(summary),
+        'historical P0 result must equal the original registered summary');
+      const created=this.db.prepare(
+        "SELECT seq,payload FROM events WHERE task_id=? AND type='P0_COMPLETE' ORDER BY seq"
+      ).all(t.id).find(row=>{
+        const p=JSON.parse(row.payload);
+        return p.cycle===summary.cycle&&p.sha===summary.commit&&
+          p.evidenceSha256===originalSummary.digest;
+      });
+      assert(created,'historical P0 validation has no original completed summary receipt');
+      const accepted=this.db.prepare(
+        'SELECT seq,payload FROM events WHERE task_id=? AND type IN ('+
         originalEventTypes.map(()=>'?').join(',')+') ORDER BY seq'
       ).all(t.id,...originalEventTypes);
-      assert(historic.some(e=>{
-        const snapshot=JSON.parse(e.payload);
-        return snapshot._state_sha256&&snapshot.sha===undefined; // verified below via original P0 history
-      })||historic.length>0,
-        'historical P0 validation has no original strict-acceptance event');
+      assert(accepted.some(row=>row.seq>created.seq),
+        'historical P0 validation has no original strictly verified transition');
       assert(t.history.some(h=>h.role==='P0'&&h.phase===summary.cycle&&
         h.sha===summary.commit&&
         this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?')
