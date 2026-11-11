@@ -170,7 +170,6 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
       for(const node of nodes){
         const jobId=sha256(task.id+':'+cycle+':'+commit+':'+node.id).slice(0,40);
         const agentId='signed-agent-'+node.id;
-        const taskSpec=xUnused=>xUnused; // offline fixture only; no provider invoked
         const prompt='Synthetic approved read-only original P0 test task';
         const binding={role:node.role,soulSha256:task.frozen.souls[node.role].sha256,
           promptSha256:sha256(prompt),taskSpecSha256:sha256(task.taskSpec),
@@ -914,4 +913,40 @@ test('R13 follow-up: incomplete reviewer POST process witness permanently blocks
   assert.equal(x.modelCalls.filter(x=>x==='quality_reviewer').length,1);
   x.store.verify('TASK1234');
  }finally{finish(x);}
+});
+
+test('R13 follow-up: real SQLite Gate 5.9 accepts 31-minute-old originally signed Paseo P0, never reissues witness',async()=>{
+ const x=setup({p0SignedHistorical:true});
+ const OriginalDate=Date;
+ try{
+  // Isolated harness simulation: bypass only live network/OS capability preflight;
+  // native P0 signing, immutable Store, all process-audit history and final
+  // approval gates still execute their unmodified production verification code.
+  x.c.livePreflight=async()=>{};
+  await movePastPlanning(x);
+  await assert.rejects(()=>x.c.run('TASK1234',{maxSteps:9}),/maxStep guard reached/);
+  const ready=x.c.required('TASK1234');
+  assert.equal(ready.stage,'READY_FINAL');
+  assert.equal(ready.p0Initial?.reports?.length,2);
+  class FutureDate extends OriginalDate{
+   constructor(...args){
+    if(args.length)super(...args);
+    else super(OriginalDate.now()+31*60000);
+   }
+   static now(){return OriginalDate.now()+31*60000;}
+  }
+  globalThis.Date=FutureDate;
+  const after=await x.c.run('TASK1234');
+  assert.equal(after.stage,'WAIT_GATE_59');
+  const waiting=x.c.required('TASK1234');
+  const message='Human confirms the final Gate after independently signed P0 evidence was originally accepted more than thirty minutes ago.';
+  const approval=x.proof('5.9',waiting.currentSha,message);
+  const closed=x.c.approve({id:'TASK1234',gate:'5.9',digest:waiting.currentSha,
+    actor:'user',receipt:message,proof:approval});
+  assert.equal(closed.stage,'CLOSED');
+  x.store.verify('TASK1234');
+ }finally{
+  globalThis.Date=OriginalDate;
+  finish(x);
+ }
 });
