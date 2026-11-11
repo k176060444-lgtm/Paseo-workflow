@@ -216,6 +216,31 @@ export const hasBlockingFinding = findings => findings.some(f =>
   /^(?:\s*[-*]\s*)?(?:\[?(?:BLOCKER|CRITICAL|HIGH|P0|P1)\]?\s*[:：-]|severity\s*[:=]\s*(?:BLOCKER|CRITICAL|HIGH|P0|P1)\b)/i.test(f));
 export const PASS = verdict => verdict === 'PASS' || verdict === 'APPROVE_WITH_COMMENTS';
 export const PAUSE = verdict => verdict === 'QUESTION' || verdict === 'NEEDS_SPECIALIST';
+// Never use an Adapter-provided PASS/dispute flag for technical acceptance.
+// These values are derived from the actual per-seat verdicts only. The Store
+// separately verifies the original signed node reports against these entries.
+export function deriveP0Verdict(reports){
+  assert(Array.isArray(reports)&&reports.length>=2,'P0 requires at least two seat reports');
+  for(const report of reports)
+    assert(report&&['PASS','FAIL','QUESTION','NEEDS_SPECIALIST','APPROVE_WITH_COMMENTS'].includes(report.verdict)&&
+      Array.isArray(report.findings)&&report.findings.every(x=>typeof x==='string')&&
+      !(PASS(report.verdict)&&report.findings.length>0),
+      'P0 report invalid or contradictory verdict/findings');
+  const anyPass=reports.some(r=>PASS(r.verdict));
+  const anyFail=reports.some(r=>r.verdict==='FAIL');
+  const anyUnknown=reports.some(r=>PAUSE(r.verdict));
+  return {passed:reports.every(r=>PASS(r.verdict)&&r.findings.length===0),
+    dispute:anyUnknown||(anyPass&&anyFail),
+    findings:reports.flatMap(r=>r.findings)};
+}
+export function assertP0Summary(summary){
+  assert(summary&&Array.isArray(summary.reports),'P0 original report set absent');
+  const computed=deriveP0Verdict(summary.reports);
+  assert(summary.passed===computed.passed&&summary.dispute===computed.dispute&&
+    canonical(summary.findings)===canonical(computed.findings),
+    'P0 summary passed/dispute/findings contradict independently signed seat verdicts');
+  return computed;
+}
 /* An Arbitrator may dismiss a genuinely disputed, independently verified P0
  * finding with evidence, but may NEVER waive missing witnesses, unsigned
  * reports, unknown results, or a unanimous FAIL. The complete signed original
