@@ -248,9 +248,15 @@ export function assertP0Summary(summary){
 export function acceptedP0Dispute(t){
   const p0=t.p0Final??t.p0Initial;
   const decisions=t.finalArbitration?.disputeResolution;
-  if(!p0?.dispute||p0.commit!==t.currentSha||!Array.isArray(p0.reports)||
+  if(!p0||p0.commit!==t.currentSha||!Array.isArray(p0.reports)||
     p0.reports.length<2||!Array.isArray(decisions?.decisions)||
     decisions.reportSetSha256!==sha256(p0.reports))return false;
+  // Guard even direct callers of acceptedP0Dispute, not just Store/Controller.
+  let derived;
+  try{derived=deriveP0Verdict(p0.reports);}catch{return false;}
+  if(!derived.dispute||derived.passed||p0.passed!==derived.passed||
+    p0.dispute!==derived.dispute||canonical(p0.findings)!==canonical(derived.findings))
+    return false;
   const positives=p0.reports.filter(r=>PASS(r.verdict)&&r.findings?.length===0);
   const negative=p0.reports.filter(r=>r.verdict==='FAIL');
   if(positives.length===0||negative.length===0||positives.length+negative.length!==p0.reports.length||
