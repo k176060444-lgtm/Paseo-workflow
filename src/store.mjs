@@ -5,7 +5,7 @@ import { verifyCommitEvidenceSync } from './git.mjs';
 import {loadTrustRoots,verifyHumanApproval,verifyGateProcess,verifyExecutionAttestation,verifyObserverReadiness} from './auth.mjs';
 import {SshP0Adapter} from './p0.mjs';
 import {verifyPaseoP0Envelope} from './p0_paseo.mjs';
-import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, acceptedP0Dispute, assertP0Summary, deriveP0Verdict, verifyGateBTests } from './policy.mjs';
+import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, PAUSE, hasBlockingFinding, acceptedP0Dispute, assertP0Summary, deriveP0Verdict, verifyGateBTests } from './policy.mjs';
 
 export class Store {
   // Only the Store's own verified, synchronous mutation methods may append
@@ -428,6 +428,63 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     assert(distinct.size>=2,'P0 authenticated physical quorum incomplete');
     return computed;
   }
+  // Recovery is allowed ONLY when BOTH original, separately attested local
+  // review reports AND both independent PRE/POST process audits are complete.
+  // This operation does not run a model or manufacture any missing reviewer.
+  readCompletedReviewerPair(id,checkpoint,sha){
+    assert(['A_REVIEW','B_REVIEW'].includes(checkpoint),
+      'only the original parallel Reviewer checkpoint may be reused');
+    const t=this.get(id);
+    assert(t?.currentSha===sha,'Reviewer recovery requires frozen exact Commit');
+    const cycle=checkpoint==='A_REVIEW'?'A'+t.aRound:'B'+t.bRound;
+    const phase=cycle+'-review',roles=['spec_reviewer','quality_reviewer'];
+    const originals={};const identities=new Set();
+    for(const role of roles){
+      const entries=t.history.filter(h=>h.role===role&&h.phase===phase&&h.sha===sha);
+      assert(entries.length===1,'source-aware recovery requires exactly one original '+role+' report');
+      const h=entries[0];
+      assert(typeof h.agentId==='string'&&h.agentId&&!identities.has(h.agentId),
+        'Reviewer recovery cannot reuse a seat or Agent ID');
+      identities.add(h.agentId);
+      this.#verifyHistoryExecution(t,h);
+      const record=this.db.prepare('SELECT name FROM artifacts WHERE task_id=? AND digest=?')
+        .get(id,h.evidenceSha256);
+      assert(record,'Reviewer source evidence not registered');
+      const raw=JSON.parse(this.#requireArtifact(id,record.name,h.evidenceSha256));
+      assert(raw.role===role&&raw.agentId===h.agentId&&raw.phase===phase+'-'+role&&
+        raw.verdict===h.verdict&&Array.isArray(raw.findings),
+        'Reviewer source report identity mismatch');
+      const originalDispatch=this.db.prepare(
+        'SELECT * FROM dispatches WHERE task_id=? AND phase=? AND agent_id=?')
+        .all(id,phase+'-'+role,h.agentId);
+      assert(originalDispatch.length===1&&originalDispatch[0].state==='TERMINAL',
+        'Reviewer original dispatched task is not uniquely terminal');
+      const audits=t.history.filter(a=>a.role==='pro_audit'&&
+        a.auditSessionId===h.auditSessionId);
+      assert(audits.length===2,'reviewer recovery requires paired original PRE/POST compliance');
+      for(const kind of ['PRE','POST']){
+        const audit=audits.find(a=>a.phase==='audit-'+kind+'-'+role+'-'+phase+'-'+role);
+        assert(audit?.verdict==='PASS'&&audit.auditBinding?.checkpoint===kind&&
+          audit.auditBinding?.sessionId===h.auditSessionId&&
+          audit.auditBinding?.targetEvidenceSha256===(kind==='POST'?h.evidenceSha256:null)&&
+          audit.auditBinding?.targetAgentId===(kind==='POST'?h.agentId:null),
+          'reviewer recovery missing exact original process audit evidence');
+        this.#verifyHistoryExecution(t,audit);
+      }
+      originals[role]=raw;
+    }
+    const spec=originals.spec_reviewer,quality=originals.quality_reviewer;
+    const individual=Object.fromEntries(roles.map(role=>{
+      const r=originals[role];
+      return [role,{agentId:r.agentId,verdict:r.verdict,findings:r.findings,
+        pass:PASS(r.verdict)&&!hasBlockingFinding(r.findings)&&
+          (r.verdict!=='PASS'||r.findings.length===0)}];
+    }));
+    return {spec,quality,assessments:individual,
+      pass:individual.spec_reviewer.pass&&individual.quality_reviewer.pass,
+      pause:PAUSE(spec.verdict)||PAUSE(quality.verdict),
+      findings:[...spec.findings,...quality.findings]};
+  }
   #verifyReviewerPair(t){
     const prefix=t.stage==='A_REVIEW'? 'A'+t.aRound:'B'+t.bRound;
     const phase=`${prefix}-review`, roles=['spec_reviewer','quality_reviewer'];
@@ -653,12 +710,14 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     }else if(type==='HUMAN_CONTROLLED_RECOVERY'){
       assert(((oldTask.stage==='BLOCKED'&&['BLOCKED','WAITING_HUMAN'].includes(oldTask.status))||
         (oldTask.stage==='WAIT_HUMAN'&&oldTask.status==='WAITING_HUMAN'))&&
-        ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_TEST',
-          'B_ENTER','B_WORKER','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.stage)&&
+        ['PLANNER','PLAN_DETAIL','PREPARE','A_WORKER','A_REVIEW','A_TEST',
+          'B_ENTER','B_WORKER','B_REVIEW','B_TEST','P0_INITIAL','P0_FINAL','ARBITRATOR','READY_FINAL'].includes(t.stage)&&
         t.status==='READY'&&!oldTask.inflight&&
         (oldTask.blockedStage?oldTask.blockedStage===t.stage:
           oldTask.stage==='BLOCKED'&&!oldTask.taskSpecSha&&t.stage==='PLANNER'),
         'recovery cannot skip a stage or clear unresolved state');
+      if(['A_REVIEW','B_REVIEW'].includes(t.stage))
+        this.readCompletedReviewerPair(oldTask.id,t.stage,oldTask.currentSha);
       this.#verifyRecoveryReceipt(oldTask,t,payload);
     }else if(type==='AWAITING_CLARIFICATION'||type==='COMPLIANCE_OR_INFRA_BLOCK'){
       assert(t.stage===(type==='AWAITING_CLARIFICATION'?'WAIT_HUMAN':'BLOCKED')&&
