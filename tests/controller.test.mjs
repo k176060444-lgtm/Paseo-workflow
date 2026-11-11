@@ -465,7 +465,7 @@ test('R13.2: Reviewer recovery rejects duplicate Agent identities and never trea
   await assert.rejects(()=>x.c.run('TASK1234',{maxSteps:3}),/maxStep guard reached/);
   await assert.rejects(()=>x.c.run('TASK1234'),/Reviewer call failed or identity invalid/);
   const task=x.c.required('TASK1234');
-  const reviewers=task.history.filter(h=>['spec_reviewer','quality_reviewer'].includes(h.role));
+  const reviewers=task.history.filter(h=>['spec_reviewer','quality_reviewer'].includes(h.role)&&h.phase==='A1-review');
   assert.equal(reviewers.length,2);
   assert.equal(reviewers[0].agentId,reviewers[1].agentId);
   assert.throws(()=>x.store.readCompletedReviewerPair('TASK1234','A_REVIEW',task.currentSha),
