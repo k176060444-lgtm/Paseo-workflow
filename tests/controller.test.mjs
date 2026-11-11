@@ -11,7 +11,7 @@ import {ROLE_PERMISSIONS,MAX_A,MAX_B,providerOptions,sha256,canonical,verifyGate
 import {verifyCommitEvidenceSync} from '../src/git.mjs';
 import {resealLastEventSyntheticState} from './fixtures.mjs';
 
-function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false,preRejectRole=null,p0ForgedPass=false}={}) {
+function setup({workerFails=false,remediationFails=false,p0HasFindings=false,ambiguous=false,conflicting=false,arbResolves=true,scopeDrift=false,preRejectRole=null,p0ForgedPass=false,p0SignedHistorical=false}={}) {
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'p1-case-'));
   const g=(cwd,...args)=>execFileSync('git',['-C',cwd,...args],{encoding:'utf8'}).trim();
   const repo=path.join(tmp,'repo');fs.mkdirSync(repo);
@@ -22,11 +22,14 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
   const keys=generateKeyPairSync('ed25519');
   const witness=generateKeyPairSync('ed25519');
   const processWitness=generateKeyPairSync('ed25519');
+  const p0Pairs=new Map(['5bao','9bao'].map(id=>[id,generateKeyPairSync('ed25519')]));
   const manifest=path.join(tmp,'public-trust.json');
   fs.writeFileSync(manifest,JSON.stringify({schema:1,human:{
     'offline-auditor':keys.publicKey.export({format:'pem',type:'spki'})},
     execution:{'offline-execution-witness':witness.publicKey.export({format:'pem',type:'spki'})},
-    procedure:{'offline-process-witness':processWitness.publicKey.export({format:'pem',type:'spki'})}}));
+    procedure:{'offline-process-witness':processWitness.publicKey.export({format:'pem',type:'spki'})},
+    ...(p0SignedHistorical?{p0:Object.fromEntries([...p0Pairs].map(([id,p])=>
+      [id,p.publicKey.export({format:'pem',type:'spki'})]))}:{})}));
   const prevTrustFile=process.env.P1_TRUST_ROOTS_FILE;
   const prevTrustHash=process.env.P1_TRUST_ROOTS_SHA256;
   process.env.P1_TRUST_ROOTS_FILE=manifest;
@@ -74,12 +77,17 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
   const nodes=['5bao','9bao'].map((id,i)=>{
     const file=path.join(tmp,'p0-'+id+'.hmac');
     fs.writeFileSync(file,Buffer.alloc(48,0x43+i));
+    if(p0SignedHistorical)return {
+      id,physicalId:'physical-'+id,serverId:'srv_'+id,
+      registrationId:'hst_'+id,workspaceId:'workspace-'+id,cwd:'/srv/p0/'+id,
+      transport:'direct',enabled:true,role:i===0?'blind_a':'blind_b',
+      harness:'opencode',model:'opencode/model'};
     return {id,physicalId:'physical-'+id,sshAlias:id,harness:'opencode',
       model:'opencode/model',hmacKeyPath:file,enabled:true,role:i===0?'blind_a':'blind_b',
       runner:'/runner',config:'/config'};
   });
   const matrix=path.join(tmp,'matrix.json');const intent=path.join(tmp,'intent.md');
-  fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']],gateB:{smoke:[['node','--test','smoke']],canary:[['node','--test','canary']],regression:[['node','--test','regression']]}},roles,p0:{transport:'legacy-hmac',nodes}}));
+  fs.writeFileSync(matrix,JSON.stringify({schema:1,project:{repo:'repo'},runtime:{paseoUrl:'ws://127.0.0.1/ws'},tests:{commands:[['node','--test']],gateB:{smoke:[['node','--test','smoke']],canary:[['node','--test','canary']],regression:[['node','--test','regression']]}},roles,p0:{transport:p0SignedHistorical?'paseo':'legacy-hmac',nodes}}));
   fs.writeFileSync(intent,'Implement a precise and approved programming feature with fully independent review.');
   const store=new Store(path.join(tmp,'state'));
   let workerCount=0,remCount=0,reportCount=0,modelCalls=[];
@@ -157,6 +165,45 @@ function setup({workerFails=false,remediationFails=false,p0HasFindings=false,amb
   };
   const p0={review:async({task,commit,cycle,store})=>{
     reportCount++;
+    if(p0SignedHistorical){
+      const reports=[];
+      for(const node of nodes){
+        const jobId=sha256(task.id+':'+cycle+':'+commit+':'+node.id).slice(0,40);
+        const agentId='signed-agent-'+node.id;
+        const taskSpec=xUnused=>xUnused; // offline fixture only; no provider invoked
+        const prompt='Synthetic approved read-only original P0 test task';
+        const binding={role:node.role,soulSha256:task.frozen.souls[node.role].sha256,
+          promptSha256:sha256(prompt),taskSpecSha256:sha256(task.taskSpec),
+          intentSha256:task.frozen.intentSha256,
+          workspaceId:node.workspaceId,cwd:node.cwd};
+        const request={jobId,taskId:task.id,cycle,serverId:node.serverId,nodeId:node.id,
+          workspaceId:node.workspaceId,commit,soulSha256:binding.soulSha256,
+          promptSha256:binding.promptSha256,binding};
+        store.artifact(task.id,'p0-'+cycle+'-'+node.id+'-request.json',request);
+        store.recordIntent(task.id,'P0:'+cycle+':'+node.id,jobId);
+        store.recordAck(jobId,node.serverId+':'+agentId);
+        const rawMessage=JSON.stringify({verdict:'PASS',
+          summary:'Independent synthetic signed result at original receipt time',findings:[]});
+        const report={taskId:task.id,cycle,jobId,commit,nodeId:node.id,
+          physicalId:node.physicalId,serverId:node.serverId,agentId,
+          model:node.model,harness:node.harness,binding,rawMessage,
+          stdoutSha256:sha256(rawMessage),exitCode:0,clean:true,
+          verdict:'PASS',summary:'synthetic original signed review',findings:[]};
+        const statement={purpose:'P1_P0_NODE_RESULT_V2',taskId:task.id,cycle,
+          jobId,commit,nodeId:node.id,physicalId:node.physicalId,
+          serverId:node.serverId,agentId,model:node.model,harness:node.harness,
+          bindingSha256:sha256(binding),reportSha256:sha256(report),
+          nonce:randomUUID(),issuedAt:new Date().toISOString()};
+        const proof={schema:1,keyId:node.id,statement,
+          signature:sign(null,Buffer.from(canonical(statement)),
+            p0Pairs.get(node.id).privateKey).toString('base64')};
+        const evidence=store.artifact(task.id,'p0-'+cycle+'-'+node.id+'-result.json',{report,proof});
+        store.recordTerminal(jobId);
+        reports.push({...report,evidence});
+      }
+      return {transport:'paseo',commit,cycle,reports,
+        findings:[],passed:true,dispute:false,skipped:[],cancelled:[]};
+    }
     const isInitial=cycle.startsWith('initial');
     const issue=p0HasFindings&&isInitial?['fix this defect']:[];
     const reports=[];
