@@ -656,3 +656,79 @@ test('incident certificate cannot turn an orphan TERMINAL ACK into a safe restar
   x.store.verify(t.id);
  }finally{finish(x);}
 });
+
+
+test('uncertain execution records a canonical NEEDS_RECONCILIATION checkpoint',async()=>{
+ const x=setup({ambiguous:true});
+ try{
+  await assert.rejects(()=>x.c.run('TASK1234'),/provider lost connection/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.status,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'PLANNER');
+  assert.equal(t.inflight,null);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('P0 Store rejects a summary PASS that contradicts a signed FAIL report',async()=>{
+ const x=setup({conflicting:true});
+ try{
+  await movePastPlanning(x);
+  const original=x.c.p0.review.bind(x.c.p0);
+  x.c.p0.review=async args=>{
+    const result=await original(args);
+    return {...result,passed:true,dispute:false};
+  };
+  await assert.rejects(()=>x.c.run('TASK1234'),
+    /P0 summary flags\/findings contradict independently verified signed node reports/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'P0_INITIAL');
+  assert.equal(t.inflight,null);
+  assert.notEqual(t.stage,'WAIT_GATE_59');
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
+
+test('reviewer-pair incident recovery reuses the completed seat and dispatches only the missing seat',async()=>{
+ const x=setup();
+ try{
+  await movePastPlanning(x);
+  const original=x.c.runtime.execute;
+  let failQuality=true,specCalls=0,qualityCalls=0;
+  x.c.runtime.execute=async fields=>{
+    if(fields.role==='spec_reviewer'&&fields.phase==='A1-review-spec_reviewer')specCalls++;
+    if(fields.role==='quality_reviewer'&&fields.phase==='A1-review-quality_reviewer'){
+      qualityCalls++;
+      if(failQuality){failQuality=false;throw new Error('simulated reviewer provider disconnect');}
+    }
+    return original(fields);
+  };
+  await assert.rejects(()=>x.c.run('TASK1234'),/Reviewer call failed/);
+  let t=x.c.required('TASK1234');
+  assert.equal(t.stage,'NEEDS_RECONCILIATION');
+  assert.equal(t.blockedStage,'A_REVIEW');
+  assert.equal(t.inflight,null);
+  assert.equal(t.history.filter(h=>h.role==='spec_reviewer'&&h.phase==='A1-review'&&h.sha===t.currentSha).length,1);
+  assert.equal(t.history.filter(h=>h.role==='quality_reviewer'&&h.phase==='A1-review'&&h.sha===t.currentSha).length,0);
+  const incidentReceipt='I reviewed the terminal original dispatch evidence and authorize incident closure only.';
+  const incidentProof=x.proof('incident',t.currentSha,incidentReceipt);
+  x.c.certifyIncident({id:t.id,actor:'user',receipt:incidentReceipt,
+    expectedSha:t.currentSha,proof:incidentProof});
+  t=x.c.required('TASK1234');
+  assert.equal(t.stage,'BLOCKED');
+  const recoveryReceipt='I authorize resuming the same review checkpoint without replaying the completed seat.';
+  const recoveryProof=x.proof('recovery',t.currentSha,recoveryReceipt);
+  x.c.authorizeRecovery({id:t.id,actor:'user',receipt:recoveryReceipt,
+    expectedSha:t.currentSha,proof:recoveryProof});
+  const result=await x.c.run('TASK1234');
+  assert.equal(result.stage,'WAIT_GATE_59');
+  assert.equal(specCalls,1,'completed Spec Reviewer must not be dispatched again');
+  assert.equal(qualityCalls,2,'only the missing Quality Reviewer seat may be retried');
+  const final=x.c.required('TASK1234');
+  assert.equal(final.history.filter(h=>h.role==='spec_reviewer'&&h.phase==='A1-review'&&h.sha===final.currentSha).length,1);
+  assert.equal(final.history.filter(h=>h.role==='quality_reviewer'&&h.phase==='A1-review'&&h.sha===final.currentSha).length,1);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
