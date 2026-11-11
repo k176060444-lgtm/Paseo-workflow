@@ -611,11 +611,16 @@ export class WorkflowController {
           const latest=this.required(id);
           if(latest.status==='INFLIGHT'||latest.status==='READY'){
             const uncertain=Boolean(latest.inflight) || this.store.dispatches(id).some(d=>d.state!=='TERMINAL');
-            latest.blockedStage=t.stage;
+            const interrupted=latest.stage,originalInFlight=latest.inflight;
+            latest.blockedStage=interrupted;
             latest.stage=uncertain?'NEEDS_RECONCILIATION':'BLOCKED';
             latest.status=uncertain?'NEEDS_RECONCILIATION':'BLOCKED';
-            latest.pendingHuman=`Stage ${t.stage} failed: ${e.message}`;
-            this.store.save(latest,'UNEXPECTED_STAGE_ERROR',{error:e.message,uncertain});
+            latest.inflight=null;
+            latest.pendingHuman=`Stage ${interrupted} failed: ${e.message}`;
+            this.store.save(latest,'UNEXPECTED_STAGE_ERROR',{
+              error:String(e.message),uncertain,checkpoint:interrupted,
+              originalRole:originalInFlight?.role??null,
+              originalPhase:originalInFlight?.phase??null});
           }
           throw e;
         }
