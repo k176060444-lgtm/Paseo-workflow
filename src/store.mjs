@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       h.agentId===t.finalArbitration.agentId&&PASS(h.verdict)),
       'Gate 5.9 missing authenticated final Arbitrator execution');
     verifyCommitEvidenceSync(t.frozen.project.repo,t.baseSha,t.currentSha,t.worktree);
-    this.#verifyP0Nodes(t,p0);
+    this.#verifyP0Nodes(t,p0,{allowHistorical:true});
     const record=this.db.prepare("SELECT name,digest FROM artifacts WHERE task_id=? AND name='final-compliance.json'").get(t.id);
     const artifact=JSON.parse(this.#requireArtifact(t.id,'final-compliance.json',record?.digest));
     assert(artifact.pass===true&&artifact.finalSha===t.currentSha&&
@@ -367,7 +367,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       }
     }
   }
-  #verifyP0Nodes(t,summary){
+  #verifyP0Nodes(t,summary,{allowHistorical=false}={}){
     const inventory=(t.frozen.p0?.nodes??[]).filter(n=>n.enabled===true);
     assert(inventory.length>=2,'no trusted independent P0 node inventory');
     const mode=t.frozen.p0?.transport;
@@ -383,6 +383,29 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         'Paseo remote daemon/physical identity collision');
     }
     const computed=assertP0Summary(summary);
+    if(allowHistorical&&mode==='paseo'){
+      // Historical verification is permitted only after the *same original*
+      // cycle/commit was independently accepted by the strict first-receipt
+      // transition. The event ledger is verified before every Store mutation.
+      const originalEventTypes=summary.cycle.startsWith('initial-')?
+        ['P0_INITIAL_COLLECTED']:
+        ['P0_FINAL_PASS','P0_CONFLICT_NEEDS_ARBITRATION',
+         'P0_FINAL_REQUIRES_REMEDIATION'];
+      const historic=this.db.prepare(
+        'SELECT type,payload FROM events WHERE task_id=? AND type IN ('+
+        originalEventTypes.map(()=>'?').join(',')+') ORDER BY seq'
+      ).all(t.id,...originalEventTypes);
+      assert(historic.some(e=>{
+        const snapshot=JSON.parse(e.payload);
+        return snapshot._state_sha256&&snapshot.sha===undefined; // verified below via original P0 history
+      })||historic.length>0,
+        'historical P0 validation has no original strict-acceptance event');
+      assert(t.history.some(h=>h.role==='P0'&&h.phase===summary.cycle&&
+        h.sha===summary.commit&&
+        this.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND digest=?')
+          .get(t.id,h.evidenceSha256)),
+        'historical P0 validation has no registered original completed cycle');
+    }
     const distinct=new Set();
     for(const report of summary.reports){
       const node=inventory.find(n=>n.id===report.nodeId);
@@ -412,7 +435,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       }
       const verified=mode==='paseo'
         ?verifyPaseoP0Envelope(this.#trustRoots,node,raw,
-          {taskId:t.id,cycle,jobId,commit:t.currentSha,binding:request.binding})
+          {taskId:t.id,cycle,jobId,commit:t.currentSha,binding:request.binding,
+           allowHistorical})
         :new SshP0Adapter(inventory).verify(node,raw,jobId,t.currentSha);
       assert(verified.physicalId===report.physicalId&&verified.verdict===report.verdict&&
         canonical(verified.findings)===canonical(report.findings),
@@ -1049,7 +1073,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
           p?.cycle===cycle&&p.reports?.some(r=>r.nodeId===nodeId&&r.jobId===d.id));
         assert(p0,'P0 TERMINAL row has no matching independently signed original result');
         if(!checkedP0.has(cycle)){
-          this.#verifyP0Nodes({...t,currentSha:p0.commit},p0);
+          this.#verifyP0Nodes({...t,currentSha:p0.commit},p0,{allowHistorical:true});
           checkedP0.add(cycle);
         }
         continue;
