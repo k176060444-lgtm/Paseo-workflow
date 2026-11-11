@@ -1,3 +1,5 @@
+> **R13.1 audit-driven follow-up:** [R13.1 signed-P0/State/Arbitrator remediation](docs/R13_R2_REVIEW_FOLLOWUP_20261111.md) fixes 30-minute P0 Gate 5.9 historical revalidation, uncertain generic error guard, original signed Arbitrator decision comparison and stale Reviewer recovery state. Offline synthetic SQLite tests do **not** change the R13 review's missing C and NON_COMPLIANT D results; live authorization remains BLOCKED.
+
 > **R13 targeted source remediation:** [R13 fixed-SHA audit handoff](docs/R13_TARGETED_REMEDIATION.md) resolves the reported uncertain-state mismatch, forged P0 summary trust, safe two-seat Reviewer re-use and actual Arbitrator dispute output contract at offline code level. Historical R12 verdict FAIL and all live-integration blockers remain; **do not deploy/merge this branch**.
 
 > **R12 source-only security gate:** Independent process signers are required for Gates 0.1/0.2/5.9 and safe incident closure. Signed OS/Paseo observer capability preflight is mandatory before the first paid model dispatch. See [R12 review and witness handoff](docs/R12_GATE_WITNESS_INCIDENT_REVIEW.md). CI simulation does not authorize live deployment.
