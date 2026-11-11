@@ -89,6 +89,7 @@ export class PaseoAgentRuntime {
     const bare={role,phase,agentId:agent.id,dispatchId,verdict:data.verdict,
       summary:data.summary,findings:data.findings,taskSpec:data.taskSpec??null,
       userAlignment:data.userAlignment??null,
+      disputeResolution:role==='arbitrator'?data.disputeResolution??null:null,
       model:cfg.model,harness:cfg.harness,soulSha256:soul.sha256,
       raw:result.lastMessage,...(auditBinding?{auditBinding}:{})};
     assert(this.attestor,'independent Paseo execution attestor not installed; BLOCKED');
