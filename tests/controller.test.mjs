@@ -847,3 +847,24 @@ test('R13 follow-up: Store rejects final P0 dispute ruling mutated after indepen
   x.store.verify('TASK1234');
  }finally{finish(x);}
 });
+
+test('R13 follow-up: incomplete reviewer POST process witness permanently blocks source-aware reuse',async()=>{
+ const x=setup();try{
+  await movePastPlanning(x);
+  const previous=x.c.auditRole.bind(x.c);
+  x.c.auditRole=async(...args)=>{
+    if(args[1]==='quality_reviewer'&&args[3]==='POST')
+      throw Error('synthetic missing Quality Reviewer POST witness');
+    return previous(...args);
+  };
+  await assert.rejects(()=>x.c.run('TASK1234'),
+    /synthetic missing Quality Reviewer POST witness/);
+  const t=x.c.required('TASK1234');
+  assert.equal(t.stage,'BLOCKED');
+  assert.equal(t.blockedStage,'A_REVIEW');
+  assert.throws(()=>x.store.readCompletedReviewerPair('TASK1234','A_REVIEW',t.currentSha),
+    /paired original PRE\/POST compliance|missing exact original process audit/);
+  assert.equal(x.modelCalls.filter(x=>x==='quality_reviewer').length,1);
+  x.store.verify('TASK1234');
+ }finally{finish(x);}
+});
