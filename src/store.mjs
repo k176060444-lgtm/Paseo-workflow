@@ -772,8 +772,23 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       assert(oldTask.status==='READY'&&t.stage==='BLOCKED'&&t.status==='BLOCKED',
         'invalid preflight block');
     }else if(type==='UNEXPECTED_STAGE_ERROR'){
+      const unknown=t.stage==='NEEDS_RECONCILIATION';
       assert(['BLOCKED','NEEDS_RECONCILIATION'].includes(t.stage)&&
-        t.status===t.stage,'invalid unexpected error reconciliation');
+        t.status===t.stage&&payload.uncertain===unknown&&
+        oldTask.stage!=='CLOSED'&&oldTask.stage!=='NEEDS_RECONCILIATION'&&
+        t.blockedStage===oldTask.stage&&payload.checkpoint===oldTask.stage&&
+        t.inflight===null&&typeof t.pendingHuman==='string'&&
+        t.pendingHuman.length>0,
+        'unexpected stage error cannot invent a checkpoint or skip a Gate');
+      if(unknown)
+        assert(oldTask.status==='INFLIGHT'&&oldTask.inflight?.role&&
+          oldTask.inflight?.phase&&payload.originalRole===oldTask.inflight.role&&
+          payload.originalPhase===oldTask.inflight.phase,
+          'uncertain unexpected error must bind the original in-flight role and phase');
+      else
+        assert(oldTask.status==='READY'&&!oldTask.inflight&&
+          payload.originalRole===null&&payload.originalPhase===null,
+          'definite stage failure cannot overwrite an in-flight or human-gated task');
     }else{
       throw new Error(`unrecognized workflow state transition: ${type}`);
     }
