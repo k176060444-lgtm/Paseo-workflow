@@ -39,7 +39,8 @@ The Paseo cleanup path records `cancelEvidenceCleanupState` alongside the origin
 
 Environment: Linux container, Node `v22.16.0`, Python `3.13.5`. This differs from 21bao's Windows / Node 26 / Python 3.11 runtime and must be rechecked there.
 
-- Focused Store + P0 + R2 tests: **39 PASS, 0 FAIL, 0 SKIP**.
+- Store + R2 + R4 focused regression files (`s0_store_p0.test.mjs`, `r2_regression.test.mjs`, `r4_regression.test.mjs`): **39 PASS, 0 FAIL, 0 SKIP**.
+- P0 adapter + S0-R2 targeted + Store focused files: **38 PASS, 0 FAIL, 1 SKIP**; the sole SKIP is the actual SDK DaemonClient constructor check because this isolated source snapshot has no installed `@getpaseo/client`.
 - Full Node suite before the final fsync-only cleanup guard: **226 total, 225 PASS, 0 FAIL, 1 SKIP**, exit 0. After the final guard, the directly affected Store/R2/R4 tests passed; a repeated monolithic run in this container timed out before completing, so no final full-suite count is claimed.
 - Python suite: **11 PASS, 0 FAIL**, exit 0.
 - `node --check src/*.mjs`: all source modules parsed, exit 0.
