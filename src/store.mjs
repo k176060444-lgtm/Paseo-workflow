@@ -8,6 +8,55 @@ import {SshP0Adapter} from './p0.mjs';
 import {verifyPaseoP0Envelope,verifyPaseoP0Preflight,verifyPaseoP0Termination,p0Eligibility} from './p0_paseo.mjs';
 import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, PAUSE, hasBlockingFinding, acceptedP0Dispute, assertP0Summary, deriveP0Verdict, verifyGateBTests } from './policy.mjs';
 
+// A pathname and a content digest do not prove that a file is still the
+// exclusive object created by this invocation. Capture the filesystem identity
+// from the open descriptor and require that identity before rollback cleanup.
+function evidenceFileIdentity(stat){
+  return {
+    dev:stat.dev.toString(),
+    ino:stat.ino.toString(),
+    birthtimeNs:stat.birthtimeNs?.toString()??null,
+  };
+}
+function sameEvidenceFileIdentity(identity,stat){
+  if(!identity||!stat?.isFile()||stat.isSymbolicLink())return false;
+  if(identity.dev!==stat.dev.toString()||identity.ino!==stat.ino.toString())return false;
+  return identity.birthtimeNs===null||identity.birthtimeNs===undefined||
+    identity.birthtimeNs===stat.birthtimeNs.toString();
+}
+function lstatEvidenceIfPresent(file){
+  try{return fs.lstatSync(file,{bigint:true});}
+  catch(error){if(error?.code==='ENOENT')return null;throw error;}
+}
+function removeCreatedEvidenceFile(created){
+  const before=lstatEvidenceIfPresent(created.file);
+  if(!before)return 'ABSENT_AFTER_ROLLBACK';
+  if(!before.isFile()||before.isSymbolicLink())
+    throw new Error('created evidence path changed type; refusing cleanup');
+  if(!sameEvidenceFileIdentity(created.identity,before))
+    throw new Error('created evidence file identity changed; refusing cleanup');
+
+  // Read through a descriptor and re-check the path against the descriptor's
+  // object identity. A same-byte replacement must never be treated as ours.
+  const fd=fs.openSync(created.file,fs.constants.O_RDONLY);
+  try{
+    const opened=fs.fstatSync(fd,{bigint:true});
+    if(!sameEvidenceFileIdentity(created.identity,opened))
+      throw new Error('created evidence file identity changed while opening; refusing cleanup');
+    if(sha256(fs.readFileSync(fd,'utf8'))!==created.digest)
+      throw new Error('created evidence bytes changed; refusing cleanup');
+    const current=lstatEvidenceIfPresent(created.file);
+    if(!current)return 'ABSENT_AFTER_ROLLBACK';
+    if(!sameEvidenceFileIdentity(created.identity,current))
+      throw new Error('created evidence file identity changed during cleanup; refusing cleanup');
+    // Node exposes path-based unlink rather than an unlink-by-open-handle API;
+    // keep the identity check immediately adjacent to unlink and fail closed
+    // for every replacement observed before this operation.
+    fs.unlinkSync(created.file);
+    return 'REMOVED_AFTER_ROLLBACK';
+  }finally{fs.closeSync(fd);}
+}
+
 export class Store {
   // Only the Store's own verified, synchronous mutation methods may append
   // against an already-mutated row. No public caller can set this private flag.
@@ -123,17 +172,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         throw error;
       }
       try{
-        if(!fs.existsSync(created.file)){
-          if(error&&typeof error==='object')error.evidenceCleanupState='ABSENT_AFTER_ROLLBACK';
-        }else{
-          const stat=fs.lstatSync(created.file);
-          if(!stat.isFile()||stat.isSymbolicLink())
-            throw new Error('created evidence path changed type; refusing cleanup');
-          if(sha256(fs.readFileSync(created.file,'utf8'))!==created.digest)
-            throw new Error('created evidence bytes changed; refusing cleanup');
-          fs.unlinkSync(created.file);
-          if(error&&typeof error==='object')error.evidenceCleanupState='REMOVED_AFTER_ROLLBACK';
-        }
+        const cleanupState=removeCreatedEvidenceFile(created);
+        if(error&&typeof error==='object')error.evidenceCleanupState=cleanupState;
       }catch(cleanupError){
         const combined=new AggregateError([error,cleanupError],
           'artifact registration failed; exclusive evidence cleanup failed and requires reconciliation');
@@ -173,7 +213,9 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'orphan evidence file requires independently authorized reconciliation: '+name);
     const fd=fs.openSync(file,'wx',0o600);
     try{
-      if(onFileCreated)onFileCreated({file,digest});
+      const createdStat=fs.fstatSync(fd,{bigint:true});
+      assert(createdStat.isFile(),'exclusive evidence descriptor is not a regular file');
+      if(onFileCreated)onFileCreated({file,digest,identity:evidenceFileIdentity(createdStat)});
       fs.writeFileSync(fd,data,'utf8');
       try{fs.fsyncSync(fd);}
       catch(error){
@@ -221,17 +263,29 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       });
     }catch(err){
       if(created){
-        const registered=this.db.prepare(
-          'SELECT digest FROM artifacts WHERE task_id=? AND name=?')
-          .get(t.id,name);
-        // Do not delete anything registered, replaced, mutated or not ours.
-        // A partial write remains a visible orphan for manual reconciliation.
-        if(!registered&&fs.existsSync(created.file)&&
-          fs.lstatSync(created.file).isFile()&&
-          sha256(fs.readFileSync(created.file,'utf8'))===created.digest){
-          try{fs.unlinkSync(created.file);}
-          catch(cleanErr){throw new AggregateError([err,cleanErr],
-            'recovery rejected; exclusive evidence cleanup failed and requires reconciliation');}
+        let registered;
+        try{
+          registered=this.db.prepare(
+            'SELECT digest FROM artifacts WHERE task_id=? AND name=?')
+            .get(t.id,name);
+        }catch(checkError){
+          const combined=new AggregateError([err,checkError],
+            'recovery rejected; artifact manifest state unknown, evidence preserved for reconciliation');
+          combined.evidenceCleanupState='ORPHAN_PRESERVED';
+          throw combined;
+        }
+        if(registered){
+          if(err&&typeof err==='object')err.evidenceCleanupState='REGISTERED';
+        }else{
+          try{
+            const cleanupState=removeCreatedEvidenceFile(created);
+            if(err&&typeof err==='object')err.evidenceCleanupState=cleanupState;
+          }catch(cleanError){
+            const combined=new AggregateError([err,cleanError],
+              'recovery rejected; exclusive evidence cleanup failed and requires reconciliation');
+            combined.evidenceCleanupState='ORPHAN_PRESERVED';
+            throw combined;
+          }
         }
       }
       throw err;

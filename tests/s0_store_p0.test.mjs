@@ -230,3 +230,80 @@ test('S0-R2 F3: transient artifact fsync failure rolls back only its unregistere
     store.verify(task.id);
   });
 });
+
+function replaceCreatedEvidenceWithSameBytes({target,backup,action}){
+  const originalOpen=fs.openSync,originalFsync=fs.fsyncSync,originalUnlink=fs.unlinkSync;
+  let targetFd=null,injected=false,originalIdentity=null,replacementIdentity=null,unlinkCalls=0,caught=null;
+  fs.openSync=function(file,...args){
+    const fd=originalOpen.call(this,file,...args);
+    if(path.resolve(String(file))===path.resolve(target)&&args[0]==='wx')targetFd=fd;
+    return fd;
+  };
+  fs.fsyncSync=function(fd){
+    if(fd===targetFd&&!injected){
+      injected=true;
+      originalIdentity=fs.fstatSync(fd,{bigint:true});
+      fs.renameSync(target,backup);
+      fs.copyFileSync(backup,target);
+      replacementIdentity=fs.lstatSync(target,{bigint:true});
+      const error=new Error('INJECTED_SAME_BYTES_REPLACEMENT_FSYNC_EIO');
+      error.code='EIO';
+      throw error;
+    }
+    return originalFsync.call(this,fd);
+  };
+  fs.unlinkSync=function(file,...args){
+    if(path.resolve(String(file))===path.resolve(target))unlinkCalls++;
+    return originalUnlink.call(this,file,...args);
+  };
+  try{action();}catch(error){caught=error;}
+  finally{fs.openSync=originalOpen;fs.fsyncSync=originalFsync;fs.unlinkSync=originalUnlink;}
+  return {injected,originalIdentity,replacementIdentity,unlinkCalls,caught};
+}
+
+test('S0 T3: artifact rollback preserves same-byte replacement with a different file identity',async()=>{
+  await withStore(async({store,task})=>{
+    const name='same-bytes-replaced.json';
+    const target=path.join(store.dir(task.id),'evidence',name);
+    const backup=path.join(store.root,name+'.original');
+    const content='synthetic evidence bytes must not transfer file ownership';
+    const result=replaceCreatedEvidenceWithSameBytes({target,backup,
+      action:()=>store.artifact(task.id,name,content)});
+    assert.equal(result.injected,true);
+    assert.notEqual(String(result.originalIdentity.ino),String(result.replacementIdentity.ino),
+      'replacement must have a different filesystem file ID');
+    assert.equal(String(result.originalIdentity.dev),String(result.replacementIdentity.dev));
+    assert.equal(fs.readFileSync(backup,'utf8'),content);
+    assert.equal(fs.readFileSync(target,'utf8'),content);
+    assert.equal(result.unlinkCalls,0,'Store must not unlink a replacement object');
+    assert(result.caught instanceof AggregateError);
+    assert.equal(result.caught.evidenceCleanupState,'ORPHAN_PRESERVED');
+    assert.match(result.caught.errors?.[1]?.message??'',/file identity changed/);
+    assert.equal(store.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND name=?').get(task.id,name),undefined);
+    assert.throws(()=>store.verify(task.id),/unregistered evidence file requires reconciliation/);
+  });
+});
+
+test('S0 T3: commitRecovery rollback preserves same-byte replacement with a different file identity',async()=>{
+  await withStore(async({store,task})=>{
+    const name='recovery-same-bytes-replaced.json';
+    const target=path.join(store.dir(task.id),'evidence',name);
+    const backup=path.join(store.root,name+'.original');
+    const content='synthetic rejected recovery evidence bytes';
+    const result=replaceCreatedEvidenceWithSameBytes({target,backup,
+      action:()=>store.commitRecovery(task,{name,content,payload:{evidenceSha256:'0'.repeat(64)}})});
+    assert.equal(result.injected,true);
+    assert.notEqual(String(result.originalIdentity.ino),String(result.replacementIdentity.ino),
+      'replacement must have a different filesystem file ID');
+    assert.equal(String(result.originalIdentity.dev),String(result.replacementIdentity.dev));
+    assert.equal(fs.readFileSync(backup,'utf8'),content);
+    assert.equal(fs.readFileSync(target,'utf8'),content);
+    assert.equal(result.unlinkCalls,0,'Store must not unlink a replacement object');
+    assert(result.caught instanceof AggregateError);
+    assert.equal(result.caught.evidenceCleanupState,'ORPHAN_PRESERVED');
+    assert.match(result.caught.errors?.[1]?.message??'',/file identity changed/);
+    assert.equal(store.db.prepare('SELECT 1 FROM artifacts WHERE task_id=? AND name=?').get(task.id,name),undefined);
+    assert.throws(()=>store.verify(task.id),/unregistered evidence file requires reconciliation/);
+    assert.equal(store.get(task.id).status,'INFLIGHT','rejected recovery must not mutate task state');
+  });
+});
