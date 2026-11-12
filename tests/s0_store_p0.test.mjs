@@ -74,7 +74,9 @@ test('S0 Store: rejected '+attack+' closes paid Agent without forming a quorum',
     assert.equal(store.dispatches(task.id).find(d=>d.agent_id==='srv_5bao:agent-5bao').state,'TERMINAL');
     assert.equal(x.seen.created.length,2);
     assert.equal(x.seen.terminal.length,2);
-    assert.equal(x.seen.payloads['p0-initial-A1-incomplete.json'].quorum.established,false);
+    const incompleteDigest=store.evidenceDigest(task.id,'p0-initial-A1-incomplete.json');
+    const incomplete=JSON.parse(store.readEvidenceByDigest(task.id,incompleteDigest).content);
+    assert.equal(incomplete.quorum.established,false);
     assert.equal(store.get(task.id).status,'INFLIGHT');store.verify(task.id);
   });
 });
