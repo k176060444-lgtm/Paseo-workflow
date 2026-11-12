@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {spawn} from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
 import {Store} from '../src/store.mjs';
@@ -113,7 +114,13 @@ test('S0 Store: public completion rejects a summary that changes signed '+field,
 test('S0-R2 F9: stale lock allows only fail-closed quarantine, not redispatch',async()=>{
   await withStore(async({store,task})=>{
     const lock=path.join(store.dir(task.id),'controller.lock');
-    const prior=JSON.stringify({pid:2147483647,created:new Date(Date.now()-120000).toISOString()});
+    // Use a child process that actually existed and exited; do not depend
+    // on arbitrary Windows/Linux PID range behaviour.
+    const child=spawn(process.execPath,['-e','process.exit(0)'],{stdio:'ignore'});
+    await new Promise((resolve,reject)=>{
+      child.once('error',reject);child.once('exit',resolve);
+    });
+    const prior=JSON.stringify({pid:child.pid,created:new Date(Date.now()-120000).toISOString()});
     fs.writeFileSync(lock,prior,{mode:0o600});
     const result=store.quarantineCrashedTask(task.id,{
       actor:'local operator',receipt:'Independent crash incident registration receipt'
