@@ -80,13 +80,16 @@ export function p0Eligibility(node){
     return {status:'P0_INELIGIBLE',reason:'native Paseo workspace contract incomplete'};
   return {status:'PREFLIGHT_REQUIRED',reason:null};
 }
-export function verifyPaseoP0Termination(roots,node,proof,{taskId,cycle,jobId,commit,agentId,allowHistorical=false}){
+export function verifyPaseoP0Termination(roots,node,proof,{taskId,cycle,jobId,commit,agentId,expectedNativeTaskId=null,allowHistorical=false}){
   signed(roots,node,proof,{purpose:'P1_P0_TERMINATION_V1',taskId,cycle,jobId,commit,
     nodeId:node.id,physicalId:node.physicalId,serverId:node.serverId,
     workspaceId:node.workspaceId,agentId,terminated:true,nativeExecutionState:'TERMINAL'},
     {allowHistorical});
   assert(typeof proof.statement.nativeTaskId==='string'&&proof.statement.nativeTaskId.length>0,
     'termination witness lacks original native task identity');
+  if(expectedNativeTaskId!==null)
+    assert(proof.statement.nativeTaskId===expectedNativeTaskId,
+      'termination witness nativeTaskId does not match original task');
 }
 async function makeDirectClient({url,password,signal,timeoutMs}) {
   const {createPaseoApi}=await import('@getpaseo/client');
@@ -198,11 +201,16 @@ export class PaseoP0Adapter{
     const host=(directory.hosts??[]).find(h=>h.serverId===node.serverId&&
       h.registrationId===node.registrationId&&h.enabled!==false&&h.metadata?.p1Transport==='direct');
     assert(host,'P0 Host registration mismatch; no SSH fallback');
-    // HostSummary has source/targetDescription, not target/connection.
-    // Reject opaque or SSH transports before asking Hosts API to connect.
+    // source.key identifies the registering source (often a UUID), NOT the
+    // connection transport. targetDescription is derived by the daemon.
+    // Fail closed on SSH/opaque targets instead of interpreting source.key.
     const description=host.targetDescription;
-    assert(host.source?.key==='direct'&&typeof description==='string'&&
-      /^wss?:\/\/[^\s]+\/ws$/.test(description),
+    let target=null;
+    try{target=new URL(description);}catch{}
+    assert(typeof host.source?.id==='string'&&host.source.id.length>0&&
+      typeof host.source?.key==='string'&&host.source.key.length>0&&
+      target&&['ws:','wss:'].includes(target.protocol)&&target.pathname==='/ws'&&
+      !target.username&&!target.password&&!target.search&&!target.hash,
       'P0 Connected Host transport not verifiably native direct; SSH forbidden');
     return this.call('host-client',()=>this.client.hosts.client(node.serverId));
   }
@@ -228,22 +236,39 @@ export class PaseoP0Adapter{
     }catch(e){await this.close(remote).catch(()=>{});throw e;}
   }
   async terminate(job,task,cycle,commit,store){
-    let cancelAck='ACKNOWLEDGED';
-    try{await this.call('cancel',()=>job.remote.cancelAgent(job.agentId),{collection:false});}
-    catch{cancelAck='UNKNOWN';}
-    // A cancel ACK, idle state or archive flag alone never proves termination.
+    job.terminateStage='cancel';
+    job.cancelAck='UNKNOWN';
+    try{
+      await this.call('cancel',()=>job.remote.cancelAgent(job.agentId),{collection:false});
+      job.cancelAck='ACKNOWLEDGED';
+    }catch(e){job.cancelError=String(e?.message??e);}
+    // A cancellation ACK, idle state or archive flag alone cannot prove
+    // provider termination. Preserve each stage for incident reconciliation.
+    job.terminateStage='cancel-readback';
     const snapshot=await this.call('cancel-readback',()=>job.remote.agents.ref(job.agentId).refresh(),{collection:false});
     const state=snapshot?.agent??snapshot;
     assert(state?.id===job.agentId&&['idle','closed'].includes(state.status)&&
       state.activeTurn==null,'P0 cancellation readback is not terminal');
+    job.terminateStage='termination-witness';
     const proof=await this.call('termination-witness',()=>this.attestor.attestP0Termination({
       node:job.node,task,cycle,commit,jobId:job.jobId,agentId:job.agentId}),{collection:false});
     verifyPaseoP0Termination(this.p0Roots,job.node,proof,{
-      taskId:task.id,cycle,jobId:job.jobId,commit,agentId:job.agentId});
-    const evidence=store.artifact(task.id,'p0-'+cycle+'-'+job.node.id+'-cancel.json',proof);
+      taskId:task.id,cycle,jobId:job.jobId,commit,agentId:job.agentId,
+      expectedNativeTaskId:job.nativeTaskId??null});
+    // Keep a verified original in memory for the incomplete report if the
+    // primary cancel artifact cannot be durably registered.
+    job.verifiedTerminationProof=proof;
+    job.terminateStage='cancel-evidence';
+    job.cancelEvidenceName='p0-'+cycle+'-'+job.node.id+'-cancel.json';
+    let evidence;
+    try{evidence=store.artifact(task.id,job.cancelEvidenceName,proof);}
+    catch(e){job.cancelEvidenceWriteFailed=true;throw e;}
+    job.verifiedTerminationProof=null;
+    job.terminateStage='dispatch-terminal';
     store.recordTerminal(job.jobId);job.state='CANCELLED';
+    job.terminateStage='complete';
     return {nodeId:job.node.id,jobId:job.jobId,agentId:job.agentId,
-      cancelAck,evidenceSha256:evidence.sha256};
+      cancelAck:job.cancelAck,evidenceSha256:evidence.sha256};
   }
   async review({task,commit,taskSpec,store,cycle}){
     this.validateInventory();
@@ -306,7 +331,10 @@ export class PaseoP0Adapter{
             cwd:node.cwd,title:'P0:'+task.id+':'+cycle+':'+node.id,prompt,background:true,
             labels:{'p0-job':jobId,'p0-task':task.id,'p0-cycle':cycle,'p0-commit':commit,'p0-node':node.id}}));
           assert(handle.id,'P0 remote agent ACK identity missing');
-          job.agentId=handle.id;store.recordAck(jobId,node.serverId+':'+handle.id);job.state='ACKNOWLEDGED';
+          job.agentId=handle.id;
+          if(typeof handle.nativeTaskId==='string'&&handle.nativeTaskId.length>0)
+            job.nativeTaskId=handle.nativeTaskId;
+          store.recordAck(jobId,node.serverId+':'+handle.id);job.state='ACKNOWLEDGED';
         }catch(e){if(!optional(node))throw e;}
       }
       while(true){
@@ -330,6 +358,9 @@ export class PaseoP0Adapter{
               const body=verifyPaseoP0Envelope(this.p0Roots,job.node,envelope,
                 {taskId:task.id,cycle,jobId:job.jobId,commit,binding:job.binding});
               assert(body.agentId===job.agentId,'P0 signed Agent ID mismatched ACK');
+              if(job.nativeTaskId&&job.nativeTaskId!==body.nativeTaskId)
+                throw new Error('P0 signed result nativeTaskId mismatches original create ACK');
+              job.nativeTaskId=body.nativeTaskId;
               store.recordTerminal(job.jobId);job.state='TERMINAL';
               reports.set(job.node.id,{...body,evidence:ev});updateQuorum();
             }else assert(['initializing','running'].includes(state.status),
@@ -346,13 +377,42 @@ export class PaseoP0Adapter{
       // primary has already started a paid execution.
       for(const job of jobs.filter(j=>!['TERMINAL','CANCELLED'].includes(j.state))){
         if(job.agentId&&job.canTerminate){
-          try{cancelled.push(await this.terminate(job,task,cycle,commit,store));continue;}catch{}
+          try{
+            cancelled.push(await this.terminate(job,task,cycle,commit,store));
+            continue;
+          }catch(e){
+            job.cleanupError=String(e?.message??e);
+            const errorName='p0-'+cycle+'-'+job.node.id+'-cancel-error.json';
+            try{
+              store.artifact(task.id,errorName,{
+                nodeId:job.node.id,jobId:job.jobId,agentId:job.agentId,
+                terminateStage:job.terminateStage,cancelAck:job.cancelAck,
+                cancelError:job.cancelError??null,cleanupError:job.cleanupError,
+                cancelEvidenceWriteFailed:job.cancelEvidenceWriteFailed===true,
+                attemptedEvidenceName:job.cancelEvidenceName??null,
+                verifiedTerminationProof:job.verifiedTerminationProof??null
+              });
+            }catch(writeError){
+              job.cleanupEvidenceError=String(writeError?.message??writeError);
+            }
+          }
+        }else if(job.agentId&&!job.canTerminate){
+          job.cleanupError='verified termination capability unavailable';
+        }else{
+          job.cleanupError=job.cleanupError??'create attempted without confirmed Agent ACK';
         }
         job.state='UNKNOWN';
       }
       const result=[...reports.values()],physicalIds=[...new Set(result.map(r=>r.physicalId))];
       const execution={state:jobs.every(j=>['TERMINAL','CANCELLED'].includes(j.state))?'CLOSED':'NEEDS_RECONCILIATION',
-        jobs:jobs.map(j=>({nodeId:j.node.id,jobId:j.jobId,agentId:j.agentId,state:j.state}))};
+        jobs:jobs.map(j=>({nodeId:j.node.id,jobId:j.jobId,agentId:j.agentId,state:j.state,
+          reason:j.reason??null,terminateStage:j.terminateStage??null,
+          cancelAck:j.cancelAck??null,cancelError:j.cancelError??null,
+          cleanupError:j.cleanupError??null,
+          cleanupEvidenceError:j.cleanupEvidenceError??null,
+          cancelEvidenceWriteFailed:j.cancelEvidenceWriteFailed===true,
+          attemptedEvidenceName:j.cancelEvidenceName??null,
+          verifiedTerminationProof:j.verifiedTerminationProof??null}))};
       const quorum={established:physicalIds.length>=2,validReportCount:result.length,physicalIds,
         establishedAt:quorumAt,extraThirdMs:this.extraThirdMs};
       if(collectionError||!quorum.established){

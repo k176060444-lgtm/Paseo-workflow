@@ -73,7 +73,7 @@ export function mock({badKey=false,createUnknown=false,thirdRunning=true,signedA
     list:async()=>({hosts:nodes.map(n=>({
       serverId:n.serverId,registrationId:n.registrationId,
       metadata:{p1Transport:'direct'},enabled:true,
-      source:{key:'direct'},targetDescription:'wss://private-vpn-host/ws'}))}),
+      source:{id:'source-'+n.id,key:'550e8400-e29b-41d4-a716-446655440000'},targetDescription:'wss://private-vpn-host/ws'}))}),
     client:async id=>scopes[id]
   }};
   const store={

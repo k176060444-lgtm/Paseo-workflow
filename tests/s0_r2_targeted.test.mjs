@@ -13,12 +13,12 @@ test('S0-R2: initializing is nonterminal; it must keep polling the same Agent',a
   const x=mock();x.nodes[2].enabled=false;
   const ref=x.scopes.srv_5bao.agents.ref;let reads=0;
   x.scopes.srv_5bao.agents.ref=id=>({
-    ...ref(id),refresh:async()=>({agent:{id,status:reads++===0?'initializing':'idle'}})});
+    ...ref(id),refresh:async()=>({agent:{id,status:['initializing','running','idle'][Math.min(reads++,2)]}})});
   const result=await review(x);
   assert.equal(result.quorum.established,true);
   assert.equal(result.execution.state,'CLOSED');
   assert.equal(result.reports.length,2);
-  assert(reads>=2);
+  assert(reads>=3);
 });
 
 test('S0-R2: a later primary create failure closes any earlier known paid Agent',async()=>{
@@ -83,11 +83,46 @@ test('S0-R2: a Registered Host with SSH source is never connected for P0',async(
   const x=mock();let connected=0;
   x.client.hosts.list=async()=>({hosts:x.nodes.map(n=>({
     registrationId:n.registrationId,serverId:n.serverId,enabled:true,
-    metadata:{p1Transport:'direct'},source:{key:'ssh'},
+    metadata:{p1Transport:'ssh'},source:{id:'source-'+n.id,key:'550e8400-e29b-41d4-a716-446655440000'},
     targetDescription:'ssh://forbidden-host'
   }))});
   x.client.hosts.client=async()=>{connected++;throw Error('must not connect SSH');};
   await assert.rejects(review(x),/requires 2 authenticated/);
   assert.equal(connected,0);
   assert.equal(x.seen.created.length,0);
+});
+
+test('S0-R2: realistic Connected Host source UUID is metadata, not transport',async()=>{
+  const x=mock();x.nodes[2].enabled=false;
+  const r=await review(x);
+  assert.equal(r.quorum.established,true);
+  assert.equal(x.seen.created.length,2);
+});
+test('S0-R2: cancelled execution retains stage and signed proof if cancel artifact fails',async()=>{
+  const x=mock();x.nodes[2].enabled=false;
+  x.scopes.srv_9bao.agents.create=async()=>{throw Error('CREATE_FAILED');};
+  const artifact=x.store.artifact;
+  x.store.artifact=(id,name,body)=>{
+    if(name.endsWith('-5bao-cancel.json'))throw Error('CANCEL_ARTIFACT_IO_FAILURE');
+    return artifact(id,name,body);
+  };
+  await assert.rejects(review(x),/CREATE_FAILED/);
+  const incomplete=x.seen.payloads['p0-initial-A1-incomplete.json'];
+  const first=incomplete.execution.jobs.find(j=>j.nodeId==='5bao');
+  assert.equal(first.state,'UNKNOWN');
+  assert.equal(first.terminateStage,'cancel-evidence');
+  assert.equal(first.cleanupError,'CANCEL_ARTIFACT_IO_FAILURE');
+  assert.equal(first.cancelEvidenceWriteFailed,true);
+  assert.equal(first.verifiedTerminationProof.statement.agentId,'agent-5bao');
+  assert.equal(x.store.dispatches().find(j=>j.phase.endsWith(':5bao')).state,'ACKNOWLEDGED');
+});
+test('S0-R2: termination witness rejects mismatched known original nativeTaskId',async()=>{
+  const x=mock();x.nodes[2].enabled=false;
+  const create=x.scopes.srv_5bao.agents.create;
+  x.scopes.srv_5bao.agents.create=async opts=>({...await create(opts),nativeTaskId:'original-task'});
+  x.scopes.srv_9bao.agents.create=async()=>{throw Error('CREATE_FAILED');};
+  await assert.rejects(review(x),/CREATE_FAILED/);
+  const first=x.seen.payloads['p0-initial-A1-incomplete.json'].execution.jobs.find(j=>j.nodeId==='5bao');
+  assert.equal(first.state,'UNKNOWN');
+  assert.match(first.cleanupError,/nativeTaskId/);
 });

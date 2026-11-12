@@ -182,7 +182,9 @@ test('P0 signed V2 request binding rejects altered user intent even when node id
  await assert.rejects(()=>adapter(x).review({task:x.task,commit:'a'.repeat(40),
    taskSpec:'Approved synthetic requirement',store:x.store,cycle:'initial-A1'}),
    /P0 physical quorum invalid/);
- assert.equal(x.seen.terminal.length,0,'bad signed binding must never count or become terminal');
+ assert.equal(x.seen.terminal.length,2,'invalid reports cannot count, but paid Agents must be terminated');
+ assert.equal(x.seen.artifacts.some(name=>name.endsWith('-result.json')),true);
+ assert.equal(x.seen.artifacts.includes('p0-initial-A1-incomplete.json'),true);
  assert.equal(x.seen.created.length,2);
 });
 

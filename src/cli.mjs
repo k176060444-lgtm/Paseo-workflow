@@ -122,8 +122,13 @@ async function main(){
         observations.push({nodeId:node.id,serverId:node.serverId,
           originalCommit:commit,state:known.state,agentId:known.agent_id,
           remoteMatches:agents.map(agent=>({id:agent.id,status:agent.status})),
-          consistent:known.agent_id===null?agents.length===0:
-            agents.length===1&&known.agent_id===node.serverId+':'+agents[0].id});
+          consistent:known.agent_id!==null&&
+            agents.length===1&&known.agent_id===node.serverId+':'+agents[0].id,
+          outcome:known.agent_id===null?'UNKNOWN_ACK':
+            agents.length===0?'UNKNOWN_REMOTE_ABSENCE':
+            agents.length===1&&known.agent_id===node.serverId+':'+agents[0].id?
+              'IDENTIFIED_NOT_RECOVERED':'IDENTITY_CONFLICT',
+          manualReconciliationRequired:true});
       }
       result={taskId:task.id,cycle,mode:'READ_ONLY_NO_MUTATION',
         observations,manualReconciliationRequired:true};

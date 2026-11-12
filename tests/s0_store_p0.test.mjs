@@ -52,7 +52,7 @@ test('S0 Store: native two-seat result is accepted only with pinned preflight, s
   });
 });
 for(const attack of ['invalid-signature','wrong-serverId','wrong-Workspace','wrong-Commit','missing-isolation'])
-test('S0 Store: rejected '+attack+' preserves original ACK and cannot produce quorum',async()=>{
+test('S0 Store: rejected '+attack+' closes paid Agent without forming a quorum',async()=>{
   await withStore(async context=>{
     const {x,store,task}=context;
     const original=x.attestor.attestP0Result;
@@ -71,7 +71,10 @@ test('S0 Store: rejected '+attack+' preserves original ACK and cannot produce qu
     };
     // Adapter must reject the malicious report before it can form a quorum.
     await assert.rejects(()=>collect(context),/physical quorum invalid/);
-    assert.equal(store.dispatches(task.id).find(d=>d.agent_id==='srv_5bao:agent-5bao').state,'ACKNOWLEDGED');
+    assert.equal(store.dispatches(task.id).find(d=>d.agent_id==='srv_5bao:agent-5bao').state,'TERMINAL');
+    assert.equal(x.seen.created.length,2);
+    assert.equal(x.seen.terminal.length,2);
+    assert.equal(x.seen.payloads['p0-initial-A1-incomplete.json'].quorum.established,false);
     assert.equal(store.get(task.id).status,'INFLIGHT');store.verify(task.id);
   });
 });
