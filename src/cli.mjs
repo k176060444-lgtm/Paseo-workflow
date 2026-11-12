@@ -110,6 +110,12 @@ async function main(){
         }
         // Read-only remote SDK enumeration: NEVER creates, cancels, archives or
         // marks a dispatch terminal, and never claims reconciliation is approved.
+        if(!node.paseoUrl){
+          observations.push({nodeId:node.id,serverId:node.serverId,
+            originalCommit:commit,state:'LEGACY_CONNECTED_HOSTS_MANUAL_RECONCILIATION',
+            agentId:known.agent_id??null,manualReconciliationRequired:true});
+          continue;
+        }
         const agents=await adapter.reconcileByLabels(node,{
           taskId:task.id,cycle,jobId,commit});
         assert(agents.length<=1,'duplicate remote Agents with same P0 job label; BLOCKED');

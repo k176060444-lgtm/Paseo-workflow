@@ -1,4 +1,4 @@
-import {verify} from 'node:crypto';
+import {verify,randomUUID} from 'node:crypto';
 import {withDeadline} from './deadline.mjs';
 import {assert,canonical,sha256,parseAgentOutput,normalizeVerdict,PASS,providerOptions,deriveP0Verdict} from './policy.mjs';
 
@@ -91,7 +91,7 @@ export function verifyPaseoP0Termination(roots,node,proof,{taskId,cycle,jobId,co
 async function makeDirectClient({url,password,signal,timeoutMs}) {
   const {createPaseoApi}=await import('@getpaseo/client');
   const {DaemonClient}=await import('@getpaseo/client/internal/daemon-client');
-  const driver=new DaemonClient({url,password,connectTimeoutMs:timeoutMs,
+  const driver=new DaemonClient({url,password,clientId:'p1-controller-'+randomUUID(),connectTimeoutMs:timeoutMs,
     reconnect:{enabled:false},logger:{debug(){},info(){},warn(){},error(){}}});
   const abort=()=>{Promise.resolve(driver.close()).catch(()=>{});};
   signal.addEventListener('abort',abort,{once:true});
@@ -271,6 +271,11 @@ export class PaseoP0Adapter{
         store.event(task.id,'P0_OPTIONAL_NOT_DISPATCHED',{nodeId:node.id,cycle,reason});
       }
       assert(ready.length>=2,'P0 requires 2 authenticated Paseo hosts before paid dispatch');
+      // All paid seats require independently witnessed cancellation capability.
+      assert(ready.every(seat=>seat.canTerminate),
+        'P0 paid primary lacks independently verified termination capability; BLOCKED');
+      let collectionError=null;
+      try{
       for(const seat of ready){
         const {node,remote,proof}=seat,role=node.role,soul=task.frozen.souls[role];
         assert(soul?.text,'P0 frozen Soul missing');
@@ -323,7 +328,7 @@ export class PaseoP0Adapter{
               assert(body.agentId===job.agentId,'P0 signed Agent ID mismatched ACK');
               store.recordTerminal(job.jobId);job.state='TERMINAL';
               reports.set(job.node.id,{...body,evidence:ev});updateQuorum();
-            }else assert(['running','queued','starting','busy'].includes(state.status),
+            }else assert(['initializing','running'].includes(state.status),
               'P0 remote Agent nonterminal/failed; reconcile manually');
           }catch(e){job.state='UNKNOWN';job.reason=e.code==='P0_DEADLINE'?'DEADLINE':'INVALID_OR_UNKNOWN_RESULT';}
         }
@@ -332,6 +337,9 @@ export class PaseoP0Adapter{
         try{await this.call('poll',()=>this.sleep(delay),{timeoutMs:Math.max(this.callTimeoutMs,delay+1000)});}
         catch{break;} // Preserve an established quorum and close existing execution separately.
       }
+      }catch(e){collectionError=e;}
+      // Cleanup also runs when a later primary create fails after an earlier
+      // primary has already started a paid execution.
       for(const job of jobs.filter(j=>!['TERMINAL','CANCELLED'].includes(j.state))){
         if(job.agentId&&job.canTerminate){
           try{cancelled.push(await this.terminate(job,task,cycle,commit,store));continue;}catch{}
@@ -343,8 +351,11 @@ export class PaseoP0Adapter{
         jobs:jobs.map(j=>({nodeId:j.node.id,jobId:j.jobId,agentId:j.agentId,state:j.state}))};
       const quorum={established:physicalIds.length>=2,validReportCount:result.length,physicalIds,
         establishedAt:quorumAt,extraThirdMs:this.extraThirdMs};
-      if(!quorum.established){
-        store.artifact(task.id,'p0-'+cycle+'-incomplete.json',{quorum,execution,skipped,reports:result});
+      if(collectionError||!quorum.established){
+        store.artifact(task.id,'p0-'+cycle+'-incomplete.json',{
+          quorum,execution,skipped,reports:result,
+          cause:collectionError?String(collectionError.message):'insufficient physical quorum'});
+        if(collectionError)throw collectionError;
         throw new Error('P0 physical quorum invalid; retain original dispatches; no automatic retry');
       }
       const derived=deriveP0Verdict(result);

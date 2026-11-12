@@ -396,8 +396,19 @@ export class WorkflowController {
     this.store.save(t,'P0_STARTED',{cycle,sha:t.currentSha});
     let p;
     try{p=await this.p0.review({task:t,commit:t.currentSha,taskSpec:t.taskSpec,store:this.store,cycle});}
-    catch(e){this.markExecutionUncertain(t,{type:'P0_UNCERTAIN',role:'P0',phase:cycle,
-      error:e,details:{cycle}});throw e;}
+    catch(e){
+      const dispatched=this.store.dispatches(t.id).some(d=>d.phase?.startsWith('P0:'+cycle+':'));
+      if(dispatched){
+        this.markExecutionUncertain(t,{type:'P0_UNCERTAIN',role:'P0',phase:cycle,
+          error:e,details:{cycle}});
+      }else{
+        const checkpoint=t.stage;
+        t.blockedStage=checkpoint;t.stage='BLOCKED';t.status='BLOCKED';t.inflight=null;
+        t.pendingHuman='P0 pre-dispatch qualification failed: '+String(e.message);
+        this.store.save(t,'P0_PRE_DISPATCH_BLOCKED',{cycle,checkpoint,reason:String(e.message)});
+      }
+      throw e;
+    }
     assertP0Summary(p); // A forged Adapter PASS cannot be frozen into evidence.
     const ev=this.store.artifact(t.id,`p0-${cycle}-summary.json`,p);
     if(p.execution&&p.execution.state!=='CLOSED'){

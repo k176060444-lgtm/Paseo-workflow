@@ -886,6 +886,15 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     }else if(type==='AWAITING_CLARIFICATION'||type==='COMPLIANCE_OR_INFRA_BLOCK'){
       assert(t.stage===(type==='AWAITING_CLARIFICATION'?'WAIT_HUMAN':'BLOCKED')&&
         t.status==='WAITING_HUMAN','invalid human-stop transition');
+    }else if(type==='P0_PRE_DISPATCH_BLOCKED'){
+      assert(['P0_INITIAL','P0_FINAL'].includes(oldTask.stage)&&
+        oldTask.status==='INFLIGHT'&&oldTask.inflight?.role==='P0'&&
+        oldTask.inflight.phase===payload.cycle&&
+        t.stage==='BLOCKED'&&t.status==='BLOCKED'&&
+        t.blockedStage===oldTask.stage&&t.inflight===null&&
+        typeof t.pendingHuman==='string'&&t.pendingHuman.length>0&&
+        !this.dispatches(t.id).some(d=>d.phase?.startsWith('P0:'+payload.cycle+':')),
+        'P0 definite pre-dispatch block requires zero attempted remote dispatch');
     }else if(type==='PREFLIGHT_BLOCKED'){
       assert(oldTask.status==='READY'&&t.stage==='BLOCKED'&&t.status==='BLOCKED',
         'invalid preflight block');
@@ -1095,7 +1104,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'reviewer reuse token cannot change without signed human recovery');
     if(type!=='HUMAN_CONTROLLED_RECOVERY'&&
        type!=='AWAITING_CLARIFICATION'&&type!=='COMPLIANCE_OR_INFRA_BLOCK'&&
-       type!=='PREFLIGHT_BLOCKED'&&type!=='INCIDENT_RECONCILED_BLOCK'&&
+       type!=='PREFLIGHT_BLOCKED'&&type!=='P0_PRE_DISPATCH_BLOCKED'&&
+       type!=='INCIDENT_RECONCILED_BLOCK'&&
        type!=='EXECUTION_UNCERTAIN'&&type!=='REVIEW_PAIR_UNCERTAIN'&&
        type!=='P0_UNCERTAIN'&&type!=='UNEXPECTED_STAGE_ERROR')
       assert((oldTask.blockedStage??null)===(nextTask.blockedStage??null),

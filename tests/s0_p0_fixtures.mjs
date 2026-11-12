@@ -28,7 +28,8 @@ export function mock({badKey=false,createUnknown=false,thirdRunning=true,signedA
     attestP0Preflight:async({node,task,commit})=>signed(node,{
       purpose:'P1_P0_WORKSPACE_PREFLIGHT_V2',taskId:task.id,
       nodeId:node.id,physicalId:node.physicalId,serverId:node.serverId,
-      workspaceId:node.workspaceId,cwd:node.cwd,commit,head:commit,clean:true,independentSession:true,osReadonlyIsolation:true,nativeTaskIdentity:true}),
+      workspaceId:node.workspaceId,cwd:node.cwd,commit,head:commit,clean:true,independentSession:true,osReadonlyIsolation:true,nativeTaskIdentity:true,
+      verifiedTermination:node.id!=='rusty'}),
     attestP0Result:async({node,task,cycle,commit,jobId,agentId,raw:actual,binding})=>{
       const report={taskId:task.id,cycle,jobId,commit,nodeId:node.id,
         physicalId:node.physicalId,serverId:node.serverId,
@@ -41,9 +42,15 @@ export function mock({badKey=false,createUnknown=false,thirdRunning=true,signedA
         nodeId:node.id,physicalId:node.physicalId,serverId:node.serverId,
         agentId,model:node.model,harness:node.harness,
         ...(binding?{bindingSha256:sha256(binding)}:{}),reportSha256:sha256(report)})};
-    }
+    },
+    attestP0Termination:async({node,task,cycle,jobId,commit,agentId})=>signed(node,{
+      purpose:'P1_P0_TERMINATION_V1',taskId:task.id,cycle,jobId,commit,
+      nodeId:node.id,physicalId:node.physicalId,serverId:node.serverId,
+      workspaceId:node.workspaceId,agentId,terminated:true,nativeExecutionState:'TERMINAL',
+      nativeTaskId:'native-'+agentId})
   };
   const scopes=Object.fromEntries(nodes.map(node=>[node.serverId,{
+    cancelAgent:async id=>{states.set(id,'idle');},
     workspaces:{ref:id=>({refresh:async()=>({workspace:{directory:node.cwd,id}})})},
     agents:{
       create:async opts=>{
