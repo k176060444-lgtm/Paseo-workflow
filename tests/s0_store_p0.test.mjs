@@ -109,3 +109,39 @@ test('S0 Store: public completion rejects a summary that changes signed '+field,
     context.store.verify(context.task.id);
   });
 });
+
+test('S0-R2 F9: stale lock allows only fail-closed quarantine, not redispatch',async()=>{
+  await withStore(async({store,task})=>{
+    const lock=path.join(store.dir(task.id),'controller.lock');
+    const prior=JSON.stringify({pid:2147483647,created:new Date(Date.now()-120000).toISOString()});
+    fs.writeFileSync(lock,prior,{mode:0o600});
+    const result=store.quarantineCrashedTask(task.id,{
+      actor:'local operator',receipt:'Independent crash incident registration receipt'
+    });
+    assert.equal(result.status,'NEEDS_RECONCILIATION');
+    assert.equal(result.allowedToRedispatch,false);
+    assert.equal(fs.existsSync(lock),false);
+    assert.equal(fs.readFileSync(result.lockArchived,'utf8'),prior);
+    const saved=store.get(task.id);
+    assert.equal(saved.blockedStage,'P0_INITIAL');
+    assert.equal(saved.inflight,null);
+    assert.equal(store.verify(task.id).events>0,true);
+    assert.equal(store.dispatches(task.id).length,0);
+    const incidentEvidence=store.readEvidenceByDigest(task.id,result.evidenceSha256);
+    assert.match(incidentEvidence.content,/OUTCOME_UNKNOWN/);
+  });
+});
+test('S0-R2 F9: live lock owner cannot be declared stale',async()=>{
+  await withStore(async({store,task})=>{
+    const lock=path.join(store.dir(task.id),'controller.lock');
+    fs.writeFileSync(lock,JSON.stringify({
+      pid:process.pid,created:new Date(Date.now()-120000).toISOString()
+    }),{mode:0o600});
+    assert.throws(()=>store.quarantineCrashedTask(task.id,{
+      actor:'local operator',receipt:'Deliberate negative test of active-owner handling'
+    }),/current process/);
+    assert.equal(store.get(task.id).status,'INFLIGHT');
+    assert(fs.existsSync(lock));
+    store.verify(task.id);
+  });
+});

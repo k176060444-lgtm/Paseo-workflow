@@ -826,7 +826,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       'REVIEW_SEAT_RECORDED','REVIEW_PAIR_TERMINAL',
       'TEST_RECEIPTS','P0_STARTED','P0_COMPLETE',
       'GATE_A_ROUND_START','GATE_B_ROUND_START','WORKER_TECHNICAL_FAIL','AUDIT_NOTE']);
-    const uncertainEvents=new Set(['EXECUTION_UNCERTAIN','REVIEW_PAIR_UNCERTAIN','P0_UNCERTAIN']);
+    const uncertainEvents=new Set(['EXECUTION_UNCERTAIN','REVIEW_PAIR_UNCERTAIN','P0_UNCERTAIN','CRASH_DETECTED_UNCERTAIN']);
     if(uncertainEvents.has(type)){
       assert(oldTask.status==='INFLIGHT'&&oldTask.stage!=='NEEDS_RECONCILIATION'&&
         t.stage==='NEEDS_RECONCILIATION'&&t.status==='NEEDS_RECONCILIATION'&&
@@ -1107,7 +1107,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
        type!=='PREFLIGHT_BLOCKED'&&type!=='P0_PRE_DISPATCH_BLOCKED'&&
        type!=='INCIDENT_RECONCILED_BLOCK'&&
        type!=='EXECUTION_UNCERTAIN'&&type!=='REVIEW_PAIR_UNCERTAIN'&&
-       type!=='P0_UNCERTAIN'&&type!=='UNEXPECTED_STAGE_ERROR')
+       type!=='P0_UNCERTAIN'&&type!=='CRASH_DETECTED_UNCERTAIN'&&
+       type!=='UNEXPECTED_STAGE_ERROR')
       assert((oldTask.blockedStage??null)===(nextTask.blockedStage??null),
         'blockedStage cannot mutate without an authorized failure/recovery event');
     if(oldTask.finalArbitration!==undefined&&oldTask.finalArbitration!==null)
@@ -1317,6 +1318,61 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     this.db.exec('BEGIN');
     try { const result=fn(); this.db.exec('COMMIT'); return result; }
     catch(e){ this.db.exec('ROLLBACK'); throw e; }
+  }
+  // Explicit fail-closed handling of a controller killed during an INFLIGHT
+  // checkpoint. This never returns to READY or declares any Dispatch terminal.
+  // A separate signed incident-close and signed recovery remain mandatory.
+  quarantineCrashedTask(id,{actor,receipt}={}){
+    assert(!this.readOnly,'crash quarantine requires writable Store');
+    assert(typeof actor==='string'&&actor.trim().length>1&&
+      typeof receipt==='string'&&receipt.trim().length>15,
+      'explicit operator and incident receipt required');
+    const lockFile=path.join(this.dir(id),'controller.lock');
+    const stats=fs.lstatSync(lockFile);
+    assert(stats.isFile()&&!stats.isSymbolicLink(),
+      'crash quarantine requires original regular lock file');
+    const raw=fs.readFileSync(lockFile,'utf8');
+    const lock=JSON.parse(raw);
+    const ageMs=Date.now()-Date.parse(lock.created);
+    assert(Number.isSafeInteger(lock.pid)&&lock.pid>0&&lock.pid!==process.pid&&
+      Number.isFinite(ageMs)&&ageMs>=60000,
+      'crash lock identity missing, current process, future or too recent');
+    try{
+      process.kill(lock.pid,0);
+      throw new Error('lock owner is still alive; refusing quarantine');
+    }catch(e){
+      // EPERM and any platform-unknown response are NOT evidence of death.
+      if(e.code!=='ESRCH')throw e;
+    }
+    this.verify(id);
+    const t=this.get(id);
+    assert(t.status==='INFLIGHT'&&t.inflight?.role&&t.inflight?.phase&&
+      t.stage!=='NEEDS_RECONCILIATION',
+      'crash quarantine applies only to original in-flight checkpoint');
+    const checkpoint=t.stage,originalRole=t.inflight.role,
+      originalPhase=t.inflight.phase;
+    const evidence=this.artifact(id,'crash-quarantine-'+randomUUID()+'.json',{
+      schema:1,taskId:id,checkpoint,originalRole,originalPhase,
+      ownerPid:lock.pid,lockCreated:lock.created,lockSha256:sha256(raw),
+      originalStateSha256:sha256(t),actor,receipt,
+      conclusion:'OWNER_NOT_RUNNING; OUTCOME_UNKNOWN; NO_REDISPATCH'
+    });
+    t.stage='NEEDS_RECONCILIATION';t.status='NEEDS_RECONCILIATION';
+    t.blockedStage=checkpoint;t.inflight=null;
+    t.pendingHuman='Controller process crashed during '+originalRole+'/'+originalPhase+
+      '; original Dispatch/Agent identities must be reconciled before signed incident closure';
+    this.save(t,'CRASH_DETECTED_UNCERTAIN',{
+      checkpoint,originalRole,originalPhase,actor,
+      lockSha256:sha256(raw),evidenceSha256:evidence.sha256});
+    // Preserve the original stale lock bytes under an immutable unique name.
+    // No automatic retry, cancellation or recovery occurs here.
+    assert(fs.readFileSync(lockFile,'utf8')===raw,
+      'lock changed during quarantine; inspect before releasing');
+    const archived=lockFile+'.quarantined-'+randomUUID();
+    fs.renameSync(lockFile,archived);
+    return {taskId:id,stage:t.stage,status:t.status,
+      originalCheckpoint:checkpoint,lockArchived:archived,
+      evidenceSha256:evidence.sha256,allowedToRedispatch:false};
   }
   withLock(id,cb){
     assert(!this.readOnly,'store opened read-only');

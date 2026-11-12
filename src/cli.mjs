@@ -29,6 +29,7 @@ Commands:
   verify --id TASK1234
   p0-reconcile --id TASK1234 --cycle initial-A1|final-B1  # READ ONLY, historical original commit
   agent-reconcile --id TASK1234        # READ ONLY, local original dispatch labels
+  crash-quarantine --id TASK1234 --actor NAME --receipt FILE  # manual fail-closed stale-lock inspection, no retry
   approve --id TASK1234 --gate 0.1|0.2|5.9 --digest SHA --actor NAME --receipt FILE --approval-proof SIGNED_JSON --process-proof SEPARATELY_SIGNED_JSON
   run --id TASK1234                   # requires explicit safety environment and installed Paseo
   incident-close --id TASK1234 --actor NAME --receipt FILE --process-proof SIGNED_PROCESS_JSON --approval-proof SIGNED_INCIDENT --sha EXACT_COMMIT  # only fully attested original tasks
@@ -133,6 +134,8 @@ async function main(){
       result={taskId:task.id,cycle,mode:'READ_ONLY_NO_MUTATION',
         observations,manualReconciliationRequired:true};
     }
+    else if(cmd==='crash-quarantine')result=store.quarantineCrashedTask(need(a,'id'),{
+      actor:need(a,'actor'),receipt:receipt(a)});
     else if(cmd==='approve')result=await store.withLock(need(a,'id'),()=>controller.approve({id:need(a,'id'),gate:need(a,'gate'),digest:need(a,'digest'),actor:need(a,'actor'),receipt:receipt(a),proof:approvalProof(a),processProof:processProof(a)}));
     else if(cmd==='incident-close')result=await store.withLock(need(a,'id'),()=>controller.certifyIncident({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a),processProof:processProof(a)}));
     else if(cmd==='recover')result=await store.withLock(need(a,'id'),()=>controller.authorizeRecovery({id:need(a,'id'),actor:need(a,'actor'),receipt:receipt(a),expectedSha:a.sha??null,expectedBasis:a.basis??null,proof:approvalProof(a)}));
