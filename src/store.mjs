@@ -1252,11 +1252,41 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         const cycle=match[1],nodeId=match[2];
         const p0=[t.p0Initial,t.p0Final].find(p=>
           p?.cycle===cycle&&[...(p.reports??[]),...(p.cancelled??[])].some(r=>r.nodeId===nodeId&&r.jobId===d.id));
-        assert(p0,'P0 TERMINAL row has no matching independently signed original result');
-        if(!checkedP0.has(cycle)){
-          this.#verifyP0Nodes({...t,currentSha:p0.commit},p0,{allowHistorical:true});
-          checkedP0.add(cycle);
+        if(p0){
+          if(!checkedP0.has(cycle)){
+            this.#verifyP0Nodes({...t,currentSha:p0.commit},p0,{allowHistorical:true});
+            checkedP0.add(cycle);
+          }
+          continue;
         }
+        // A valid signed termination can precede a P0 summary when a later
+        // seat fails. Do not require a fabricated quorum/result to reconcile
+        // an independently terminated paid Agent; check the original request,
+        // original preflight and exact signed cancellation instead.
+        const node=(t.frozen.p0?.nodes??[]).find(n=>n.id===nodeId);
+        assert(node&&node.serverId&&d.agent_id?.startsWith(node.serverId+':'),
+          'P0 terminal dispatch has no pinned original physical Agent identity');
+        const requestName='p0-'+cycle+'-'+nodeId+'-request.json';
+        const preflightName='p0-'+cycle+'-'+nodeId+'-preflight.json';
+        const cancelName='p0-'+cycle+'-'+nodeId+'-cancel.json';
+        const original=JSON.parse(this.#requireArtifact(id,requestName,
+          this.evidenceDigest(id,requestName)));
+        assert(original.jobId===d.id&&original.taskId===id&&
+          original.cycle===cycle&&original.nodeId===nodeId&&
+          original.serverId===node.serverId&&
+          original.physicalId===node.physicalId&&
+          original.workspaceId===node.workspaceId&&
+          original.cwd===node.cwd&&/^[a-f0-9]{40}$/.test(original.commit??''),
+          'P0 terminal dispatch has no immutable matching original request');
+        const preflight=JSON.parse(this.#requireArtifact(id,preflightName,
+          this.evidenceDigest(id,preflightName)));
+        verifyPaseoP0Preflight(this.p0TrustRoots(),node,preflight,
+          id,original.commit,{allowHistorical:true});
+        const proof=JSON.parse(this.#requireArtifact(id,cancelName,
+          this.evidenceDigest(id,cancelName)));
+        verifyPaseoP0Termination(this.p0TrustRoots(),node,proof,{
+          taskId:id,cycle,jobId:d.id,commit:original.commit,
+          agentId:d.agent_id.slice(node.serverId.length+1),allowHistorical:true});
         continue;
       }
       const matches=[];

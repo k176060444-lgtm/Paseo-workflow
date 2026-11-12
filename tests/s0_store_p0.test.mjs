@@ -145,3 +145,19 @@ test('S0-R2 F9: live lock owner cannot be declared stale',async()=>{
     store.verify(task.id);
   });
 });
+
+test('S0-R2: independently signed cancellation without P0 quorum is recoverable evidence',async()=>{
+  await withStore(async context=>{
+    const {x,store,task}=context;
+    const original=x.attestor.attestP0Result;
+    x.attestor.attestP0Result=async args=>{
+      const e=await original(args);
+      if(args.node.id==='5bao')e.report.binding.intentSha256='0'.repeat(64);
+      return e;
+    };
+    await assert.rejects(()=>collect(context),/physical quorum invalid/);
+    assert.equal(store.dispatches(task.id).every(d=>d.state==='TERMINAL'),true);
+    assert.doesNotThrow(()=>store.assertRecoverableDispatches(task.id),
+      'signed cancellation must be recognized without inventing a P0 report');
+  });
+});
