@@ -1,0 +1,210 @@
+{
+  "status": "FIXED_CODE_COMMIT",
+  "repository": "k176060444-lgtm/Paseo-workflow",
+  "branch": "fix/s0-three-node-p0-20261112t021428z",
+  "reviewTarget": {
+    "commit": "ff80df8e9771225dbe4bfc37011403a47c104668",
+    "tree": "4b30348bca7b1bb3a766a345e77ec0a525fe2789",
+    "parent": "b4bcfe93fde5a2538d87659c084881b6b25cf5b0"
+  },
+  "sourceArchiveSha256": "0bad30fd3de74883851c36d0cdd2238148fb27aa0584fadf0334c1e213700c11",
+  "sourceArchiveFormat": "canonical Git bytes, core.autocrlf=false for this export only",
+  "frozenCandidateTreeUnchanged": true,
+  "originalCandidatePackageSha256": "65425756260ae64693e3af2eca892e6dee40c1e348700ea6f4137bc52b3209fb",
+  "testedWorktreeInputSha256": {
+    "src/deadline.mjs": "04e4915fccd93277c8cb138f993fac5cd61a018c38f4d0407771d6196c355e3a",
+    "tests/s0_deadline_routes.test.mjs": "a7ba8d6c34280fd2586e533e281695c902131b055f4e377806acc0afb0f6c412",
+    "tests/s0_p0_fixtures.mjs": "e35d77e34a0580a639b0178f62907815aef6c7fe43bfa5b495c16d60352257db",
+    "tests/s0_recovery.test.mjs": "3f6a6a77642a5eb151db7575188fa9d65ffc908482d4f8afd2cc7ffd499bea00",
+    "tests/s0_store_p0.test.mjs": "687e874c61721fabc70b8048e86a2950f83392334e9333c20053c433a9fbae1f",
+    "tests/s0_three_node.test.mjs": "e1cc13efb9d9c8d6be248bd3cf6c0ed9162bcf687f8f772b27cf93a93fd55f6a",
+    "config/intent.example.md": "9c6acdc13fce9dd875c48e2025877220a6a05c6c76795ac6cfa7f1983f6af322",
+    "config/remote-node.example.json": "5ef1eed8a30be0e132d9417698300029c5e61068b7de7c2395d2cffbca48669b",
+    "config/remote-rusty.example.json": "2bb5ec56862f9b07871efa2c238dcb9668412a18d9d7bc4625ee42a3a782a307",
+    "config/role-matrix.example.json": "e55a825f77feb666638946cf3792cbae963b51b03e5266af2e60b825dd4bb560",
+    "package.json": "bcb041b7f0f9777db634635271234798988c15ccfadfbba12d079375de2b6bed",
+    "remote/p0_runner.py": "ebec79524463b39c90b1728a7ea926b29a7e566778943cc7d064865aee868f20",
+    "remote/tests/test_r2_runner.py": "854b65413c2fd64ae2feb314243459313a7394e458dd722eac42cb56481b69ca",
+    "remote/tests/test_r3_runner.py": "90a367680a41cf40cc53e95f9d477d68bd5580c888392511e1a4a95f072b6a19",
+    "remote/tests/test_r4_parser.py": "919d3b9c7bbb362984e7c37ec9346463737b0036c2ca3e005180fa228248eea4",
+    "remote/tests/test_runner.py": "2d843cec049156b9bd2b8d344d592c025f65c9eee4d60e213269c4a8bd3db014",
+    "src/agents.mjs": "5e5acc84ad9dfd53efe8a72cca691cb534b60cae682e1638d1bb19508fa9a816",
+    "src/attestor.mjs": "f37e3e7278d0271aeaa2f2319c256bfcbd6dd1501b937be857151d628a94d910",
+    "src/auth.mjs": "67f4b6e802a5a1d3ab03a696ab079074f71a1fbacbcebe4371769f976c20eb79",
+    "src/cli.mjs": "1241d6543677f0bf49e25eb247a7fedd3833992bb8e0170e33c954defbb70913",
+    "src/controller.mjs": "9bbc17a90f770f4aa6aceff88fd0827458538b1431ed0b7ccf64f832d8e603ab",
+    "src/git.mjs": "2a9c69c0168bba64d072c2274ff0ee10efd2b421cff3449bcecf2a24aeff8441",
+    "src/p0.mjs": "2246e7707e539087e845ce0f3b4f613955fc3d786723172b83543714d90ff71e",
+    "src/p0_a2a.mjs": "bf7d70616c522a660becea404f31d2d00f382b3dcdc80bdcec86a8b4415c1ebc",
+    "src/p0_paseo.mjs": "6820805909d93ad33ef00109f06bd4e65a0630148ebc8920ba45cbdac507c507",
+    "src/policy.mjs": "386fd71e7577fe2eeb7f2e55351ebb88640f93a20e722d7e0f1059a42481593f",
+    "src/store.mjs": "8e5caf2643cb7964e7e7c74a36cc63315715a9d8394638845ea7a3639cc248b1",
+    "tests/controller.test.mjs": "86f3dc65469ab980924aac1dbb7abba9966d40b5ec6192b0cdc5497d11daf1d1",
+    "tests/fixtures.mjs": "f8702f1e429e582b52c8490519c8af2f63d5c3ec909a77713f182e1205c28012",
+    "tests/observer_readiness.test.mjs": "3e56819b7d2832a819c6ff9fa9fb74dc7b10d93f22c5ec02cc93f040004e209d",
+    "tests/p0.test.mjs": "cb7f15e8e9e3457dc248048f8c095f8d0fcabbea66c61e73c4c35983b2594096",
+    "tests/p0_a2a.test.mjs": "fe26fdf65542d5264f25636bc8db9015845d88ae88de3bdeeb8424d796192528",
+    "tests/p0_paseo.test.mjs": "33e4c1245f4041a27d6f25b215e8884ba8c3d04376e4b92b010ab746cd757e38",
+    "tests/p0_regression.test.mjs": "2b9fb88c6a0bbaa3cff14b20eb4e21babfbe92a0d564e993f69062f5d4d43dd5",
+    "tests/r13_verdict.test.mjs": "7b9b75854fa6bb81e9bbb602094fe7d4e2f303309d73db620c95035d34fdadae",
+    "tests/r2_regression.test.mjs": "478d8743f63d7db595cfc0a21a6eef8489332e559420ce88ff041dca33ad3df2",
+    "tests/r3_regression.test.mjs": "34e1090bcf0d58febbecbc389f808bc5b837a0a5a2d5069a8fdb527bb8a60009",
+    "tests/r4_regression.test.mjs": "d305108998ab3d417c202a41dfe3c206bf2ad86e59180328389b2df2d7bbe6c2",
+    "tests/r5_regression.test.mjs": "a7bd9b01c308da33ec32d284a9624d7d801ed456f06345ea8cbfe6e1d4dcb213",
+    "tests/r6_auth.test.mjs": "aa017d75d6874695b7caf2c46e1c6597d3655f977f10c85d8beedf01aeaa7e93",
+    "tests/r7_security.test.mjs": "ddc1f1f331c4405a18b55a700e0e7d718180e46b81ba8aa920c3c9d2e8833c05",
+    "tests/r8_attestor.test.mjs": "cdfb97f68c5f6d08f2cc2c5919c4dfc615b0542931ebb24c11373ac743bfb4c8",
+    "tests/r8_regression.test.mjs": "deac8eb2ec7463480449d8b84f108f4859ee010e915c5d7c0a6dc21ac6c1e90e",
+    "tests/security_regression.test.mjs": "5f83ad4f623fd9f0bf0f279f8c04c288fad8a5d9fb95d0a6d26c733a07e81db6"
+  },
+  "tests": {
+    "node": {
+      "tests": 211,
+      "pass": 210,
+      "fail": 0,
+      "skip": 1,
+      "exitCode": 0
+    },
+    "python": {
+      "tests": 11,
+      "pass": 11,
+      "fail": 0,
+      "skip": 0,
+      "exitCode": 0
+    },
+    "source": "existing original offline logs, not re-run for this documentation/package-only publication"
+  },
+  "evidenceInventory": [
+    {
+      "path": "audit_evidence/s0-three-node/.gitattributes",
+      "bytes": 20,
+      "sha256": "e97602ab9cac70102245345c5ab0fc9830df8b17f1072b188265a662a3a547ae"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/00-fixed-baseline-timeout.json",
+      "bytes": 524,
+      "sha256": "9400d247811f6f8402e29618c712ff5cffa89ce12e001014f23b14de5f54b728"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/01-q1-negative-before-fix.txt",
+      "bytes": 11280,
+      "sha256": "e8b119495ef1742dab19b5d6aef2f2c72814439af5402bf5de49626d82cd6a54"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/02-q1-negative-after-fix.txt",
+      "bytes": 9112,
+      "sha256": "c8c7f877b7ff2be8e080f78cdb68bfb61f09f1864c4d9ab2356321076181491b"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/03-existing-offline-baseline-bounded.txt",
+      "bytes": 44631,
+      "sha256": "2fb5a1f689362df22434fcd1059ba5e1beabe5cda2c39498ccdc33ebf8786047"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/04-paseo-existing-targeted.txt",
+      "bytes": 12102,
+      "sha256": "0282b58cfa1345203ce83c83ab451365c200e9b1d4c457ca852aa5c74cf07adb"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/05-three-node-regressions-r1.txt",
+      "bytes": 17294,
+      "sha256": "1c7c8ff95eb02affc883637988854667399e7ae47e92fb52b9c6be8f309d3a63"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/06-store-boundaries-r1.txt",
+      "bytes": 19669,
+      "sha256": "d0227c8014276d3f81f82c74f30b5bc7cf6421ca630c280ece087de8d2e3436e"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/07-store-boundaries-fixture-corrected.txt",
+      "bytes": 10761,
+      "sha256": "2f87885b8d72d7296911c08fc543b99cb308f5b9f12d1ce2f15427f0e768d38a"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/08-complete-node-regression-r1.txt",
+      "bytes": 59377,
+      "sha256": "3628fec3f447cedc5cc4a45218612772c61c09a6729984babbc1c71c3760380b"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/09-existing-python-offline.txt",
+      "bytes": 10640,
+      "sha256": "ddceeaa0400ecb33304c853b62f7e2d4e7512c3e52a9571c95711666f8228aff"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/10-historical-native-fixture.txt",
+      "bytes": 9544,
+      "sha256": "056ce3e95e05110fd17365b9e9f2733f54e02a9545fd8e2d7eb8ef59d5cb06c6"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/11-three-node-supplemental.txt",
+      "bytes": 22770,
+      "sha256": "5d76974e2945f20bb20b1c53682efa7ff06954bb4b189f24317f6afe801f4707"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/12-targeted-final.txt",
+      "bytes": 22553,
+      "sha256": "aecdb3053128c15462bc2c3bb6b9f5e8707cac086b6a1a691e9fa81908c7c540"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/13-final-complete-node.txt",
+      "bytes": 59118,
+      "sha256": "b992a36ea665256c979bd5bd9dd89eeffd5f1ecf991bbb706dc801c6fd120c47"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/14-final-existing-python.txt",
+      "bytes": 10640,
+      "sha256": "4c133b10a6fc4a5a9dc124ab69a2494a133ffada5f5ac6d194a1a4da1b517324"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/15-static-checks.txt",
+      "bytes": 5041,
+      "sha256": "18deaa17081e1619cbba6ed0ecd0b8e7324d8d491d0aa3c77f1f9d8e5d2a1bf2"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/ORIGINAL_FREEZE.json",
+      "bytes": 1051,
+      "sha256": "b7e5017ef09ab0b03abe2279d617bfbf965e79cfb64b83c46a3274a155e10bd4"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/PROVENANCE.json",
+      "bytes": 10598,
+      "sha256": "c3d124dd93de9b46f37057e390bcef68286c2d100c184449dfe519ef423126b0"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/S0_TASK_AUTHORIZATION.md",
+      "bytes": 6884,
+      "sha256": "b7e085ae5ba4d6fc63c1f745f4b782baf872c6c9c5f6044f0fd0a222ec292985"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/original-index.diff",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/original-status.txt",
+      "bytes": 346,
+      "sha256": "016dfda9a7a23cd98ba4f9b71ff4ecbd3e9345d4a8904dcf0d61b892933c0591"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/original-worktree.diff",
+      "bytes": 3463,
+      "sha256": "3a4d81cb85de5a4f1837b73c202fee03b0090271cd68f9c08ebe7fab5abe9015"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/sdk-0.15.2-daemon-client.d.ts.txt",
+      "bytes": 67341,
+      "sha256": "16044046dcc7a4316f2b355615b5338880055c6ad4f58aa2773fd0c286881917"
+    },
+    {
+      "path": "audit_evidence/s0-three-node/sdk-0.15.2-index.d.ts.txt",
+      "bytes": 19815,
+      "sha256": "3cd2c53aa663d8c67e88fa38855b702a7363709e1c1c8aa6fa130fa2846b5f79"
+    }
+  ],
+  "independentTechnicalReview": "NOT_PERFORMED",
+  "ProAuditAcceptance": "NOT_ISSUED",
+  "S0": "NOT_ACCEPTED",
+  "realP0": "NOT_RUN",
+  "deployment": "NOT_PERFORMED",
+  "publicationCommitNote": "Package and publication files are in a following commit on the same branch. It is not the code review target; its identity is read back from GitHub after push."
+}
