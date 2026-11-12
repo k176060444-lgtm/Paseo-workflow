@@ -63,7 +63,7 @@ test('S0-R2: definite zero-dispatch preflight failure is BLOCKED, not UNKNOWN',a
   assert.equal(t.stage,'BLOCKED');
   assert.equal(t.status,'BLOCKED');
   assert.equal(t.inflight,null);
-  assert.equal(records.at(-1)[2],'P0_PRE_DISPATCH_BLOCKED');
+  assert.equal(records.at(-1)[1],'P0_PRE_DISPATCH_BLOCKED');
 });
 
 test('S0-R2: actual SDK DaemonClient constructor accepts a nonempty clientId',async t=>{
