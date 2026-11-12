@@ -198,8 +198,12 @@ export class PaseoP0Adapter{
     const host=(directory.hosts??[]).find(h=>h.serverId===node.serverId&&
       h.registrationId===node.registrationId&&h.enabled!==false&&h.metadata?.p1Transport==='direct');
     assert(host,'P0 Host registration mismatch; no SSH fallback');
-    const target=JSON.stringify(host.target??host.connection??'');
-    assert(!target.toLowerCase().includes('ssh://'),'SSH host connection forbidden');
+    // HostSummary has source/targetDescription, not target/connection.
+    // Reject opaque or SSH transports before asking Hosts API to connect.
+    const description=host.targetDescription;
+    assert(host.source?.key==='direct'&&typeof description==='string'&&
+      /^wss?:\/\/[^\s]+\/ws$/.test(description),
+      'P0 Connected Host transport not verifiably native direct; SSH forbidden');
     return this.call('host-client',()=>this.client.hosts.client(node.serverId));
   }
   async connect(node,task,commit){

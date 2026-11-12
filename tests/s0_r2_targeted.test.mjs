@@ -78,3 +78,16 @@ test('S0-R2: actual SDK DaemonClient constructor accepts a nonempty clientId',as
   assert(driver,'constructor rejected valid clientId');
   await driver.close();
 });
+
+test('S0-R2: a Registered Host with SSH source is never connected for P0',async()=>{
+  const x=mock();let connected=0;
+  x.client.hosts.list=async()=>({hosts:x.nodes.map(n=>({
+    registrationId:n.registrationId,serverId:n.serverId,enabled:true,
+    metadata:{p1Transport:'direct'},source:{key:'ssh'},
+    targetDescription:'ssh://forbidden-host'
+  }))});
+  x.client.hosts.client=async()=>{connected++;throw Error('must not connect SSH');};
+  await assert.rejects(review(x),/requires 2 authenticated/);
+  assert.equal(connected,0);
+  assert.equal(x.seen.created.length,0);
+});

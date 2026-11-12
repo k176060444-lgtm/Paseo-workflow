@@ -72,7 +72,8 @@ export function mock({badKey=false,createUnknown=false,thirdRunning=true,signedA
   const client={hosts:{
     list:async()=>({hosts:nodes.map(n=>({
       serverId:n.serverId,registrationId:n.registrationId,
-      metadata:{p1Transport:'direct'},enabled:true,target:'wss://private-vpn-host/ws'}))}),
+      metadata:{p1Transport:'direct'},enabled:true,
+      source:{key:'direct'},targetDescription:'wss://private-vpn-host/ws'}))}),
     client:async id=>scopes[id]
   }};
   const store={
