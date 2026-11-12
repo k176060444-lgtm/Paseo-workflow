@@ -1,9 +1,14 @@
 import {randomUUID} from 'node:crypto';
 import {AGENT_SCHEMA,assert,parseAgentOutput,providerOptions} from './policy.mjs';
+import {withDeadline} from './deadline.mjs';
 
 // Never import the SDK in simulation or contract tests: a missing daemon is not a test failure.
 export class PaseoAgentRuntime {
-  constructor(url,{attestor=null}={}) {this.url=url;this.client=null;this.attestor=attestor;}
+  constructor(url,{attestor=null,passwordEnv='PASEO_LOCAL_PASSWORD',
+    connectTimeoutMs=15000,createTimeoutMs=30000}={}) {
+    this.url=url;this.client=null;this.attestor=attestor;this.passwordEnv=passwordEnv;
+    this.connectTimeoutMs=connectTimeoutMs;this.createTimeoutMs=createTimeoutMs;
+  }
   async open(){
     // 21bao live observation: daemon 0.15.3 accepts /ws; a bare host:port
     // can hang silently. Never try to connect to an unapproved remote target.
@@ -14,8 +19,15 @@ export class PaseoAgentRuntime {
     assert(['127.0.0.1','localhost','[::1]'].includes(uri.hostname),
       'Paseo SDK must connect only to the local authenticated daemon');
     const {createPaseoClient}=await import('@getpaseo/client');
-    this.client=createPaseoClient({url:this.url});
-    await this.client.connect();
+    const password=process.env[this.passwordEnv];
+    this.client=createPaseoClient({url:this.url,
+      ...(typeof password==='string'&&password.length>0?{password}:{})});
+    try{await withDeadline(()=>this.client.connect(),this.connectTimeoutMs,'local daemon connect');}
+    catch(e){
+      await withDeadline(()=>this.client.close(),3000,'local daemon close after failed connect')
+        .catch(()=>{});
+      throw e;
+    }
   }
   async findExistingAgent(agentId){
     assert(this.client&&typeof agentId==='string'&&agentId.length>0,
@@ -63,7 +75,7 @@ export class PaseoAgentRuntime {
     return {taskId:task.id,mode:'READ_ONLY_NO_SIDE_EFFECTS',
       observations:result,manualAttestationRequired:true};
   }
-  async close(){if(this.client) await this.client.close();}
+  async close(){if(this.client)await withDeadline(()=>this.client.close(),5000,'local daemon close');}
   async execute({task,role,phase,cwd,prompt,store,auditBinding=null}){
     assert(this.client,'Paseo not connected');
     const cfg=task.frozen.roles[role];assert(cfg,'missing role configuration');
@@ -71,7 +83,7 @@ export class PaseoAgentRuntime {
     const dispatchId=randomUUID();
     store.recordIntent(task.id,phase,dispatchId);
     // A create ACK is not proof that the provider ran. A lost ACK is UNCERTAIN, not retryable.
-    const agent=await this.client.agents.create({
+    const agent=await withDeadline(()=>this.client.agents.create({
       config:{provider:cfg.model,systemPrompt:soul.text,options:providerOptions(role,cfg.harness,
             role==='tester_gate_b'?Object.values(task.frozen.tests?.gateB??{}).flat():
               task.frozen.tests?.commands??[])},
@@ -81,7 +93,7 @@ export class PaseoAgentRuntime {
         'p1-dispatch':dispatchId,'p1-commit':task.currentSha??'NOT_YET_ESTABLISHED',
         'p1-soul-sha':soul.sha256},
       background:true,
-    });
+    }),this.createTimeoutMs,'local agent create');
     store.recordAck(dispatchId,agent.id);
     const result=await agent.waitForFinish(60*60*1000);
     assert(result.status==='idle',`Paseo role ${role} not terminal idle: ${result.status}; inspect Agent ${agent.id}`);

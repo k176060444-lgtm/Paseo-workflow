@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {PaseoP0Adapter} from '../src/p0_paseo.mjs';
 import {WorkflowController} from '../src/controller.mjs';
 import {describeP0Reconciliation} from '../src/p0_reconciliation.mjs';
+import {PaseoAgentRuntime} from '../src/agents.mjs';
 import {mock,adapter} from './s0_p0_fixtures.mjs';
 
 const review=x=>adapter(x).review({task:x.task,commit:'a'.repeat(40),
@@ -140,4 +141,21 @@ test('S0-R2 F6: no local ACK and no remote record remain UNKNOWN',()=>{
     [{id:'agent-1'}],'srv_5bao');
   assert.equal(matched.consistent,true);
   assert.equal(matched.outcome,'IDENTIFIED_NOT_RECOVERED');
+});
+
+test('S0-R2 F12: hung local create is bounded with immutable Intent and no retry',async()=>{
+  const runtime=new PaseoAgentRuntime('ws://127.0.0.1:6767/ws',{createTimeoutMs:15});
+  let creates=0,intents=0,acks=0;
+  runtime.client={agents:{create:async()=>{creates++;return new Promise(()=>{});}}};
+  const task={id:'TASKR2',currentSha:'a'.repeat(40),
+    frozen:{roles:{worker:{model:'opencode/approved',harness:'opencode'}},
+      souls:{worker:{text:'synthetic-test-only',sha256:'a'.repeat(64)}}}};
+  const store={recordIntent:()=>{intents++;},recordAck:()=>{acks++;}};
+  await assert.rejects(runtime.execute({
+    task,role:'worker',phase:'A1-worker',cwd:'/synthetic',prompt:'test',
+    store
+  }),/deadline exceeded: local agent create/);
+  assert.equal(creates,1);
+  assert.equal(intents,1);
+  assert.equal(acks,0);
 });
