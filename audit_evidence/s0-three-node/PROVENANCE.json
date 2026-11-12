@@ -1,0 +1,356 @@
+{
+  "purpose": "Implementer evidence provenance, not an independent audit or S0 acceptance",
+  "requiredParent": "b4bcfe93fde5a2538d87659c084881b6b25cf5b0",
+  "runtimes": {
+    "node": "v26.6.0",
+    "python": "Python 3.14.7",
+    "git": "git version 2.54.0.windows.1",
+    "inspectedInstalledSdk": "0.15.2",
+    "sdkUsedByTests": "hand-written mock fixtures only",
+    "daemonContactedInThisRound": false
+  },
+  "copiedBytesVerified": [
+    {
+      "name": "00-fixed-baseline-timeout.json",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\00-fixed-baseline-timeout.json",
+      "sha256": "9400d247811f6f8402e29618c712ff5cffa89ce12e001014f23b14de5f54b728",
+      "bytes": 524
+    },
+    {
+      "name": "01-q1-negative-before-fix.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\01-q1-negative-before-fix.txt",
+      "sha256": "e8b119495ef1742dab19b5d6aef2f2c72814439af5402bf5de49626d82cd6a54",
+      "bytes": 11280
+    },
+    {
+      "name": "02-q1-negative-after-fix.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\02-q1-negative-after-fix.txt",
+      "sha256": "c8c7f877b7ff2be8e080f78cdb68bfb61f09f1864c4d9ab2356321076181491b",
+      "bytes": 9112
+    },
+    {
+      "name": "03-existing-offline-baseline-bounded.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\03-existing-offline-baseline-bounded.txt",
+      "sha256": "2fb5a1f689362df22434fcd1059ba5e1beabe5cda2c39498ccdc33ebf8786047",
+      "bytes": 44631
+    },
+    {
+      "name": "04-paseo-existing-targeted.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\04-paseo-existing-targeted.txt",
+      "sha256": "0282b58cfa1345203ce83c83ab451365c200e9b1d4c457ca852aa5c74cf07adb",
+      "bytes": 12102
+    },
+    {
+      "name": "05-three-node-regressions-r1.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\05-three-node-regressions-r1.txt",
+      "sha256": "1c7c8ff95eb02affc883637988854667399e7ae47e92fb52b9c6be8f309d3a63",
+      "bytes": 17294
+    },
+    {
+      "name": "06-store-boundaries-r1.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\06-store-boundaries-r1.txt",
+      "sha256": "d0227c8014276d3f81f82c74f30b5bc7cf6421ca630c280ece087de8d2e3436e",
+      "bytes": 19669
+    },
+    {
+      "name": "07-store-boundaries-fixture-corrected.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\07-store-boundaries-fixture-corrected.txt",
+      "sha256": "2f87885b8d72d7296911c08fc543b99cb308f5b9f12d1ce2f15427f0e768d38a",
+      "bytes": 10761
+    },
+    {
+      "name": "08-complete-node-regression-r1.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\08-complete-node-regression-r1.txt",
+      "sha256": "3628fec3f447cedc5cc4a45218612772c61c09a6729984babbc1c71c3760380b",
+      "bytes": 59377
+    },
+    {
+      "name": "09-existing-python-offline.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\09-existing-python-offline.txt",
+      "sha256": "ddceeaa0400ecb33304c853b62f7e2d4e7512c3e52a9571c95711666f8228aff",
+      "bytes": 10640
+    },
+    {
+      "name": "10-historical-native-fixture.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\10-historical-native-fixture.txt",
+      "sha256": "056ce3e95e05110fd17365b9e9f2733f54e02a9545fd8e2d7eb8ef59d5cb06c6",
+      "bytes": 9544
+    },
+    {
+      "name": "11-three-node-supplemental.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\11-three-node-supplemental.txt",
+      "sha256": "5d76974e2945f20bb20b1c53682efa7ff06954bb4b189f24317f6afe801f4707",
+      "bytes": 22770
+    },
+    {
+      "name": "12-targeted-final.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\12-targeted-final.txt",
+      "sha256": "aecdb3053128c15462bc2c3bb6b9f5e8707cac086b6a1a691e9fa81908c7c540",
+      "bytes": 22553
+    },
+    {
+      "name": "13-final-complete-node.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\13-final-complete-node.txt",
+      "sha256": "b992a36ea665256c979bd5bd9dd89eeffd5f1ecf991bbb706dc801c6fd120c47",
+      "bytes": 59118
+    },
+    {
+      "name": "14-final-existing-python.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\14-final-existing-python.txt",
+      "sha256": "4c133b10a6fc4a5a9dc124ab69a2494a133ffada5f5ac6d194a1a4da1b517324",
+      "bytes": 10640
+    },
+    {
+      "name": "15-static-checks.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\15-static-checks.txt",
+      "sha256": "18deaa17081e1619cbba6ed0ecd0b8e7324d8d491d0aa3c77f1f9d8e5d2a1bf2",
+      "bytes": 5041
+    },
+    {
+      "name": "original-index.diff",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\original-index.diff",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "original-status.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\original-status.txt",
+      "sha256": "016dfda9a7a23cd98ba4f9b71ff4ecbd3e9345d4a8904dcf0d61b892933c0591",
+      "bytes": 346
+    },
+    {
+      "name": "original-worktree.diff",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\original-worktree.diff",
+      "sha256": "3a4d81cb85de5a4f1837b73c202fee03b0090271cd68f9c08ebe7fab5abe9015",
+      "bytes": 3463
+    },
+    {
+      "name": "ORIGINAL_FREEZE.json",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\ORIGINAL_FREEZE.json",
+      "sha256": "b7e5017ef09ab0b03abe2279d617bfbf965e79cfb64b83c46a3274a155e10bd4",
+      "bytes": 1051
+    },
+    {
+      "name": "sdk-0.15.2-daemon-client.d.ts.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\sdk-0.15.2-daemon-client.d.ts.txt",
+      "sha256": "16044046dcc7a4316f2b355615b5338880055c6ad4f58aa2773fd0c286881917",
+      "bytes": 67341
+    },
+    {
+      "name": "sdk-0.15.2-index.d.ts.txt",
+      "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\sdk-0.15.2-index.d.ts.txt",
+      "sha256": "3cd2c53aa663d8c67e88fa38855b702a7363709e1c1c8aa6fa130fa2846b5f79",
+      "bytes": 19815
+    }
+  ],
+  "runs": [
+    {
+      "file": "01-q1-negative-before-fix.txt",
+      "exitCodes": [
+        "1"
+      ],
+      "tap": {
+        "tests": "3",
+        "pass": "0",
+        "fail": "3",
+        "cancelled": "0",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "02-q1-negative-after-fix.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {
+        "tests": "3",
+        "pass": "3",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "03-existing-offline-baseline-bounded.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {
+        "tests": "149",
+        "pass": "148",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "1"
+      },
+      "python": []
+    },
+    {
+      "file": "04-paseo-existing-targeted.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {
+        "tests": "15",
+        "pass": "15",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "05-three-node-regressions-r1.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {
+        "tests": "39",
+        "pass": "39",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "06-store-boundaries-r1.txt",
+      "exitCodes": [
+        "1"
+      ],
+      "tap": {
+        "tests": "8",
+        "pass": "0",
+        "fail": "8",
+        "cancelled": "0",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "07-store-boundaries-fixture-corrected.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {
+        "tests": "8",
+        "pass": "8",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "08-complete-node-regression-r1.txt",
+      "exitCodes": [
+        "1"
+      ],
+      "tap": {
+        "tests": "205",
+        "pass": "203",
+        "fail": "1",
+        "cancelled": "0",
+        "skipped": "1"
+      },
+      "python": []
+    },
+    {
+      "file": "09-existing-python-offline.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {},
+      "python": [
+        "11"
+      ]
+    },
+    {
+      "file": "10-historical-native-fixture.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {
+        "tests": "1",
+        "pass": "1",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "11-three-node-supplemental.txt",
+      "exitCodes": [
+        "1"
+      ],
+      "tap": {
+        "tests": "60",
+        "pass": "59",
+        "fail": "0",
+        "cancelled": "1",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "12-targeted-final.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {
+        "tests": "60",
+        "pass": "60",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "0"
+      },
+      "python": []
+    },
+    {
+      "file": "13-final-complete-node.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {
+        "tests": "211",
+        "pass": "210",
+        "fail": "0",
+        "cancelled": "0",
+        "skipped": "1"
+      },
+      "python": []
+    },
+    {
+      "file": "14-final-existing-python.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {},
+      "python": [
+        "11"
+      ]
+    },
+    {
+      "file": "15-static-checks.txt",
+      "exitCodes": [
+        "0"
+      ],
+      "tap": {},
+      "python": []
+    }
+  ],
+  "finalRuns": [
+    "13-final-complete-node.txt",
+    "14-final-existing-python.txt"
+  ],
+  "syntheticOnly": true,
+  "noProductionAcceptance": true,
+  "userTaskAuthorization": {
+    "path": "S0_TASK_AUTHORIZATION.md",
+    "source": "E:\\opencode\\workspace\\paseo-s0-v2-evidence-20261112T021428Z\\S0_TASK_AUTHORIZATION.md",
+    "sha256": "b7e085ae5ba4d6fc63c1f745f4b782baf872c6c9c5f6044f0fd0a222ec292985",
+    "scope": "S0 source/offline repair only; not Gate 5.9 or an independent acceptance"
+  }
+}

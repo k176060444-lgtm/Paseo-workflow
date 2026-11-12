@@ -1,0 +1,69 @@
+diff --git a/src/p0_paseo.mjs b/src/p0_paseo.mjs
+index bec8ef66315d64617d21e81fd5879c3f1eb1eaa6..c9eb778cc2eae6965fbadd6db960d9b566d68bf3 100644
+--- a/src/p0_paseo.mjs
++++ b/src/p0_paseo.mjs
+@@ -80,14 +80,15 @@ function validatedEndpoint(node){
+   assert(['ws:','wss:'].includes(uri.protocol)&&uri.pathname==='/ws'&&
+     !uri.username&&!uri.password&&!uri.search&&!uri.hash,
+     'invalid authenticated direct Paseo daemon endpoint');
+-  // Cleartext WebSocket is limited to explicitly approved private-LAN peers.
++  // Cleartext WebSocket is limited to private LANs and approved Tailscale peers.
+   const host=uri.hostname.replace(/^\[|\]$/g,'');
+   const a=host.split('.').map(Number);
+   const privateIp=a.length===4&&a.every(v=>Number.isInteger(v)&&v>=0&&v<=255)&&
+     (a[0]===10||(a[0]===172&&a[1]>=16&&a[1]<=31)||
+       (a[0]===192&&a[1]===168));
+-  assert(uri.protocol==='wss:'||privateIp,
+-    'unencrypted Paseo WebSocket forbidden outside trusted private LAN');
++  const approvedTailscaleIp=['100.100.88.21','100.100.88.9','100.100.88.5','100.100.88.100'].includes(host);
++  assert(uri.protocol==='wss:'||privateIp||approvedTailscaleIp,
++    'unencrypted Paseo WebSocket forbidden outside trusted private LAN or approved Tailscale peers');
+   return uri.toString();
+ }
+ export class PaseoP0Adapter{
+diff --git a/tests/p0_paseo.test.mjs b/tests/p0_paseo.test.mjs
+index 8a4c68ea67109097042501dcb24f4511ceba0718..e802f8cae9f3cce10b7f6bf7bd9f2bfaca3ff942 100644
+--- a/tests/p0_paseo.test.mjs
++++ b/tests/p0_paseo.test.mjs
+@@ -159,6 +159,41 @@ test('Paseo P0: real-layout direct SDK path authenticates each daemon without re
+     }
+   }
+ });
++test('Paseo P0: exact approved Tailscale endpoints reach authenticated preflight; other CGNAT endpoints fail closed',async()=>{
++  const x=mock(),node=x.nodes[0],observed=[];
++  node.passwordEnv='PASEO_TS_ALLOWLIST_TEST_PASSWORD';
++  const prior=process.env[node.passwordEnv];
++  process.env[node.passwordEnv]='synthetic-test-only';
++  const directClientFactory=async({url,password})=>{
++    observed.push(url);
++    assert.equal(password,'synthetic-test-only');
++    return {
++      hosts:{list:async()=>({self:{serverId:node.serverId}})},
++      providers:{listAvailable:async()=>({providers:[{provider:node.harness,available:true}]})},
++      workspaces:{ref:()=>({refresh:async()=>({workspace:{directory:node.cwd}})})},
++      close:async()=>{},
++    };
++  };
++  const a=adapter(x,{directClientFactory});
++  try{
++    for(const host of ['100.100.88.21','100.100.88.9','100.100.88.5','100.100.88.100']){
++      node.paseoUrl='ws://'+host+':6767/ws';
++      const remote=await a.connect(node,x.task,'a'.repeat(40));
++      await remote.close();
++    }
++    assert.equal(observed.length,4);
++    for(const host of ['100.100.88.22','100.64.0.1','100.100.255.254','1.1.1.1']){
++      node.paseoUrl='ws://'+host+':6767/ws';
++      await assert.rejects(()=>a.connect(node,x.task,'a'.repeat(40)),
++        /unencrypted Paseo WebSocket forbidden/);
++    }
++    assert.equal(observed.length,4,'denied endpoints must not reach the client factory');
++    assert.equal(x.seen.created.length,0,'endpoint checks must not create Agents');
++  }finally{
++    if(prior===undefined)delete process.env[node.passwordEnv];
++    else process.env[node.passwordEnv]=prior;
++  }
++});
+ test('Paseo P0: direct SDK mismatch of serverId fails closed before remote Agent creation',async()=>{
+   const x=mock();
+   x.nodes[2].enabled=false;

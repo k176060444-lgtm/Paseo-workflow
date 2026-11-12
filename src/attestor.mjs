@@ -77,7 +77,9 @@ export class IndependentExecutionAttestor {
     return this.#ask({schema:1,source:'paseo-p0-workspace',
       taskId:task.id,nodeId:node.id,serverId:node.serverId,
       physicalId:node.physicalId,workspaceId:node.workspaceId,
-      cwd:node.cwd,commit,requestedAt:new Date().toISOString()});
+      cwd:node.cwd,commit,requiredProtocol:'P1_P0_WORKSPACE_PREFLIGHT_V2',
+      requiredCapabilities:['INDEPENDENT_SESSION','OS_READONLY_ISOLATION','NATIVE_TASK_IDENTITY'],
+      requestedAt:new Date().toISOString()});
   }
   async attestP0Result({node,task,cycle,commit,jobId,agentId,raw,binding}){
     // A trusted per-node signer must independently retrieve this Agent's
@@ -88,6 +90,12 @@ export class IndependentExecutionAttestor {
       model:node.model,harness:node.harness,agentId,binding,
       requiredProtocol:'P1_P0_NODE_RESULT_V2',
       claimedRawSha256:sha256(raw),requestedAt:new Date().toISOString()});
+  }
+  async attestP0Termination({node,task,cycle,commit,jobId,agentId}){
+    return this.#ask({schema:1,source:'paseo-p0-termination',taskId:task.id,
+      cycle,commit,jobId,agentId,nodeId:node.id,physicalId:node.physicalId,
+      serverId:node.serverId,workspaceId:node.workspaceId,
+      requiredProtocol:'P1_P0_TERMINATION_V1',requestedAt:new Date().toISOString()});
   }
   async attestTests({task,phase,commit,sha,tests,cwd}){
     const {attestation,...bare}=tests;

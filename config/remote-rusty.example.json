@@ -13,5 +13,5 @@
   "physicalId": "must-confirm-physical-node",
   "_status": "HISTORICAL_OFFLINE_FIXTURE_ONLY_DO_NOT_DEPLOY",
   "enabled": false,
-  "_reason": "rusty requires native Hermes A2A, not this runner"
+  "_reason": "historical runner only; production uses native Paseo with independent P0 eligibility, never this runner"
 }

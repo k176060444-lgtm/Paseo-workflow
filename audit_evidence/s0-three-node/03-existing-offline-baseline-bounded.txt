@@ -1,0 +1,1065 @@
+{
+  "argv": [
+    "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+    "--test",
+    "--test-timeout=30000",
+    "--test-reporter=tap",
+    "tests/*.test.mjs"
+  ],
+  "cwd": "E:\\opencode\\workspace\\wt-paseo-s0-v2-20261112T021428Z",
+  "HEAD": "b4bcfe93fde5a2538d87659c084881b6b25cf5b0",
+  "tree": "9b95f436463c2cb890a16447ac3c08fdfa716db3",
+  "startedAt": "2026-11-12T02:23:04.103015+00:00",
+  "diffSha256": "f720073fe8507cc998fa63f72dc8bfaad8a28cc9e317e21b0ddd957fb758a5ce",
+  "fileSha256": {
+    "tests/s0_recovery.test.mjs": "3f6a6a77642a5eb151db7575188fa9d65ffc908482d4f8afd2cc7ffd499bea00",
+    ".github/workflows/offline-tests.yml": "6a6c4c806dd778a14f451a332acb6c86e3ec90d69398f8d25c0ffe87fbf98fc2",
+    ".gitignore": "470e5473d96e81d00f8e3580659af16830f07ef0b2d45f3dacf00893f38ecf88",
+    "README.md": "1c40e9ec73635adfe554830233d9f41d0ec2ee9946ddad063e02bed8fc084e96",
+    "config/intent.example.md": "9c6acdc13fce9dd875c48e2025877220a6a05c6c76795ac6cfa7f1983f6af322",
+    "config/remote-node.example.json": "5ef1eed8a30be0e132d9417698300029c5e61068b7de7c2395d2cffbca48669b",
+    "config/remote-rusty.example.json": "642d6d5130d1864204b8121e87897fcae6b8d597f2a0a362fe463df5ba5a6473",
+    "config/role-matrix.example.json": "1b79fe7cf22c13db95fef293ddb5f897c2380a40be20b4fc2f4b934d53c1a451",
+    "docs/ARCHITECTURE.md": "af8ad1c714cd3c75905b4915e62c1f8a14a45c7da80651188c8d7b9871401d8c",
+    "docs/AUDIT_HANDOFF.md": "eafa933b96ef0b0f92983515b1573c2683b21501b80d10850e8e1e111ed1dc54",
+    "docs/PASEO_LOCAL_TEST_PLAN.md": "4957f7ee2bf30aa9d2a0a27419be74b81c0584c461e2125fc8bff8ee053f5fb1",
+    "docs/R10_EVIDENCE_RELIABILITY_REMEDIATION.md": "848a24615257fc6ce66da85374f1aa2a1fe85dcba1c1458be18654124c6e0d01",
+    "docs/R11_CODING_MAINLINE_REMEDIATION.md": "b51cda80edda4032ab7c4927bc49a36e9f85e936e899681fd3d33c02613d461f",
+    "docs/R12_GATE_WITNESS_INCIDENT_REVIEW.md": "405d4ecf66c2bda0c2561a39bbfdcf921c4f15f87306bedd23c3c3dfa5fcaef8",
+    "docs/R13_2_CLOSEOUT_AND_LIVE_ACCEPTANCE_PREP_20261111.md": "bd906f11c984c6393c976cf7cb61f436430a0b075b94bfec45410573befe787b",
+    "docs/R13_2_RECOVERY_PROOF_HARDENING_20261111.md": "84a9528a534cb131f38c545cdf3e5289645b1bc391ebc3e77b662631ea42a38f",
+    "docs/R13_R2_REVIEW_FOLLOWUP_20261111.md": "a6a3cc4b008ea14ec1c440d6ffe0bfbba1b1efc1c3ddfac6b518ea74ebdb5faa",
+    "docs/R13_TARGETED_REMEDIATION.md": "2827026d91680681bab65a83fd9a5d89091d6472a18391a0fc907fabc32eafea",
+    "docs/R2_REMEDIATION_20261107.md": "2fd9d6ef8b330d541f17e2dcad7b878cb56b14ff6980edd31c1d722871edeb67",
+    "docs/R3_REMEDIATION_20261108.md": "9257377988069dd9ff90aa9960d625d84cef1bf697ef4c92e6e5213d284a6b31",
+    "docs/R4_REMEDIATION_20261108.md": "f7962d5ba275d44bb5a240f80c6b543143e6029b15b37f9685bfd5373d3a753d",
+    "docs/R5_REMEDIATION_20261108.md": "5f5430f0c59e617fe1922312857bc9225009e66bdb46acb085c345b20cc1d6ce",
+    "docs/R6_AUTHENTICATED_EVIDENCE_20261108.md": "9d2f659f67ff25df0175329d9209a41d594dcea1317032d38a4aacdea86f1144",
+    "docs/R7_EXECUTION_PROVENANCE_20261108.md": "f10f9f11536474d4a83951318866d0a92d0e023d1655ca4ce9124a62bdf54e56",
+    "docs/R8_PASEO_FIRST_REMEDIATION_20261108.md": "174132e122255535249c90610a965a1537f77cd32f2fea3d82cede09b75abb53",
+    "docs/R9_REVIEW_REMEDIATION_STATUS.md": "2d2fe7d7a8d27e816871057733eef131ad3cc53160fb4dc31d022bf010331d40",
+    "docs/REMEDIATION_20261110.md": "e5abf05448b04a42cfaa198a9b1ccb41d70b0c142bff7ee1117fdd8a63a61489",
+    "docs/S0_REMEDIATION_20261107.md": "2e9c4d996e1b556638bd80e3d14e7b4141159805966cf1d113fc6834b8507fc7",
+    "docs/SECURITY.md": "74f55e7931dfa387d73f4475228241fb1c5db5d0da03972250f0b3e704d9e4e6",
+    "docs/SOUL_PROVENANCE.md": "6adba69c6c7f131c54ed1d52624802fc580c34c3ec4068c372f68dca810c7df4",
+    "docs/SOUL_V21_MIGRATION_PENDING.md": "87a0112bad9316745026e284d6b0ae1e252e13ebee3db7fe19ecb4a7d279eadb",
+    "package.json": "bcb041b7f0f9777db634635271234798988c15ccfadfbba12d079375de2b6bed",
+    "remote/p0_runner.py": "ebec79524463b39c90b1728a7ea926b29a7e566778943cc7d064865aee868f20",
+    "remote/tests/test_r2_runner.py": "854b65413c2fd64ae2feb314243459313a7394e458dd722eac42cb56481b69ca",
+    "remote/tests/test_r3_runner.py": "90a367680a41cf40cc53e95f9d477d68bd5580c888392511e1a4a95f072b6a19",
+    "remote/tests/test_r4_parser.py": "919d3b9c7bbb362984e7c37ec9346463737b0036c2ca3e005180fa228248eea4",
+    "remote/tests/test_runner.py": "2d843cec049156b9bd2b8d344d592c025f65c9eee4d60e213269c4a8bd3db014",
+    "souls/arbitrator.md": "29a8ae3117814021bcabc0ddc6314efcf0026abaa6f2c4025bc82fbdaf4008e3",
+    "souls/blind_a.md": "347ce3a025e1e07fcce59ea1e848af1b74234ac33a7b2eecb9c4e6e48ef4fade",
+    "souls/blind_b.md": "3d5b9012ca577828df879fc8c08ad6532ac4c7f81dc25f31d052d29f27b1f6b9",
+    "souls/blind_c.md": "f2eeaea18cb9ea7815be5961cfb8feca01ea4c5dce8a6c69480000e2214c70fd",
+    "souls/planner.md": "00d82616bca9064931cc83d40e27c4c4ea9bd6c3b65ced00a369abb4d6ff6040",
+    "souls/pro_audit.md": "6d2b181f76efb52f352e6697d37a0dbbe07220163d32a4c23b6ba1e42dd02663",
+    "souls/quality_reviewer.md": "ec1c4b1e092767e9cbc25ba1f38674acd485592fe293b7ec9ef29c4695e61c90",
+    "souls/spec_reviewer.md": "4fdbde2cb1dc54a6fd55196827a2b9a45d0b261a0897f2e28137bbe64f1d4a6c",
+    "souls/tester_gate_a.md": "b1c3bcf05196ca664103efa1ca38f57fb5e7ad5aab612414a522e307a0a9648b",
+    "souls/tester_gate_b.md": "a5f2a29d1d967695bce5eff492f1530d7dec3a8aba036c3a7f2491bba91a416e",
+    "souls/worker.md": "370e51200bd87ef840c650460ccb4064ba7c2f636ce3922d2fc5c178f4a07f6b",
+    "souls/worker_remediation.md": "19c0a54efbb02c34756bbe4d5fa1df1f3de18c646b5439fff0aabcc0f368ff89",
+    "src/agents.mjs": "5e5acc84ad9dfd53efe8a72cca691cb534b60cae682e1638d1bb19508fa9a816",
+    "src/attestor.mjs": "e60dbe7f4b944934645282419ad527638006c474cfbd6a1cd3919c4d643b2d12",
+    "src/auth.mjs": "67f4b6e802a5a1d3ab03a696ab079074f71a1fbacbcebe4371769f976c20eb79",
+    "src/cli.mjs": "b0f08d796d2d50d01652609f04487b59ea12adf8f33b877d9682e91bb09ca0f8",
+    "src/controller.mjs": "6efc01023d08c033c4e9e0db789247db001d9a6a864bee5a8551b4b13b196577",
+    "src/git.mjs": "2a9c69c0168bba64d072c2274ff0ee10efd2b421cff3449bcecf2a24aeff8441",
+    "src/p0.mjs": "2246e7707e539087e845ce0f3b4f613955fc3d786723172b83543714d90ff71e",
+    "src/p0_a2a.mjs": "bf7d70616c522a660becea404f31d2d00f382b3dcdc80bdcec86a8b4415c1ebc",
+    "src/p0_paseo.mjs": "c1d130c5f7f1381fa2bcb5f142c1c91c4350335a9bc77701d4ae8b82a6db1ab6",
+    "src/policy.mjs": "09e0e1cc673525ab2e067ca4236a1da07cd4024bc66c71f8461dd204e9fa3beb",
+    "src/store.mjs": "3f6664e71a59fc0597783bbb2e35c909165772b19a983f6cb524c5c7ba3b75d4",
+    "tests/controller.test.mjs": "6b54b58720cc310ecadf9fb5898bc0249bb5dc3e667b8d4ddb521f563bd42272",
+    "tests/fixtures.mjs": "f8702f1e429e582b52c8490519c8af2f63d5c3ec909a77713f182e1205c28012",
+    "tests/observer_readiness.test.mjs": "3e56819b7d2832a819c6ff9fa9fb74dc7b10d93f22c5ec02cc93f040004e209d",
+    "tests/p0.test.mjs": "cb7f15e8e9e3457dc248048f8c095f8d0fcabbea66c61e73c4c35983b2594096",
+    "tests/p0_a2a.test.mjs": "fe26fdf65542d5264f25636bc8db9015845d88ae88de3bdeeb8424d796192528",
+    "tests/p0_paseo.test.mjs": "3bd0fa6c5c6014914776a1f16ee9f0b1b9a3a0e5cfc5e3bb9129e38588b83ddf",
+    "tests/p0_regression.test.mjs": "2b9fb88c6a0bbaa3cff14b20eb4e21babfbe92a0d564e993f69062f5d4d43dd5",
+    "tests/r13_verdict.test.mjs": "7b9b75854fa6bb81e9bbb602094fe7d4e2f303309d73db620c95035d34fdadae",
+    "tests/r2_regression.test.mjs": "478d8743f63d7db595cfc0a21a6eef8489332e559420ce88ff041dca33ad3df2",
+    "tests/r3_regression.test.mjs": "34e1090bcf0d58febbecbc389f808bc5b837a0a5a2d5069a8fdb527bb8a60009",
+    "tests/r4_regression.test.mjs": "d305108998ab3d417c202a41dfe3c206bf2ad86e59180328389b2df2d7bbe6c2",
+    "tests/r5_regression.test.mjs": "a7bd9b01c308da33ec32d284a9624d7d801ed456f06345ea8cbfe6e1d4dcb213",
+    "tests/r6_auth.test.mjs": "aa017d75d6874695b7caf2c46e1c6597d3655f977f10c85d8beedf01aeaa7e93",
+    "tests/r7_security.test.mjs": "ddc1f1f331c4405a18b55a700e0e7d718180e46b81ba8aa920c3c9d2e8833c05",
+    "tests/r8_attestor.test.mjs": "cdfb97f68c5f6d08f2cc2c5919c4dfc615b0542931ebb24c11373ac743bfb4c8",
+    "tests/r8_regression.test.mjs": "deac8eb2ec7463480449d8b84f108f4859ee010e915c5d7c0a6dc21ac6c1e90e",
+    "tests/security_regression.test.mjs": "5f83ad4f623fd9f0bf0f279f8c04c288fad8a5d9fb95d0a6d26c733a07e81db6"
+  }
+}
+--- RAW COMBINED STDOUT/STDERR ---
+TAP version 13
+# Preparing worktree (detached HEAD ee4e1be)
+# Preparing worktree (detached HEAD 3402d60)
+# Preparing worktree (detached HEAD 3402d60)
+# Preparing worktree (detached HEAD d586448)
+# Preparing worktree (detached HEAD 3304b03)
+# Preparing worktree (detached HEAD 8e75544)
+# Preparing worktree (detached HEAD bd0c1c5)
+# Preparing worktree (detached HEAD da22ff3)
+# Preparing worktree (detached HEAD af6dc3f)
+# Preparing worktree (detached HEAD 17243fc)
+# Preparing worktree (detached HEAD e951079)
+# Preparing worktree (detached HEAD e951079)
+# Preparing worktree (detached HEAD 143e17e)
+# Preparing worktree (detached HEAD 0fcb439)
+# Preparing worktree (detached HEAD 0fcb439)
+# Preparing worktree (detached HEAD ded27d2)
+# Preparing worktree (detached HEAD fded069)
+# Preparing worktree (detached HEAD 94b7de3)
+# Preparing worktree (detached HEAD 079462d)
+# Preparing worktree (detached HEAD abd5293)
+# Preparing worktree (detached HEAD ea89214)
+# Preparing worktree (detached HEAD fe44d88)
+# Preparing worktree (detached HEAD 507b563)
+# Preparing worktree (detached HEAD 822b711)
+# Preparing worktree (detached HEAD e9e3c8d)
+# Preparing worktree (detached HEAD e9e3c8d)
+# Preparing worktree (detached HEAD 08a208c)
+# Preparing worktree (detached HEAD c623ba3)
+# Preparing worktree (detached HEAD c623ba3)
+# Preparing worktree (detached HEAD cd84d36)
+# Preparing worktree (detached HEAD 9de9e41)
+# Preparing worktree (detached HEAD 9de9e41)
+# Preparing worktree (detached HEAD ea347ba)
+# Preparing worktree (detached HEAD bff1cca)
+# Preparing worktree (detached HEAD ea1ccbd)
+# Preparing worktree (detached HEAD ce907e8)
+# Preparing worktree (detached HEAD 16e3eab)
+# Preparing worktree (detached HEAD 16e3eab)
+# Preparing worktree (detached HEAD c96d817)
+# Preparing worktree (detached HEAD cca3588)
+# Preparing worktree (detached HEAD cca3588)
+# Preparing worktree (detached HEAD 4767ee8)
+# Preparing worktree (detached HEAD 58b4c5e)
+# Preparing worktree (detached HEAD 58b4c5e)
+# Preparing worktree (detached HEAD 802c0f9)
+# Preparing worktree (detached HEAD 17bdbc6)
+# Preparing worktree (detached HEAD 278e925)
+# Preparing worktree (detached HEAD fb77714)
+# Preparing worktree (detached HEAD da9a185)
+# Preparing worktree (detached HEAD 84fea7e)
+# Preparing worktree (detached HEAD b902c48)
+# Preparing worktree (detached HEAD 0c75100)
+# Preparing worktree (detached HEAD 78afaf2)
+# Preparing worktree (detached HEAD 6c38900)
+# Preparing worktree (detached HEAD 6c38900)
+# Preparing worktree (detached HEAD 5333f42)
+# Preparing worktree (detached HEAD a05afac)
+# Preparing worktree (detached HEAD a55ec7f)
+# Preparing worktree (detached HEAD 2d0fb2d)
+# Preparing worktree (detached HEAD cd82a09)
+# Preparing worktree (detached HEAD ccb45b6)
+# Preparing worktree (detached HEAD ccb45b6)
+# Subtest: happy path skips unnecessary remediation but always runs final Arbitrator
+ok 1 - happy path skips unnecessary remediation but always runs final Arbitrator
+  ---
+  duration_ms: 8047.8334
+  type: 'test'
+  ...
+# Subtest: changed Gate B commit forces P0 again on precise final SHA
+ok 2 - changed Gate B commit forces P0 again on precise final SHA
+  ---
+  duration_ms: 7169.1243
+  type: 'test'
+  ...
+# Subtest: Gate A exactly ten rounds and no eleventh dispatch
+ok 3 - Gate A exactly ten rounds and no eleventh dispatch
+  ---
+  duration_ms: 3281.9431
+  type: 'test'
+  ...
+# Subtest: Gate B exactly ten rounds, no reset on remediation failure
+ok 4 - Gate B exactly ten rounds, no reset on remediation failure
+  ---
+  duration_ms: 6353.8655
+  type: 'test'
+  ...
+# Subtest: post-dispatch ambiguous result blocks without silent redispatch
+ok 5 - post-dispatch ambiguous result blocks without silent redispatch
+  ---
+  duration_ms: 308.1963
+  type: 'test'
+  ...
+# Subtest: config SHA/role permissions and SQL ledger resist casual drift
+ok 6 - config SHA/role permissions and SQL ledger resist casual drift
+  ---
+  duration_ms: 225.819
+  type: 'test'
+  ...
+# Subtest: permission policy keeps TEST_ONLY in disposable write workspace with restricted test commands
+ok 7 - permission policy keeps TEST_ONLY in disposable write workspace with restricted test commands
+  ---
+  duration_ms: 0.5476
+  type: 'test'
+  ...
+# Subtest: human gate requires precise digest and explicit approval text
+ok 8 - human gate requires precise digest and explicit approval text
+  ---
+  duration_ms: 229.3433
+  type: 'test'
+  ...
+# Subtest: real config/ and souls/ sibling layout freezes without path escape
+ok 9 - real config/ and souls/ sibling layout freezes without path escape
+  ---
+  duration_ms: 42.9195
+  type: 'test'
+  ...
+# Subtest: R6-004 direct Store final close independently checks real worktree HEAD
+ok 10 - R6-004 direct Store final close independently checks real worktree HEAD
+  ---
+  duration_ms: 5493.4657
+  type: 'test'
+  ...
+# Subtest: R7-002 final Gate rejects late evidence not covered by signed compliance root
+ok 11 - R7-002 final Gate rejects late evidence not covered by signed compliance root
+  ---
+  duration_ms: 5735.0852
+  type: 'test'
+  ...
+# Subtest: A direct Store.save cannot bypass transactional human recovery
+ok 12 - A direct Store.save cannot bypass transactional human recovery
+  ---
+  duration_ms: 412.1762
+  type: 'test'
+  ...
+# Subtest: Recovery CLI status supplies one signed-state snapshot and real CLI consumes it without database access
+ok 13 - Recovery CLI status supplies one signed-state snapshot and real CLI consumes it without database access
+  ---
+  duration_ms: 773.0519
+  type: 'test'
+  ...
+# Subtest: R13.2: recovery signature rejects a state signed with the wrong status or checkpoint
+ok 14 - R13.2: recovery signature rejects a state signed with the wrong status or checkpoint
+  ---
+  duration_ms: 446.3525
+  type: 'test'
+  ...
+# Subtest: R13.2: Store independently rejects a changed recovery state digest after artifact registration
+ok 15 - R13.2: Store independently rejects a changed recovery state digest after artifact registration
+  ---
+  duration_ms: 493.7452
+  type: 'test'
+  ...
+# Subtest: R13.2: a previously consumed recovery nonce cannot authorize a later checkpoint
+ok 16 - R13.2: a previously consumed recovery nonce cannot authorize a later checkpoint
+  ---
+  duration_ms: 476.5883
+  type: 'test'
+  ...
+# Subtest: R13.2: Reviewer recovery rejects duplicate Agent identities and never treats them as two seats
+ok 17 - R13.2: Reviewer recovery rejects duplicate Agent identities and never treats them as two seats
+  ---
+  duration_ms: 2000.7693
+  type: 'test'
+  ...
+# Subtest: R13.2: recovery rejects a wrong Commit SHA and a human signature for a different SHA
+ok 18 - R13.2: recovery rejects a wrong Commit SHA and a human signature for a different SHA
+  ---
+  duration_ms: 2555.2074
+  type: 'test'
+  ...
+# Subtest: signed human recovery resumes a WAIT_HUMAN checkpoint without skipping Gate
+ok 19 - signed human recovery resumes a WAIT_HUMAN checkpoint without skipping Gate
+  ---
+  duration_ms: 452.7525
+  type: 'test'
+  ...
+# Subtest: Arbitrator may dismiss authenticated disputed P0 FALSE_POSITIVE only with exact signed report-set evidence
+ok 20 - Arbitrator may dismiss authenticated disputed P0 FALSE_POSITIVE only with exact signed report-set evidence
+  ---
+  duration_ms: 7103.9408
+  type: 'test'
+  ...
+# Subtest: Disputed P0 cannot be approved by a generic Arbitrator PASS lacking finding-by-finding ruling
+ok 21 - Disputed P0 cannot be approved by a generic Arbitrator PASS lacking finding-by-finding ruling
+  ---
+  duration_ms: 6514.524
+  type: 'test'
+  ...
+# Subtest: unique process audit sessions bind PRE and POST to exact target evidence instead of phase replay
+ok 22 - unique process audit sessions bind PRE and POST to exact target evidence instead of phase replay
+  ---
+  duration_ms: 5288.3152
+  type: 'test'
+  ...
+# Subtest: execution receipt cannot change observed model after external witness signature
+ok 23 - execution receipt cannot change observed model after external witness signature
+  ---
+  duration_ms: 345.5412
+  type: 'test'
+  ...
+# Subtest: Gate 0.2 binds independently registered USER_ALIGNMENT and TASK_SPEC hashes
+ok 24 - Gate 0.2 binds independently registered USER_ALIGNMENT and TASK_SPEC hashes
+  ---
+  duration_ms: 441.8364
+  type: 'test'
+  ...
+# Subtest: unapproved WORK_PLAN drift fails independent scope review before any Worker dispatch
+ok 25 - unapproved WORK_PLAN drift fails independent scope review before any Worker dispatch
+  ---
+  duration_ms: 763.6615
+  type: 'test'
+  ...
+# Subtest: Tester B executes and preserves three separate exact approved command layers
+ok 26 - Tester B executes and preserves three separate exact approved command layers
+  ---
+  duration_ms: 4989.6585
+  type: 'test'
+  ...
+# Subtest: Gate B cannot be certified if one layer is omitted, command is swapped, or receipt tampered
+ok 27 - Gate B cannot be certified if one layer is omitted, command is swapped, or receipt tampered
+  ---
+  duration_ms: 4979.4288
+  type: 'test'
+  ...
+# Subtest: unapproved test command cannot be exposed as an OpenCode tool permission
+ok 28 - unapproved test command cannot be exposed as an OpenCode tool permission
+  ---
+  duration_ms: 0.2861
+  type: 'test'
+  ...
+# Subtest: A Worker PRE compliance rejection spends zero Gate A technical rounds
+ok 29 - A Worker PRE compliance rejection spends zero Gate A technical rounds
+  ---
+  duration_ms: 1226.2717
+  type: 'test'
+  ...
+# Subtest: B Remediation PRE compliance rejection spends zero Gate B technical rounds
+ok 30 - B Remediation PRE compliance rejection spends zero Gate B technical rounds
+  ---
+  duration_ms: 3011.5942
+  type: 'test'
+  ...
+# Subtest: final Gate refuses a valid log digest borrowed from a different Tester B layer
+ok 31 - final Gate refuses a valid log digest borrowed from a different Tester B layer
+  ---
+  duration_ms: 5034.5326
+  type: 'test'
+  ...
+# Subtest: all human Gates fail closed if independent process witness is missing or its human countersignature changes
+ok 32 - all human Gates fail closed if independent process witness is missing or its human countersignature changes
+  ---
+  duration_ms: 423.5167
+  type: 'test'
+  ...
+# Subtest: independently signed Gate process proof binds exact evidence root and rejects late artifacts
+ok 33 - independently signed Gate process proof binds exact evidence root and rejects late artifacts
+  ---
+  duration_ms: 409.3972
+  type: 'test'
+  ...
+# Subtest: uncertain incident can only become human BLOCKED when every original dispatch already has independently authenticated result
+ok 34 - uncertain incident can only become human BLOCKED when every original dispatch already has independently authenticated result
+  ---
+  duration_ms: 5682.7209
+  type: 'test'
+  ...
+# Subtest: incident certificate cannot turn an orphan TERMINAL ACK into a safe restart
+ok 35 - incident certificate cannot turn an orphan TERMINAL ACK into a safe restart
+  ---
+  duration_ms: 5420.0991
+  type: 'test'
+  ...
+# Subtest: R13 D01: ordinary role lost ACK records exact uncertain stage and never auto-retries
+ok 36 - R13 D01: ordinary role lost ACK records exact uncertain stage and never auto-retries
+  ---
+  duration_ms: 314.6793
+  type: 'test'
+  ...
+# Subtest: R13 D01: Pro-Audit lost ACK records original phase and cannot be skipped
+ok 37 - R13 D01: Pro-Audit lost ACK records original phase and cannot be skipped
+  ---
+  duration_ms: 245.3189
+  type: 'test'
+  ...
+# Subtest: R13 D01+D03: completed reviewer seat survives other seat loss without pair replay
+ok 38 - R13 D01+D03: completed reviewer seat survives other seat loss without pair replay
+  ---
+  duration_ms: 1985.1765
+  type: 'test'
+  ...
+# Subtest: R13 D01: P0 partial unknown operation preserves review checkpoint and every dispatch
+ok 39 - R13 D01: P0 partial unknown operation preserves review checkpoint and every dispatch
+  ---
+  duration_ms: 2842.0389
+  type: 'test'
+  ...
+# Subtest: R13 D02: forged P0 passed:true with signed FAIL seat is rejected before Arbitrator and Gate 5.9
+ok 40 - R13 D02: forged P0 passed:true with signed FAIL seat is rejected before Arbitrator and Gate 5.9
+  ---
+  duration_ms: 2787.2647
+  type: 'test'
+  ...
+# Subtest: R13 D11: Arbitrator docket supplies original per-report SHA values directly
+ok 41 - R13 D11: Arbitrator docket supplies original per-report SHA values directly
+  ---
+  duration_ms: 7751.3913
+  type: 'test'
+  ...
+# Subtest: R13 D03: signed recovery of fully witnessed reviewer pair reuses both reports with zero additional model calls
+ok 42 - R13 D03: signed recovery of fully witnessed reviewer pair reuses both reports with zero additional model calls
+  ---
+  duration_ms: 5575.955
+  type: 'test'
+  ...
+# Subtest: R13 follow-up: unexpected generic error cannot invent next checkpoint or original in-flight phase
+ok 43 - R13 follow-up: unexpected generic error cannot invent next checkpoint or original in-flight phase
+  ---
+  duration_ms: 237.9228
+  type: 'test'
+  ...
+# Subtest: R13 follow-up: Store rejects final P0 dispute ruling mutated after independent Arbitrator signed result
+ok 44 - R13 follow-up: Store rejects final P0 dispute ruling mutated after independent Arbitrator signed result
+  ---
+  duration_ms: 6430.4002
+  type: 'test'
+  ...
+# Subtest: R13 follow-up: incomplete reviewer POST process witness permanently blocks source-aware reuse
+ok 45 - R13 follow-up: incomplete reviewer POST process witness permanently blocks source-aware reuse
+  ---
+  duration_ms: 2102.6065
+  type: 'test'
+  ...
+# Subtest: R13 follow-up: real SQLite Gate 5.9 accepts 31-minute-old originally signed Paseo P0, never reissues witness
+ok 46 - R13 follow-up: real SQLite Gate 5.9 accepts 31-minute-old originally signed Paseo P0, never reissues witness
+  ---
+  duration_ms: 6143.6356
+  type: 'test'
+  ...
+# Subtest: observer readiness requires an independent signed OS/Paseo capability statement for the exact fresh challenge
+ok 47 - observer readiness requires an independent signed OS/Paseo capability statement for the exact fresh challenge
+  ---
+  duration_ms: 6.5884
+  type: 'test'
+  ...
+# Subtest: paid Paseo path stops before any model when independent OS witness readiness is unavailable
+ok 48 - paid Paseo path stops before any model when independent OS witness readiness is unavailable
+  ---
+  duration_ms: 1.5293
+  type: 'test'
+  ...
+# Subtest: P0: two distinct signed nodes pass; third nonmandatory after extra window
+ok 49 - P0: two distinct signed nodes pass; third nonmandatory after extra window
+  ---
+  duration_ms: 155.8673
+  type: 'test'
+  ...
+# Subtest: P0: spoofed MAC cannot count toward quorum
+ok 50 - P0: spoofed MAC cannot count toward quorum
+  ---
+  duration_ms: 84.179
+  type: 'test'
+  ...
+# Subtest: P0: same physical identity fails before dispatch
+ok 51 - P0: same physical identity fails before dispatch
+  ---
+  duration_ms: 79.878
+  type: 'test'
+  ...
+# Subtest: rusty A2A: cannot dispatch without native Hermes tool bridge and pinned key
+ok 52 - rusty A2A: cannot dispatch without native Hermes tool bridge and pinned key
+  ---
+  duration_ms: 4.5995
+  type: 'test'
+  ...
+# Subtest: rusty A2A: traceable Task ID and independently signed original report required
+ok 53 - rusty A2A: traceable Task ID and independently signed original report required
+  ---
+  duration_ms: 5.5679
+  type: 'test'
+  ...
+# Subtest: rusty A2A: missing Task ID fails closed without duplicate model dispatch
+ok 54 - rusty A2A: missing Task ID fails closed without duplicate model dispatch
+  ---
+  duration_ms: 0.8295
+  type: 'test'
+  ...
+# Subtest: optional rusty third seat does not invent quorum and combines only signed results
+ok 55 - optional rusty third seat does not invent quorum and combines only signed results
+  ---
+  duration_ms: 0.59
+  type: 'test'
+  ...
+# Subtest: Paseo P0: unfinished third reviewer is never falsely treated as cancelled/TERMINAL
+ok 56 - Paseo P0: unfinished third reviewer is never falsely treated as cancelled/TERMINAL
+  ---
+  duration_ms: 10.7129
+  type: 'test'
+  ...
+# Subtest: Paseo P0: two independently witnessed finished seats can pass without phantom third
+ok 57 - Paseo P0: two independently witnessed finished seats can pass without phantom third
+  ---
+  duration_ms: 3.2256
+  type: 'test'
+  ...
+# Subtest: Paseo P0: preflight signed by wrong physical node stops before any paid Agent
+ok 58 - Paseo P0: preflight signed by wrong physical node stops before any paid Agent
+  ---
+  duration_ms: 1.9155
+  type: 'test'
+  ...
+# Subtest: Paseo P0: ambiguous create response never causes duplicate create
+ok 59 - Paseo P0: ambiguous create response never causes duplicate create
+  ---
+  duration_ms: 1.8518
+  type: 'test'
+  ...
+# Subtest: Paseo P0: duplicate physical node and SSH transport rejected
+ok 60 - Paseo P0: duplicate physical node and SSH transport rejected
+  ---
+  duration_ms: 0.8982
+  type: 'test'
+  ...
+# Subtest: Paseo P0: real-layout direct SDK path authenticates each daemon without registered Hosts
+ok 61 - Paseo P0: real-layout direct SDK path authenticates each daemon without registered Hosts
+  ---
+  duration_ms: 4.2645
+  type: 'test'
+  ...
+# Subtest: Paseo P0: direct SDK mismatch of serverId fails closed before remote Agent creation
+ok 62 - Paseo P0: direct SDK mismatch of serverId fails closed before remote Agent creation
+  ---
+  duration_ms: 1.2012
+  type: 'test'
+  ...
+# Subtest: real SDK providers array rejects unavailable Harness; no Agent creation
+ok 63 - real SDK providers array rejects unavailable Harness; no Agent creation
+  ---
+  duration_ms: 1.3028
+  type: 'test'
+  ...
+# Subtest: P0 inventory refuses Worker disguised as blind Reviewer
+ok 64 - P0 inventory refuses Worker disguised as blind Reviewer
+  ---
+  duration_ms: 0.5854
+  type: 'test'
+  ...
+# Subtest: read-only P0 lost-ACK lookup finds exact original labels without creating Agent, and always closes remote
+ok 65 - read-only P0 lost-ACK lookup finds exact original labels without creating Agent, and always closes remote
+  ---
+  duration_ms: 1.3122
+  type: 'test'
+  ...
+# Subtest: P0 signed V2 request binding rejects altered user intent even when node identity matches
+ok 66 - P0 signed V2 request binding rejects altered user intent even when node identity matches
+  ---
+  duration_ms: 1.7199
+  type: 'test'
+  ...
+# Subtest: R13 follow-up P0: fresh first registration is mandatory but verified original may be replayed 31 minutes later
+ok 67 - R13 follow-up P0: fresh first registration is mandatory but verified original may be replayed 31 minutes later
+  ---
+  duration_ms: 3.6209
+  type: 'test'
+  ...
+# Subtest: F3: distinct key paths with identical key bytes never dispatch
+ok 68 - F3: distinct key paths with identical key bytes never dispatch
+  ---
+  duration_ms: 54.2838
+  type: 'test'
+  ...
+# Subtest: F2: optional third probe failure does not prevent two valid seats
+ok 69 - F2: optional third probe failure does not prevent two valid seats
+  ---
+  duration_ms: 145.0855
+  type: 'test'
+  ...
+# Subtest: F2: lingering optional third is cancelled and separately receipted
+ok 70 - F2: lingering optional third is cancelled and separately receipted
+  ---
+  duration_ms: 166.0579
+  type: 'test'
+  ...
+# Subtest: F2: optional third lost submit ACK never silently passes
+ok 71 - F2: optional third lost submit ACK never silently passes
+  ---
+  duration_ms: 107.4902
+  type: 'test'
+  ...
+# Subtest: F3: signed physicalId mismatch cannot pass
+ok 72 - F3: signed physicalId mismatch cannot pass
+  ---
+  duration_ms: 45.719
+  type: 'test'
+  ...
+# Subtest: P0 failover: 5bao unavailable, 9bao + rusty form two physical seats
+ok 73 - P0 failover: 5bao unavailable, 9bao + rusty form two physical seats
+  ---
+  duration_ms: 102.2944
+  type: 'test'
+  ...
+# Subtest: R13 signed-seat contract rejects false PASS summary including absent dispute
+ok 74 - R13 signed-seat contract rejects false PASS summary including absent dispute
+  ---
+  duration_ms: 2.3945
+  type: 'test'
+  ...
+# Subtest: R13 final Arbitrator outputSchema carries actual hash-bound disputeResolution end-to-end
+ok 75 - R13 final Arbitrator outputSchema carries actual hash-bound disputeResolution end-to-end
+  ---
+  duration_ms: 4.9803
+  type: 'test'
+  ...
+# Subtest: R2-001 tampered budget never re-anchored by run or recovery
+ok 76 - R2-001 tampered budget never re-anchored by run or recovery
+  ---
+  duration_ms: 103.6196
+  type: 'test'
+  ...
+# Subtest: R2-002 orphan artifacts fail verification instead of silently accepting
+ok 77 - R2-002 orphan artifacts fail verification instead of silently accepting
+  ---
+  duration_ms: 66.3178
+  type: 'test'
+  ...
+# Subtest: R2-003 readSnapshot uses one SQLite version despite concurrent writer
+ok 78 - R2-003 readSnapshot uses one SQLite version despite concurrent writer
+  ---
+  duration_ms: 71.9693
+  type: 'test'
+  ...
+# Subtest: R2-006 final Markdown plus bare/fenced JSON and alias
+ok 79 - R2-006 final Markdown plus bare/fenced JSON and alias
+  ---
+  duration_ms: 0.8217
+  type: 'test'
+  ...
+# Subtest: R2-008 early blocked task recovers only on matching frozen basis
+ok 80 - R2-008 early blocked task recovers only on matching frozen basis
+  ---
+  duration_ms: 90.1019
+  type: 'test'
+  ...
+# Subtest: R2-009 raw porcelain preserves leading status space and rename original
+ok 81 - R2-009 raw porcelain preserves leading status space and rename original
+  ---
+  duration_ms: 1.2232
+  type: 'test'
+  ...
+# Subtest: R2-009 tracked .env edit cannot be committed
+ok 82 - R2-009 tracked .env edit cannot be committed
+  ---
+  duration_ms: 613.5372
+  type: 'test'
+  ...
+# Subtest: R2-009 staged rename to .env.production cannot be committed
+ok 83 - R2-009 staged rename to .env.production cannot be committed
+  ---
+  duration_ms: 485.2997
+  type: 'test'
+  ...
+# Subtest: R2-010 successful reviewer report survives peer failure
+ok 84 - R2-010 successful reviewer report survives peer failure
+  ---
+  duration_ms: 72.4964
+  type: 'test'
+  ...
+# Subtest: Worker cannot rewrite existing test cases or the test runner configuration
+ok 85 - Worker cannot rewrite existing test cases or the test runner configuration
+  ---
+  duration_ms: 855.7871
+  type: 'test'
+  ...
+# Subtest: Worker may add a separate test case but cannot replace the baseline
+ok 86 - Worker may add a separate test case but cannot replace the baseline
+  ---
+  duration_ms: 1490.6741
+  type: 'test'
+  ...
+# Subtest: TEST_ONLY disposable checkout allows only additive test cases and detects original file changes
+ok 87 - TEST_ONLY disposable checkout allows only additive test cases and detects original file changes
+  ---
+  duration_ms: 569.604
+  type: 'test'
+  ...
+# Subtest: registered evidence exact-byte retry is idempotent without a new ledger event
+ok 88 - registered evidence exact-byte retry is idempotent without a new ledger event
+  ---
+  duration_ms: 53.511
+  type: 'test'
+  ...
+# Subtest: signed human recovery cannot re-run an apparently TERMINAL Agent whose original attested result was never registered
+ok 89 - signed human recovery cannot re-run an apparently TERMINAL Agent whose original attested result was never registered
+  ---
+  duration_ms: 40.1131
+  type: 'test'
+  ...
+# Subtest: R3-001: public Store.event cannot reanchor tampered A/B budget
+ok 90 - R3-001: public Store.event cannot reanchor tampered A/B budget
+  ---
+  duration_ms: 66.3956
+  type: 'test'
+  ...
+# Subtest: R3-001: healthy standalone event and verified transaction append still work
+ok 91 - R3-001: healthy standalone event and verified transaction append still work
+  ---
+  duration_ms: 75.5807
+  type: 'test'
+  ...
+# Subtest: R3-002: valid ledger containing tampered frozen config cannot be used as recovery basis
+ok 92 - R3-002: valid ledger containing tampered frozen config cannot be used as recovery basis
+  ---
+  duration_ms: 40.7908
+  type: 'test'
+  ...
+# Subtest: R3-003: run cannot replace NEEDS_RECONCILIATION with ordinary BLOCKED
+ok 93 - R3-003: run cannot replace NEEDS_RECONCILIATION with ordinary BLOCKED
+  ---
+  duration_ms: 50.1462
+  type: 'test'
+  ...
+# Subtest: R3-006: CLI help renders two separate recover commands
+ok 94 - R3-006: CLI help renders two separate recover commands
+  ---
+  duration_ms: 189.3607
+  type: 'test'
+  ...
+# Subtest: R2-009: leading-space .env is rejected before Git commit
+ok 95 - R2-009: leading-space .env is rejected before Git commit
+  ---
+  duration_ms: 497.2978
+  type: 'test'
+  ...
+# Subtest: R2-009: nested leading-space .env and invisible-prefix paths are rejected
+ok 96 - R2-009: nested leading-space .env and invisible-prefix paths are rejected
+  ---
+  duration_ms: 525.0567
+  type: 'test'
+  ...
+# Subtest: R2-009: legitimate file names remain committable
+ok 97 - R2-009: legitimate file names remain committable
+  ---
+  duration_ms: 1584.8718
+  type: 'test'
+  ...
+# Subtest: R3-008: indented terminal bare and fenced JSON are accepted, trailing text rejected
+ok 98 - R3-008: indented terminal bare and fenced JSON are accepted, trailing text rejected
+  ---
+  duration_ms: 0.9804
+  type: 'test'
+  ...
+# Subtest: R3-007: signed P0 APPROVE_WITH_COMMENTS preserves low comments but blocks high
+ok 99 - R3-007: signed P0 APPROVE_WITH_COMMENTS preserves low comments but blocks high
+  ---
+  duration_ms: 28.5323
+  type: 'test'
+  ...
+# Subtest: R4-001 public save refuses round-budget reset with atomic ledger unchanged
+ok 100 - R4-001 public save refuses round-budget reset with atomic ledger unchanged
+  ---
+  duration_ms: 77.2973
+  type: 'test'
+  ...
+# Subtest: R4-001 public save refuses budget jumps beyond one or limit
+ok 101 - R4-001 public save refuses budget jumps beyond one or limit
+  ---
+  duration_ms: 57.1602
+  type: 'test'
+  ...
+# Subtest: R4-002 frozen snapshot and digest cannot be replaced together
+ok 102 - R4-002 frozen snapshot and digest cannot be replaced together
+  ---
+  duration_ms: 95.1572
+  type: 'test'
+  ...
+# Subtest: R4-002 requires complete TASK_SPEC pair and forbids any replacement after first candidate
+ok 103 - R4-002 requires complete TASK_SPEC pair and forbids any replacement after first candidate
+  ---
+  duration_ms: 57.9098
+  type: 'test'
+  ...
+# Subtest: R4-001 history is append-only and base/current SHA changes need freezing transitions
+ok 104 - R4-001 history is append-only and base/current SHA changes need freezing transitions
+  ---
+  duration_ms: 69.5699
+  type: 'test'
+  ...
+# Subtest: R4-003 state modified inside fsync cannot be trusted/reanchored by artifact
+ok 105 - R4-003 state modified inside fsync cannot be trusted/reanchored by artifact
+  ---
+  duration_ms: 42.9693
+  type: 'test'
+  ...
+# Subtest: R4-005 a standalone FAIL followed by PASS can NEVER become PASS
+ok 106 - R4-005 a standalone FAIL followed by PASS can NEVER become PASS
+  ---
+  duration_ms: 0.9496
+  type: 'test'
+  ...
+# Subtest: R4-006 invisible and deceptive Unicode prefixes cannot be committed
+ok 107 - R4-006 invisible and deceptive Unicode prefixes cannot be committed
+  ---
+  duration_ms: 988.0093
+  type: 'test'
+  ...
+# Subtest: R4-007 inherited symlink index is rejected even without staged symlink diff
+ok 108 - R4-007 inherited symlink index is rejected even without staged symlink diff # SKIP Windows symlink permission unavailable
+  ---
+  duration_ms: 311.4583
+  type: 'test'
+  ...
+# Preparing worktree (detached HEAD 5237685)
+# Preparing worktree (detached HEAD 3c0fcd2)
+# Subtest: R5-002 init requires original Gate 0.1, no preseeded final state or budget
+ok 109 - R5-002 init requires original Gate 0.1, no preseeded final state or budget
+  ---
+  duration_ms: 51.5626
+  type: 'test'
+  ...
+# Subtest: R5-002 init rejects config forged after hash, policy change or fake Soul
+ok 110 - R5-002 init rejects config forged after hash, policy change or fake Soul
+  ---
+  duration_ms: 36.9874
+  type: 'test'
+  ...
+# Subtest: R5-001 save cannot bypass Gate 0.1 by claiming GATE_APPROVED
+ok 111 - R5-001 save cannot bypass Gate 0.1 by claiming GATE_APPROVED
+  ---
+  duration_ms: 43.3663
+  type: 'test'
+  ...
+# Subtest: R5-001 arbitrary status, fake tester, fake P0 and forged reviewer history refused
+ok 112 - R5-001 arbitrary status, fake tester, fake P0 and forged reviewer history refused
+  ---
+  duration_ms: 31.6569
+  type: 'test'
+  ...
+# Subtest: R5-001 forged final stage, fake SHA and receipt cannot close Gate 5.9
+ok 113 - R5-001 forged final stage, fake SHA and receipt cannot close Gate 5.9
+  ---
+  duration_ms: 35.9983
+  type: 'test'
+  ...
+# Subtest: R5-001 Planner TASK_SPEC cannot be planted with an event label at another stage
+ok 114 - R5-001 Planner TASK_SPEC cannot be planted with an event label at another stage
+  ---
+  duration_ms: 34.5025
+  type: 'test'
+  ...
+# Subtest: R5-003 Git commit snapshot rejects missing, unrelated and wrong worktree HEAD
+ok 115 - R5-003 Git commit snapshot rejects missing, unrelated and wrong worktree HEAD
+  ---
+  duration_ms: 2768.8818
+  type: 'test'
+  ...
+# Subtest: R5-003 public Store.save cannot record non-existent Git SHA even with valid stage type
+ok 116 - R5-003 public Store.save cannot record non-existent Git SHA even with valid stage type
+  ---
+  duration_ms: 38.3135
+  type: 'test'
+  ...
+# Subtest: R5-003 real Git base and child commits freeze through Store with ancestry+HEAD
+ok 117 - R5-003 real Git base and child commits freeze through Store with ancestry+HEAD
+  ---
+  duration_ms: 1415.5382
+  type: 'test'
+  ...
+# Subtest: R6-003 unsigned self-consistent approval artifact cannot approve Gate 0.1
+ok 118 - R6-003 unsigned self-consistent approval artifact cannot approve Gate 0.1
+  ---
+  duration_ms: 49.6784
+  type: 'test'
+  ...
+# Subtest: R6-003 Ed25519 human signature binds task, gate, digest, actor and receipt
+ok 119 - R6-003 Ed25519 human signature binds task, gate, digest, actor and receipt
+  ---
+  duration_ms: 64.6274
+  type: 'test'
+  ...
+# Subtest: R6-003 signer expiry and invalid signature are fail-closed
+ok 120 - R6-003 signer expiry and invalid signature are fail-closed
+  ---
+  duration_ms: 37.4111
+  type: 'test'
+  ...
+# Subtest: R6-002 Reviewer PASS cannot skip two real review seats and registered evidence
+ok 121 - R6-002 Reviewer PASS cannot skip two real review seats and registered evidence
+  ---
+  duration_ms: 29.3272
+  type: 'test'
+  ...
+# Subtest: R6-005 Git verifier cannot be injected at construction or monkeypatched to skip trust
+ok 122 - R6-005 Git verifier cannot be injected at construction or monkeypatched to skip trust
+  ---
+  duration_ms: 32.7783
+  type: 'test'
+  ...
+# Subtest: R6 recovery is also signed and cannot be reopened with actor/receipt alone
+ok 123 - R6 recovery is also signed and cannot be reopened with actor/receipt alone
+  ---
+  duration_ms: 54.5171
+  type: 'test'
+  ...
+# Subtest: R6 Gate 5.9 signature cannot omit or substitute final compliance artifact digest
+ok 124 - R6 Gate 5.9 signature cannot omit or substitute final compliance artifact digest
+  ---
+  duration_ms: 34.1709
+  type: 'test'
+  ...
+# Subtest: R7-001 A_REVIEW cannot fake reviewer seats via public dispatch/artifact/save
+ok 125 - R7-001 A_REVIEW cannot fake reviewer seats via public dispatch/artifact/save
+  ---
+  duration_ms: 82.9108
+  type: 'test'
+  ...
+# Subtest: R7-001 B_REVIEW cannot fake reviewer seats via public dispatch/artifact/save
+ok 126 - R7-001 B_REVIEW cannot fake reviewer seats via public dispatch/artifact/save
+  ---
+  duration_ms: 58.0385
+  type: 'test'
+  ...
+# Subtest: R7-003 consumed approval table exists and is bound to the hash ledger
+ok 127 - R7-003 consumed approval table exists and is bound to the hash ledger
+  ---
+  duration_ms: 39.1536
+  type: 'test'
+  ...
+# Subtest: R7-003 identical nonce is rejected across distinct tasks and valid signatures
+ok 128 - R7-003 identical nonce is rejected across distinct tasks and valid signatures
+  ---
+  duration_ms: 79.1539
+  type: 'test'
+  ...
+# Subtest: R8-001 production IPC submits actual identifiers, external witness responds signed
+ok 129 - R8-001 production IPC submits actual identifiers, external witness responds signed
+  ---
+  duration_ms: 32.1275
+  type: 'test'
+  ...
+# Subtest: R8-001 Paseo runtime requires IPC witness before terminal completion
+ok 130 - R8-001 Paseo runtime requires IPC witness before terminal completion
+  ---
+  duration_ms: 2.5736
+  type: 'test'
+  ...
+# Subtest: R8-002 human and execution key material/issuer overlap fail closed
+ok 131 - R8-002 human and execution key material/issuer overlap fail closed
+  ---
+  duration_ms: 29.4144
+  type: 'test'
+  ...
+# Subtest: R8-003 execution receipt issued 24 hours ago cannot be admitted
+ok 132 - R8-003 execution receipt issued 24 hours ago cannot be admitted
+  ---
+  duration_ms: 11.7174
+  type: 'test'
+  ...
+# Subtest: R8-004 properly signed cross-Commit local Reviewer cannot pollute history
+ok 133 - R8-004 properly signed cross-Commit local Reviewer cannot pollute history
+  ---
+  duration_ms: 66.9081
+  type: 'test'
+  ...
+# Subtest: R8-005 failed approval attempt cannot wedge new independently signed retry
+ok 134 - R8-005 failed approval attempt cannot wedge new independently signed retry
+  ---
+  duration_ms: 72.7452
+  type: 'test'
+  ...
+# Subtest: independent Gate process public key must not alias the human approver or execution witness
+ok 135 - independent Gate process public key must not alias the human approver or execution witness
+  ---
+  duration_ms: 23.0291
+  type: 'test'
+  ...
+# Subtest: S0 Q1: public commitRecovery rejects unreconciled DISPATCH_INTENT
+ok 136 - S0 Q1: public commitRecovery rejects unreconciled DISPATCH_INTENT
+  ---
+  duration_ms: 80.0737
+  type: 'test'
+  ...
+# Subtest: S0 Q1: public commitRecovery rejects unreconciled ACKNOWLEDGED
+ok 137 - S0 Q1: public commitRecovery rejects unreconciled ACKNOWLEDGED
+  ---
+  duration_ms: 43.9329
+  type: 'test'
+  ...
+# Subtest: S0 Q1: public commitRecovery rejects unreconciled TERMINAL
+ok 138 - S0 Q1: public commitRecovery rejects unreconciled TERMINAL
+  ---
+  duration_ms: 47.4577
+  type: 'test'
+  ...
+# Subtest: F1: legacy verdict normalization and PASS with BLOCKER finding fail closed
+ok 139 - F1: legacy verdict normalization and PASS with BLOCKER finding fail closed
+  ---
+  duration_ms: 2.5364
+  type: 'test'
+  ...
+# Subtest: F1: synthetic alternative runtime cannot pass a review pair with BLOCKER finding
+ok 140 - F1: synthetic alternative runtime cannot pass a review pair with BLOCKER finding
+  ---
+  duration_ms: 108.356
+  type: 'test'
+  ...
+# Subtest: F7: ledger detects an altered dispatch row and evidence file
+ok 141 - F7: ledger detects an altered dispatch row and evidence file
+  ---
+  duration_ms: 67.3515
+  type: 'test'
+  ...
+# Subtest: F7: dispatch intent and ledger event write together (rollback on duplicate)
+ok 142 - F7: dispatch intent and ledger event write together (rollback on duplicate)
+  ---
+  duration_ms: 51.3103
+  type: 'test'
+  ...
+# Subtest: F10: read-only store refuses to create missing state directory or database
+ok 143 - F10: read-only store refuses to create missing state directory or database
+  ---
+  duration_ms: 0.5202
+  type: 'test'
+  ...
+# Subtest: F4: exact SDK waitForFinish API receives numeric timeout
+ok 144 - F4: exact SDK waitForFinish API receives numeric timeout
+  ---
+  duration_ms: 47.721
+  type: 'test'
+  ...
+# Subtest: F9: Git/test child process env omits arbitrary gateway secrets
+ok 145 - F9: Git/test child process env omits arbitrary gateway secrets
+  ---
+  duration_ms: 0.5556
+  type: 'test'
+  ...
+# Subtest: R7 Paseo loopback /ws endpoint validation is fast and offline
+ok 146 - R7 Paseo loopback /ws endpoint validation is fast and offline
+  ---
+  duration_ms: 0.6733
+  type: 'test'
+  ...
+# Subtest: R7 background-agent reconcile uses includeBackground and unwraps refresh
+ok 147 - R7 background-agent reconcile uses includeBackground and unwraps refresh
+  ---
+  duration_ms: 0.5072
+  type: 'test'
+  ...
+# Subtest: read-only local Paseo reconciliation requires exact task/dispatch/phase and never creates Agents
+ok 148 - read-only local Paseo reconciliation requires exact task/dispatch/phase and never creates Agents
+  ---
+  duration_ms: 1.5198
+  type: 'test'
+  ...
+# Subtest: read-only local reconciliation refuses replay of agent with mismatched phase label
+ok 149 - read-only local reconciliation refuses replay of agent with mismatched phase label
+  ---
+  duration_ms: 0.2985
+  type: 'test'
+  ...
+1..149
+# tests 149
+# suites 0
+# pass 148
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 132688.2154
+
+finishedAt: 2026-11-12T02:25:51.744904+00:00
+exit code: 0

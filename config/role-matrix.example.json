@@ -136,19 +136,38 @@
       {
         "id": "rusty",
         "physicalId": "physical-rusty",
-        "enabled": false,
-        "transport": "a2a",
+        "enabled": true,
+        "transport": "direct",
         "role": "blind_c",
-        "peerName": "rustyhand",
-        "serverId": "a2a-rustyhand",
-        "harness": "rusty",
-        "model": "rusty/approved-model"
+        "serverId": "srv_PpSv3HITKkcB",
+        "harness": "rustyhand",
+        "model": "rustyhand/UNAPPROVED",
+        "optional": true,
+        "workspaceId": "REQUIRES_INDEPENDENT_WORKSPACE_ACCEPTANCE",
+        "cwd": "/srv/p1/blind-task-checkout",
+        "paseoUrl": "ws://100.100.88.100:6767/ws",
+        "passwordEnv": "PASEO_RUSTY_PASSWORD",
+        "eligibility": {
+          "status": "P0_INELIGIBLE",
+          "reasons": [
+            "independent session/permissions unverified",
+            "native task identity and Witness unverified",
+            "OS isolation unverified"
+          ]
+        },
+        "network": {
+          "transport": "tailscale",
+          "encrypted": true,
+          "applicationPassword": true,
+          "approvedEndpoint": "ws://100.100.88.100:6767/ws"
+        }
       }
     ],
     "timing": {
       "pollMs": 60000,
       "extraThirdMs": 600000,
-      "deadlineMs": 7200000
+      "deadlineMs": 7200000,
+      "callTimeoutMs": 15000
     }
   }
 }

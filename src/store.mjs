@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { verifyCommitEvidenceSync } from './git.mjs';
 import {loadTrustRoots,verifyHumanApproval,verifyGateProcess,verifyExecutionAttestation,verifyObserverReadiness} from './auth.mjs';
 import {SshP0Adapter} from './p0.mjs';
-import {verifyPaseoP0Envelope} from './p0_paseo.mjs';
+import {verifyPaseoP0Envelope,verifyPaseoP0Preflight,verifyPaseoP0Termination,p0Eligibility} from './p0_paseo.mjs';
 import { canonical, sha256, assert, checkedId, MAX_A, MAX_B, ROLE_PERMISSIONS, PASS, PAUSE, hasBlockingFinding, acceptedP0Dispute, assertP0Summary, deriveP0Verdict, verifyGateBTests } from './policy.mjs';
 
 export class Store {
@@ -158,6 +158,9 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         this.verify(t.id);
         const before=this.get(t.id);
         assert(before,'recovery requires persisted original task');
+        // Public callers must meet the same reconciliation boundary as the
+        // Controller, inside this transaction and before evidence/nonces change.
+        this.assertRecoverableDispatches(t.id);
         const evidence=this.#registerArtifactInTransaction(t.id,name,content,
           marker=>{created=marker;});
         assert(payload?.evidenceSha256===evidence.sha256,
@@ -337,6 +340,8 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     this.verifyOriginalTestLogs(t,t.lastB,t.lastB?.agent?.phase);
     assert(t.lastB?.pass===true&&t.lastB?.tests?.pass===true&&
       t.lastB?.commit===t.currentSha,'Gate 5.9 missing independent Tester B pass');
+    assert(this.dispatches(t.id).every(d=>d.state==='TERMINAL'),
+      'final Gate cannot waive outstanding paid dispatch');
     const p0=t.p0Final??t.p0Initial;
     const verdict=assertP0Summary(p0);
     assert(p0?.commit===t.currentSha&&(verdict.passed===true||acceptedP0Dispute(t)),
@@ -439,11 +444,21 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       new SshP0Adapter(inventory).validateInventory();
     else{
       assert(this.#trustRoots?.p0?.size>=2,'independent P0 signing keys not provisioned');
-      assert(new Set(inventory.map(x=>x.serverId)).size===inventory.length&&
-        new Set(inventory.map(x=>x.physicalId)).size===inventory.length,
+      const claimed=(summary.reports??[]).map(r=>inventory.find(n=>n.id===r.nodeId));
+      assert(claimed.every(Boolean)&&new Set(claimed.map(x=>x.serverId)).size===claimed.length&&
+        new Set(claimed.map(x=>x.physicalId)).size===claimed.length,
         'Paseo remote daemon/physical identity collision');
     }
     const computed=assertP0Summary(summary);
+    if(mode==='paseo'){
+      assert(summary.execution?.state==='CLOSED',
+        'P0 technical quorum cannot waive execution reconciliation');
+      const cycleDispatches=this.dispatches(t.id).filter(d=>d.phase.startsWith('P0:'+summary.cycle+':'));
+      assert(cycleDispatches.length>=2&&cycleDispatches.every(d=>d.state==='TERMINAL'),
+        'P0 cycle has outstanding dispatches');
+      assert(cycleDispatches.every(d=>[...summary.reports,...(summary.cancelled??[])].some(r=>r.jobId===d.id)),
+        'P0 cycle contains an unaccounted paid dispatch');
+    }
     if(allowHistorical&&mode==='paseo'){
       // Historical verification is permitted only after the *same original*
       // cycle/commit was independently accepted by the strict first-receipt
@@ -498,6 +513,11 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
       const request=mode==='paseo'?
         JSON.parse(this.#requireArtifact(t.id,requestFile,record?.digest)):null;
       if(mode==='paseo'){
+        assert(p0Eligibility(node).status==='PREFLIGHT_REQUIRED',
+          'P0 report node is ineligible for native dispatch');
+        const pf=JSON.parse(this.#requireArtifact(t.id,
+          'p0-'+cycle+'-'+node.id+'-preflight.json',request.binding?.preflightSha256));
+        verifyPaseoP0Preflight(this.#trustRoots,node,pf,t.id,t.currentSha,{allowHistorical});
         assert(request?.jobId===jobId&&request.commit===t.currentSha&&
           request.binding?.role===node.role&&
           request.binding?.soulSha256===t.frozen.souls?.[node.role]?.sha256&&
@@ -512,6 +532,11 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
           {taskId:t.id,cycle,jobId,commit:t.currentSha,binding:request.binding,
            allowHistorical})
         :new SshP0Adapter(inventory).verify(node,raw,jobId,t.currentSha);
+      if(mode==='paseo'){
+        const {evidence,...summarized}=report;
+        assert(canonical(verified)===canonical(summarized),
+          'P0 summary mismatch with complete independently signed original report');
+      }
       assert(verified.physicalId===report.physicalId&&verified.verdict===report.verdict&&
         canonical(verified.findings)===canonical(report.findings),
         'P0 summary mismatch with signed raw report');
@@ -522,6 +547,19 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         (mode!=='paseo'||dispatch.agent_id===expectedAgent),
         'P0 node lacks matching completed Paseo Agent dispatch');
       distinct.add(node.physicalId);
+    }
+    if(mode==='paseo')for(const cancel of summary.cancelled??[]){
+      const node=inventory.find(n=>n.id===cancel.nodeId);
+      assert(node&&p0Eligibility(node).status==='PREFLIGHT_REQUIRED','cancelled node outside eligible inventory');
+      const jobId=sha256(t.id+':'+summary.cycle+':'+t.currentSha+':'+node.id).slice(0,40);
+      assert(cancel.jobId===jobId,'cancelled job identity mismatch');
+      const proof=JSON.parse(this.#requireArtifact(t.id,
+        'p0-'+summary.cycle+'-'+node.id+'-cancel.json',cancel.evidenceSha256));
+      verifyPaseoP0Termination(this.#trustRoots,node,proof,{taskId:t.id,cycle:summary.cycle,
+        jobId,commit:t.currentSha,agentId:cancel.agentId,allowHistorical});
+      const d=this.dispatches(t.id).find(d=>d.id===jobId);
+      assert(d?.state==='TERMINAL'&&d.agent_id===node.serverId+':'+cancel.agentId,
+        'cancelled task has no matching acknowledged terminal dispatch');
     }
     assert(distinct.size>=2,'P0 authenticated physical quorum incomplete');
     return computed;
@@ -1111,8 +1149,14 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         }
         if(['ROLE_TERMINAL','REVIEW_SEAT_RECORDED','TEST_RECEIPTS'].includes(type))
           this.#verifyHistoryExecution(nextTask,entry,{consume:true});
-        if(type==='P0_COMPLETE')assert(entry.role==='P0'&&entry.sha===nextTask.currentSha,
-          'P0 history must bind exact commit');
+        if(type==='P0_COMPLETE'){
+          assert(entry.role==='P0'&&entry.sha===nextTask.currentSha,'P0 history must bind exact commit');
+          if(nextTask.frozen.p0?.transport==='paseo'){
+            const summary=JSON.parse(this.#requireArtifact(nextTask.id,artifact.name,entry.evidenceSha256));
+            assert(summary.commit===nextTask.currentSha,'P0 summary commit mismatch');
+            this.#verifyP0Nodes(nextTask,summary);
+          }
+        }
         if(type==='TEST_RECEIPTS')assert(entry.role==='test_executor'&&
           entry.sha===nextTask.currentSha,'test receipt must bind exact commit');
       }
@@ -1196,7 +1240,7 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
         assert(match,'P0 dispatch has invalid cycle/peer');
         const cycle=match[1],nodeId=match[2];
         const p0=[t.p0Initial,t.p0Final].find(p=>
-          p?.cycle===cycle&&p.reports?.some(r=>r.nodeId===nodeId&&r.jobId===d.id));
+          p?.cycle===cycle&&[...(p.reports??[]),...(p.cancelled??[])].some(r=>r.nodeId===nodeId&&r.jobId===d.id));
         assert(p0,'P0 TERMINAL row has no matching independently signed original result');
         if(!checkedP0.has(cycle)){
           this.#verifyP0Nodes({...t,currentSha:p0.commit},p0,{allowHistorical:true});

@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+    "--test",
+    "tests/*.test.mjs"
+  ],
+  "cwd": "E:\\opencode\\workspace\\wt-paseo-s0-v2-20261112T021428Z",
+  "HEAD": "b4bcfe93fde5a2538d87659c084881b6b25cf5b0",
+  "outcome": "SUBPROCESS_TIMEOUT_120_SECONDS",
+  "capturedExitCode": null,
+  "rawOutputAvailable": false,
+  "note": "Initial capture runner raised TimeoutExpired before saving stdout; no PASS inferred. Retained as failed harness attempt; subsequent runs stream raw output to disk."
+}

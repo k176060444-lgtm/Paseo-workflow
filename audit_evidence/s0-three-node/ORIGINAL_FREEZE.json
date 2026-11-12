@@ -1,0 +1,24 @@
+{
+  "capturedAt": "20261112T021428Z",
+  "sourceRepo": "C:\\Users\\KK\\AppData\\Local\\hermes\\cache\\scratch\\paseo-s0-prep-20261111\\repo",
+  "HEAD": "b4bcfe93fde5a2538d87659c084881b6b25cf5b0",
+  "indexHasChanges": false,
+  "patchSha256": "3a4d81cb85de5a4f1837b73c202fee03b0090271cd68f9c08ebe7fab5abe9015",
+  "origin": "pre-existing uncommitted work observed before this S0 task; authorship not independently verified; not part of pinned Commit",
+  "files": [
+    {
+      "path": "src/p0_paseo.mjs",
+      "workingSha256": "8775b4134daba921a62628b8e1ab0f40cb36ef21ac32da97ed9246367eabe9ec",
+      "baselineSha256": "01e4198a8fff4c960b8023a8c288eb9038f7b2ee7ca49e7ff2574d8a2e173847",
+      "bytes": 15612,
+      "mtimeNs": 1794405123844296000
+    },
+    {
+      "path": "tests/p0_paseo.test.mjs",
+      "workingSha256": "b7997b0c55b550ed5458774de174865ab2f3f781c6fcb52ff6f85eaad51c213a",
+      "baselineSha256": "0db985812767aa60e1b49aa67a2d9adf8a18a6461b042b7db8a1d70e294cf3bc",
+      "bytes": 16932,
+      "mtimeNs": 1794405124065129600
+    }
+  ]
+}

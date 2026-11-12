@@ -1,0 +1,479 @@
+{
+  "argv": [
+    "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+    "--test",
+    "--test-timeout=10000",
+    "--test-reporter=tap",
+    "tests/s0_three_node.test.mjs",
+    "tests/s0_store_p0.test.mjs",
+    "tests/s0_deadline_routes.test.mjs"
+  ],
+  "cwd": "E:\\opencode\\workspace\\wt-paseo-s0-v2-20261112T021428Z",
+  "HEAD": "b4bcfe93fde5a2538d87659c084881b6b25cf5b0",
+  "tree": "9b95f436463c2cb890a16447ac3c08fdfa716db3",
+  "startedAt": "2026-11-12T02:54:13.677793+00:00",
+  "diffSha256": "a3e82db11fe4c179fe3a54e4f5c14def61cfdc802dcc71c55ba03ca7fb828f9e",
+  "fileSha256": {
+    "src/deadline.mjs": "04e4915fccd93277c8cb138f993fac5cd61a018c38f4d0407771d6196c355e3a",
+    "tests/s0_deadline_routes.test.mjs": "a7ba8d6c34280fd2586e533e281695c902131b055f4e377806acc0afb0f6c412",
+    "tests/s0_p0_fixtures.mjs": "e35d77e34a0580a639b0178f62907815aef6c7fe43bfa5b495c16d60352257db",
+    "tests/s0_recovery.test.mjs": "3f6a6a77642a5eb151db7575188fa9d65ffc908482d4f8afd2cc7ffd499bea00",
+    "tests/s0_store_p0.test.mjs": "687e874c61721fabc70b8048e86a2950f83392334e9333c20053c433a9fbae1f",
+    "tests/s0_three_node.test.mjs": "2f4a40a4b82f7367f9d87fbebecd16f74ae326ae1bff4adf692b534707f4b11a",
+    ".github/workflows/offline-tests.yml": "6a6c4c806dd778a14f451a332acb6c86e3ec90d69398f8d25c0ffe87fbf98fc2",
+    ".gitignore": "470e5473d96e81d00f8e3580659af16830f07ef0b2d45f3dacf00893f38ecf88",
+    "README.md": "1c40e9ec73635adfe554830233d9f41d0ec2ee9946ddad063e02bed8fc084e96",
+    "config/intent.example.md": "9c6acdc13fce9dd875c48e2025877220a6a05c6c76795ac6cfa7f1983f6af322",
+    "config/remote-node.example.json": "5ef1eed8a30be0e132d9417698300029c5e61068b7de7c2395d2cffbca48669b",
+    "config/remote-rusty.example.json": "2bb5ec56862f9b07871efa2c238dcb9668412a18d9d7bc4625ee42a3a782a307",
+    "config/role-matrix.example.json": "e55a825f77feb666638946cf3792cbae963b51b03e5266af2e60b825dd4bb560",
+    "docs/ARCHITECTURE.md": "af8ad1c714cd3c75905b4915e62c1f8a14a45c7da80651188c8d7b9871401d8c",
+    "docs/AUDIT_HANDOFF.md": "eafa933b96ef0b0f92983515b1573c2683b21501b80d10850e8e1e111ed1dc54",
+    "docs/PASEO_LOCAL_TEST_PLAN.md": "4957f7ee2bf30aa9d2a0a27419be74b81c0584c461e2125fc8bff8ee053f5fb1",
+    "docs/R10_EVIDENCE_RELIABILITY_REMEDIATION.md": "848a24615257fc6ce66da85374f1aa2a1fe85dcba1c1458be18654124c6e0d01",
+    "docs/R11_CODING_MAINLINE_REMEDIATION.md": "b51cda80edda4032ab7c4927bc49a36e9f85e936e899681fd3d33c02613d461f",
+    "docs/R12_GATE_WITNESS_INCIDENT_REVIEW.md": "405d4ecf66c2bda0c2561a39bbfdcf921c4f15f87306bedd23c3c3dfa5fcaef8",
+    "docs/R13_2_CLOSEOUT_AND_LIVE_ACCEPTANCE_PREP_20261111.md": "bd906f11c984c6393c976cf7cb61f436430a0b075b94bfec45410573befe787b",
+    "docs/R13_2_RECOVERY_PROOF_HARDENING_20261111.md": "84a9528a534cb131f38c545cdf3e5289645b1bc391ebc3e77b662631ea42a38f",
+    "docs/R13_R2_REVIEW_FOLLOWUP_20261111.md": "a6a3cc4b008ea14ec1c440d6ffe0bfbba1b1efc1c3ddfac6b518ea74ebdb5faa",
+    "docs/R13_TARGETED_REMEDIATION.md": "2827026d91680681bab65a83fd9a5d89091d6472a18391a0fc907fabc32eafea",
+    "docs/R2_REMEDIATION_20261107.md": "2fd9d6ef8b330d541f17e2dcad7b878cb56b14ff6980edd31c1d722871edeb67",
+    "docs/R3_REMEDIATION_20261108.md": "9257377988069dd9ff90aa9960d625d84cef1bf697ef4c92e6e5213d284a6b31",
+    "docs/R4_REMEDIATION_20261108.md": "f7962d5ba275d44bb5a240f80c6b543143e6029b15b37f9685bfd5373d3a753d",
+    "docs/R5_REMEDIATION_20261108.md": "5f5430f0c59e617fe1922312857bc9225009e66bdb46acb085c345b20cc1d6ce",
+    "docs/R6_AUTHENTICATED_EVIDENCE_20261108.md": "9d2f659f67ff25df0175329d9209a41d594dcea1317032d38a4aacdea86f1144",
+    "docs/R7_EXECUTION_PROVENANCE_20261108.md": "f10f9f11536474d4a83951318866d0a92d0e023d1655ca4ce9124a62bdf54e56",
+    "docs/R8_PASEO_FIRST_REMEDIATION_20261108.md": "174132e122255535249c90610a965a1537f77cd32f2fea3d82cede09b75abb53",
+    "docs/R9_REVIEW_REMEDIATION_STATUS.md": "2d2fe7d7a8d27e816871057733eef131ad3cc53160fb4dc31d022bf010331d40",
+    "docs/REMEDIATION_20261110.md": "e5abf05448b04a42cfaa198a9b1ccb41d70b0c142bff7ee1117fdd8a63a61489",
+    "docs/S0_REMEDIATION_20261107.md": "2e9c4d996e1b556638bd80e3d14e7b4141159805966cf1d113fc6834b8507fc7",
+    "docs/SECURITY.md": "74f55e7931dfa387d73f4475228241fb1c5db5d0da03972250f0b3e704d9e4e6",
+    "docs/SOUL_PROVENANCE.md": "6adba69c6c7f131c54ed1d52624802fc580c34c3ec4068c372f68dca810c7df4",
+    "docs/SOUL_V21_MIGRATION_PENDING.md": "87a0112bad9316745026e284d6b0ae1e252e13ebee3db7fe19ecb4a7d279eadb",
+    "package.json": "bcb041b7f0f9777db634635271234798988c15ccfadfbba12d079375de2b6bed",
+    "remote/p0_runner.py": "ebec79524463b39c90b1728a7ea926b29a7e566778943cc7d064865aee868f20",
+    "remote/tests/test_r2_runner.py": "854b65413c2fd64ae2feb314243459313a7394e458dd722eac42cb56481b69ca",
+    "remote/tests/test_r3_runner.py": "90a367680a41cf40cc53e95f9d477d68bd5580c888392511e1a4a95f072b6a19",
+    "remote/tests/test_r4_parser.py": "919d3b9c7bbb362984e7c37ec9346463737b0036c2ca3e005180fa228248eea4",
+    "remote/tests/test_runner.py": "2d843cec049156b9bd2b8d344d592c025f65c9eee4d60e213269c4a8bd3db014",
+    "souls/arbitrator.md": "29a8ae3117814021bcabc0ddc6314efcf0026abaa6f2c4025bc82fbdaf4008e3",
+    "souls/blind_a.md": "347ce3a025e1e07fcce59ea1e848af1b74234ac33a7b2eecb9c4e6e48ef4fade",
+    "souls/blind_b.md": "3d5b9012ca577828df879fc8c08ad6532ac4c7f81dc25f31d052d29f27b1f6b9",
+    "souls/blind_c.md": "f2eeaea18cb9ea7815be5961cfb8feca01ea4c5dce8a6c69480000e2214c70fd",
+    "souls/planner.md": "00d82616bca9064931cc83d40e27c4c4ea9bd6c3b65ced00a369abb4d6ff6040",
+    "souls/pro_audit.md": "6d2b181f76efb52f352e6697d37a0dbbe07220163d32a4c23b6ba1e42dd02663",
+    "souls/quality_reviewer.md": "ec1c4b1e092767e9cbc25ba1f38674acd485592fe293b7ec9ef29c4695e61c90",
+    "souls/spec_reviewer.md": "4fdbde2cb1dc54a6fd55196827a2b9a45d0b261a0897f2e28137bbe64f1d4a6c",
+    "souls/tester_gate_a.md": "b1c3bcf05196ca664103efa1ca38f57fb5e7ad5aab612414a522e307a0a9648b",
+    "souls/tester_gate_b.md": "a5f2a29d1d967695bce5eff492f1530d7dec3a8aba036c3a7f2491bba91a416e",
+    "souls/worker.md": "370e51200bd87ef840c650460ccb4064ba7c2f636ce3922d2fc5c178f4a07f6b",
+    "souls/worker_remediation.md": "19c0a54efbb02c34756bbe4d5fa1df1f3de18c646b5439fff0aabcc0f368ff89",
+    "src/agents.mjs": "5e5acc84ad9dfd53efe8a72cca691cb534b60cae682e1638d1bb19508fa9a816",
+    "src/attestor.mjs": "f37e3e7278d0271aeaa2f2319c256bfcbd6dd1501b937be857151d628a94d910",
+    "src/auth.mjs": "67f4b6e802a5a1d3ab03a696ab079074f71a1fbacbcebe4371769f976c20eb79",
+    "src/cli.mjs": "1241d6543677f0bf49e25eb247a7fedd3833992bb8e0170e33c954defbb70913",
+    "src/controller.mjs": "9bbc17a90f770f4aa6aceff88fd0827458538b1431ed0b7ccf64f832d8e603ab",
+    "src/git.mjs": "2a9c69c0168bba64d072c2274ff0ee10efd2b421cff3449bcecf2a24aeff8441",
+    "src/p0.mjs": "2246e7707e539087e845ce0f3b4f613955fc3d786723172b83543714d90ff71e",
+    "src/p0_a2a.mjs": "bf7d70616c522a660becea404f31d2d00f382b3dcdc80bdcec86a8b4415c1ebc",
+    "src/p0_paseo.mjs": "c4b70a8a282915a9518f669d0dfabcb062eea7613a2532a8222eb0440ca69d65",
+    "src/policy.mjs": "386fd71e7577fe2eeb7f2e55351ebb88640f93a20e722d7e0f1059a42481593f",
+    "src/store.mjs": "f3aab05fd3974c38f49b3615874b658035626a03eabeb16367d5e0bc73670505",
+    "tests/controller.test.mjs": "86f3dc65469ab980924aac1dbb7abba9966d40b5ec6192b0cdc5497d11daf1d1",
+    "tests/fixtures.mjs": "f8702f1e429e582b52c8490519c8af2f63d5c3ec909a77713f182e1205c28012",
+    "tests/observer_readiness.test.mjs": "3e56819b7d2832a819c6ff9fa9fb74dc7b10d93f22c5ec02cc93f040004e209d",
+    "tests/p0.test.mjs": "cb7f15e8e9e3457dc248048f8c095f8d0fcabbea66c61e73c4c35983b2594096",
+    "tests/p0_a2a.test.mjs": "fe26fdf65542d5264f25636bc8db9015845d88ae88de3bdeeb8424d796192528",
+    "tests/p0_paseo.test.mjs": "33e4c1245f4041a27d6f25b215e8884ba8c3d04376e4b92b010ab746cd757e38",
+    "tests/p0_regression.test.mjs": "2b9fb88c6a0bbaa3cff14b20eb4e21babfbe92a0d564e993f69062f5d4d43dd5",
+    "tests/r13_verdict.test.mjs": "7b9b75854fa6bb81e9bbb602094fe7d4e2f303309d73db620c95035d34fdadae",
+    "tests/r2_regression.test.mjs": "478d8743f63d7db595cfc0a21a6eef8489332e559420ce88ff041dca33ad3df2",
+    "tests/r3_regression.test.mjs": "34e1090bcf0d58febbecbc389f808bc5b837a0a5a2d5069a8fdb527bb8a60009",
+    "tests/r4_regression.test.mjs": "d305108998ab3d417c202a41dfe3c206bf2ad86e59180328389b2df2d7bbe6c2",
+    "tests/r5_regression.test.mjs": "a7bd9b01c308da33ec32d284a9624d7d801ed456f06345ea8cbfe6e1d4dcb213",
+    "tests/r6_auth.test.mjs": "aa017d75d6874695b7caf2c46e1c6597d3655f977f10c85d8beedf01aeaa7e93",
+    "tests/r7_security.test.mjs": "ddc1f1f331c4405a18b55a700e0e7d718180e46b81ba8aa920c3c9d2e8833c05",
+    "tests/r8_attestor.test.mjs": "cdfb97f68c5f6d08f2cc2c5919c4dfc615b0542931ebb24c11373ac743bfb4c8",
+    "tests/r8_regression.test.mjs": "deac8eb2ec7463480449d8b84f108f4859ee010e915c5d7c0a6dc21ac6c1e90e",
+    "tests/security_regression.test.mjs": "5f83ad4f623fd9f0bf0f279f8c04c288fad8a5d9fb95d0a6d26c733a07e81db6"
+  },
+  "nodeVersion": "v26.6.0"
+}
+--- RAW COMBINED STDOUT/STDERR ---
+TAP version 13
+# Subtest: S0 deadline routes: hanging Hosts list cannot block collection forever
+ok 1 - S0 deadline routes: hanging Hosts list cannot block collection forever
+  ---
+  duration_ms: 60.7847
+  type: 'test'
+  ...
+# Subtest: S0 deadline routes: hanging Hosts client cannot block collection forever
+ok 2 - S0 deadline routes: hanging Hosts client cannot block collection forever
+  ---
+  duration_ms: 56.6836
+  type: 'test'
+  ...
+# Subtest: S0 deadline routes: hanging direct connection is bounded without dispatch
+ok 3 - S0 deadline routes: hanging direct connection is bounded without dispatch
+  ---
+  duration_ms: 17.6674
+  type: 'test'
+  ...
+# Subtest: S0 deadline routes: late create ACK is not reused as an authorized recreation
+ok 4 - S0 deadline routes: late create ACK is not reused as an authorized recreation
+  ---
+  duration_ms: 32.7721
+  type: 'test'
+  ...
+# Subtest: S0 R7: pending native technical ruling reaches Tester B then Arbitrator before Worker remediation
+ok 5 - S0 R7: pending native technical ruling reaches Tester B then Arbitrator before Worker remediation
+  ---
+  duration_ms: 1.8912
+  type: 'test'
+  ...
+# Subtest: S0 Store: native two-seat result is accepted only with pinned preflight, signed originals and closed dispatches
+ok 6 - S0 Store: native two-seat result is accepted only with pinned preflight, signed originals and closed dispatches
+  ---
+  duration_ms: 213.7084
+  type: 'test'
+  ...
+# Subtest: S0 Store: rejected invalid-signature preserves original ACK and cannot produce quorum
+ok 7 - S0 Store: rejected invalid-signature preserves original ACK and cannot produce quorum
+  ---
+  duration_ms: 135.2503
+  type: 'test'
+  ...
+# Subtest: S0 Store: rejected wrong-serverId preserves original ACK and cannot produce quorum
+ok 8 - S0 Store: rejected wrong-serverId preserves original ACK and cannot produce quorum
+  ---
+  duration_ms: 141.388
+  type: 'test'
+  ...
+# Subtest: S0 Store: rejected wrong-Workspace preserves original ACK and cannot produce quorum
+ok 9 - S0 Store: rejected wrong-Workspace preserves original ACK and cannot produce quorum
+  ---
+  duration_ms: 135.9405
+  type: 'test'
+  ...
+# Subtest: S0 Store: rejected wrong-Commit preserves original ACK and cannot produce quorum
+ok 10 - S0 Store: rejected wrong-Commit preserves original ACK and cannot produce quorum
+  ---
+  duration_ms: 133.9319
+  type: 'test'
+  ...
+# Subtest: S0 Store: rejected missing-isolation preserves original ACK and cannot produce quorum
+ok 11 - S0 Store: rejected missing-isolation preserves original ACK and cannot produce quorum
+  ---
+  duration_ms: 142.2785
+  type: 'test'
+  ...
+# Subtest: S0 Store: public P0_COMPLETE cannot declare CLOSED while an extra dispatch remains outstanding
+ok 12 - S0 Store: public P0_COMPLETE cannot declare CLOSED while an extra dispatch remains outstanding
+  ---
+  duration_ms: 145.7179
+  type: 'test'
+  ...
+# Subtest: S0 Store: forged valid-report count cannot replace signed node evidence
+ok 13 - S0 Store: forged valid-report count cannot replace signed node evidence
+  ---
+  duration_ms: 143.1098
+  type: 'test'
+  ...
+# Subtest: S0 Store: public completion rejects a summary that changes signed serverId
+ok 14 - S0 Store: public completion rejects a summary that changes signed serverId
+  ---
+  duration_ms: 135.9251
+  type: 'test'
+  ...
+# Subtest: S0 Store: public completion rejects a summary that changes signed commit
+ok 15 - S0 Store: public completion rejects a summary that changes signed commit
+  ---
+  duration_ms: 137.7779
+  type: 'test'
+  ...
+# Subtest: S0 Store: public completion rejects a summary that changes signed workspace
+ok 16 - S0 Store: public completion rejects a summary that changes signed workspace
+  ---
+  duration_ms: 134.7236
+  type: 'test'
+  ...
+# Subtest: S0 Store: public completion rejects a summary that changes signed isolation
+ok 17 - S0 Store: public completion rejects a summary that changes signed isolation
+  ---
+  duration_ms: 138.068
+  type: 'test'
+  ...
+# Subtest: S0 R1/R5: 5bao+9bao mainline succeeds while rusty is P0_INELIGIBLE
+ok 18 - S0 R1/R5: 5bao+9bao mainline succeeds while rusty is P0_INELIGIBLE
+  ---
+  duration_ms: 13.8828
+  type: 'test'
+  ...
+# Subtest: S0 R1/R5: missing independently witnessed OS isolation cannot count as a third seat
+ok 19 - S0 R1/R5: missing independently witnessed OS isolation cannot count as a third seat
+  ---
+  duration_ms: 5.1886
+  type: 'test'
+  ...
+# Subtest: S0 R1: 9bao+fully qualified simulated rusty form quorum when 5bao preflight is unavailable
+ok 20 - S0 R1: 9bao+fully qualified simulated rusty form quorum when 5bao preflight is unavailable
+  ---
+  duration_ms: 5.1485
+  type: 'test'
+  ...
+# Subtest: S0 R1: a lone eligible physical node cannot start paid dispatch
+ok 21 - S0 R1: a lone eligible physical node cannot start paid dispatch
+  ---
+  duration_ms: 1.543
+  type: 'test'
+  ...
+# Subtest: S0 R2: exactly 600000ms after quorum, third execution is cancelled and independently read back
+ok 22 - S0 R2: exactly 600000ms after quorum, third execution is cancelled and independently read back
+  ---
+  duration_ms: 5.092
+  type: 'test'
+  ...
+# Subtest: S0 R2: cancel failure retains technical quorum but execution remains NEEDS_RECONCILIATION
+ok 23 - S0 R2: cancel failure retains technical quorum but execution remains NEEDS_RECONCILIATION
+  ---
+  duration_ms: 3.8655
+  type: 'test'
+  ...
+# Subtest: S0 R2: lost cancel ACK is accepted only after signed native termination proof
+ok 24 - S0 R2: lost cancel ACK is accepted only after signed native termination proof
+  ---
+  duration_ms: 5.0593
+  type: 'test'
+  ...
+# Subtest: S0 R3: third create ACK loss does not erase valid quorum or fabricate a terminal execution
+ok 25 - S0 R3: third create ACK loss does not erase valid quorum or fabricate a terminal execution
+  ---
+  duration_ms: 3.3196
+  type: 'test'
+  ...
+# Subtest: S0 R3: expired create retains immutable intent and a second call never recreates its Job ID
+ok 26 - S0 R3: expired create retains immutable intent and a second call never recreates its Job ID
+  ---
+  duration_ms: 28.2095
+  type: 'test'
+  ...
+# Subtest: S0 R4: two different physical hosts may share cwd AND daemon-scoped Workspace ID
+ok 27 - S0 R4: two different physical hosts may share cwd AND daemon-scoped Workspace ID
+  ---
+  duration_ms: 2.8272
+  type: 'test'
+  ...
+# Subtest: S0 R4: Tailscale requires exact approved endpoint, encryption and application password
+ok 28 - S0 R4: Tailscale requires exact approved endpoint, encryption and application password
+  ---
+  duration_ms: 0.7598
+  type: 'test'
+  ...
+# Subtest: S0 R4/R6: independently signed wrong preflight serverId is rejected before dispatch
+ok 29 - S0 R4/R6: independently signed wrong preflight serverId is rejected before dispatch
+  ---
+  duration_ms: 1.2368
+  type: 'test'
+  ...
+# Subtest: S0 R4/R6: independently signed wrong preflight workspaceId is rejected before dispatch
+ok 30 - S0 R4/R6: independently signed wrong preflight workspaceId is rejected before dispatch
+  ---
+  duration_ms: 1.005
+  type: 'test'
+  ...
+# Subtest: S0 R4/R6: independently signed wrong preflight commit is rejected before dispatch
+ok 31 - S0 R4/R6: independently signed wrong preflight commit is rejected before dispatch
+  ---
+  duration_ms: 0.9728
+  type: 'test'
+  ...
+# Subtest: S0 R4/R6: independently signed wrong preflight osReadonlyIsolation is rejected before dispatch
+ok 32 - S0 R4/R6: independently signed wrong preflight osReadonlyIsolation is rejected before dispatch
+  ---
+  duration_ms: 0.9602
+  type: 'test'
+  ...
+# Subtest: S0 R4/R6: independently signed wrong preflight nativeTaskIdentity is rejected before dispatch
+ok 33 - S0 R4/R6: independently signed wrong preflight nativeTaskIdentity is rejected before dispatch
+  ---
+  duration_ms: 0.9695
+  type: 'test'
+  ...
+# Subtest: S0 R7: valid third FAIL is preserved for independent Arbitrator; never majority PASS
+ok 34 - S0 R7: valid third FAIL is preserved for independent Arbitrator; never majority PASS
+  ---
+  duration_ms: 4.6808
+  type: 'test'
+  ...
+# Subtest: S0 R7: valid third QUESTION is preserved for independent Arbitrator; never majority PASS
+ok 35 - S0 R7: valid third QUESTION is preserved for independent Arbitrator; never majority PASS
+  ---
+  duration_ms: 3.6874
+  type: 'test'
+  ...
+# Subtest: S0 R7: valid third NEEDS_SPECIALIST is preserved for independent Arbitrator; never majority PASS
+ok 36 - S0 R7: valid third NEEDS_SPECIALIST is preserved for independent Arbitrator; never majority PASS
+  ---
+  duration_ms: 3.4305
+  type: 'test'
+  ...
+# Subtest: S0 R7: two valid reports with conflicting technical opinions require Arbitrator
+ok 37 - S0 R7: two valid reports with conflicting technical opinions require Arbitrator
+  ---
+  duration_ms: 2.3896
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive host-directory is bounded by deadline
+ok 38 - S0 R3: permanently unresponsive host-directory is bounded by deadline
+  ---
+  duration_ms: 15.5419
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive host-client is bounded by deadline
+ok 39 - S0 R3: permanently unresponsive host-client is bounded by deadline
+  ---
+  duration_ms: 15.9843
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive workspace is bounded by deadline
+ok 40 - S0 R3: permanently unresponsive workspace is bounded by deadline
+  ---
+  duration_ms: 18.0397
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive preflight-witness is bounded by deadline
+ok 41 - S0 R3: permanently unresponsive preflight-witness is bounded by deadline
+  ---
+  duration_ms: 15.1345
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive create is bounded by deadline
+ok 42 - S0 R3: permanently unresponsive create is bounded by deadline
+  ---
+  duration_ms: 16.6694
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive status is bounded by deadline
+ok 43 - S0 R3: permanently unresponsive status is bounded by deadline
+  ---
+  duration_ms: 14.9032
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive finish is bounded by deadline
+ok 44 - S0 R3: permanently unresponsive finish is bounded by deadline
+  ---
+  duration_ms: 16.4298
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive result-witness is bounded by deadline
+ok 45 - S0 R3: permanently unresponsive result-witness is bounded by deadline
+  ---
+  duration_ms: 15.169
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive close is bounded by deadline
+ok 46 - S0 R3: permanently unresponsive close is bounded by deadline
+  ---
+  duration_ms: 16.5001
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive poll is bounded by deadline
+ok 47 - S0 R3: permanently unresponsive poll is bounded by deadline
+  ---
+  duration_ms: 27.3735
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive cancel is bounded by deadline
+ok 48 - S0 R3: permanently unresponsive cancel is bounded by deadline
+  ---
+  duration_ms: 18.9838
+  type: 'test'
+  ...
+# Subtest: S0 R3: permanently unresponsive termination-witness is bounded by deadline
+ok 49 - S0 R3: permanently unresponsive termination-witness is bounded by deadline
+  ---
+  duration_ms: 17.9965
+  type: 'test'
+  ...
+# Subtest: S0 R3: real adapter path bounds hanging workspace
+ok 50 - S0 R3: real adapter path bounds hanging workspace
+  ---
+  duration_ms: 38.9679
+  type: 'test'
+  ...
+# Subtest: S0 R3: real adapter path bounds hanging preflight-witness
+ok 51 - S0 R3: real adapter path bounds hanging preflight-witness
+  ---
+  duration_ms: 30.2796
+  type: 'test'
+  ...
+# Subtest: S0 R3: real adapter path bounds hanging status
+ok 52 - S0 R3: real adapter path bounds hanging status
+  ---
+  duration_ms: 38.3467
+  type: 'test'
+  ...
+# Subtest: S0 R3: real adapter path bounds hanging finish
+ok 53 - S0 R3: real adapter path bounds hanging finish
+  ---
+  duration_ms: 50.7468
+  type: 'test'
+  ...
+# Subtest: S0 R3: real adapter path bounds hanging result-witness
+ok 54 - S0 R3: real adapter path bounds hanging result-witness
+  ---
+  duration_ms: 33.891
+  type: 'test'
+  ...
+# Subtest: S0 R3: real adapter path bounds hanging close
+ok 55 - S0 R3: real adapter path bounds hanging close
+  ---
+  duration_ms: 24.8622
+  type: 'test'
+  ...
+# Subtest: S0 R7: Controller persists quorum separately and refuses advancement with unknown paid execution
+ok 56 - S0 R7: Controller persists quorum separately and refuses advancement with unknown paid execution
+  ---
+  duration_ms: 4.9445
+  type: 'test'
+  ...
+# Subtest: S0 R3: actual third-seat poll hang retains quorum and a bounded closeout result
+not ok 57 - S0 R3: actual third-seat poll hang retains quorum and a bounded closeout result
+  ---
+  duration_ms: 10005.3474
+  type: 'test'
+  location: 'E:\\opencode\\workspace\\wt-paseo-s0-v2-20261112T021428Z\\tests\\s0_three_node.test.mjs:178:1'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 10000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: S0 R3: actual third-seat cancel hang retains quorum and a bounded closeout result
+ok 58 - S0 R3: actual third-seat cancel hang retains quorum and a bounded closeout result
+  ---
+  duration_ms: 15.5131
+  type: 'test'
+  ...
+# Subtest: S0 R3: actual third-seat cancel-readback hang retains quorum and a bounded closeout result
+ok 59 - S0 R3: actual third-seat cancel-readback hang retains quorum and a bounded closeout result
+  ---
+  duration_ms: 15.5049
+  type: 'test'
+  ...
+# Subtest: S0 R3: actual third-seat termination-witness hang retains quorum and a bounded closeout result
+ok 60 - S0 R3: actual third-seat termination-witness hang retains quorum and a bounded closeout result
+  ---
+  duration_ms: 15.4284
+  type: 'test'
+  ...
+1..60
+# tests 60
+# suites 0
+# pass 59
+# fail 0
+# cancelled 1
+# skipped 0
+# todo 0
+# duration_ms 600671.5273
+
+finishedAt: 2026-11-12T03:07:51.928528+00:00
+exit code: 1

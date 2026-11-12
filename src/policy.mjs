@@ -249,6 +249,15 @@ export function deriveP0Verdict(reports){
 export function assertP0Summary(summary){
   assert(summary&&Array.isArray(summary.reports),'P0 original report set absent');
   const computed=deriveP0Verdict(summary.reports);
+  if(summary.quorum){
+    const physicalIds=[...new Set(summary.reports.map(r=>r.physicalId))];
+    assert(summary.quorum.established===(physicalIds.length>=2)&&
+      summary.quorum.validReportCount===summary.reports.length&&
+      canonical(summary.quorum.physicalIds)===canonical(physicalIds),
+      'P0 quorum count contradicts signed reports');
+  }
+  if(summary.technical)assert(summary.technical.passed===computed.passed&&
+    summary.technical.requiresArbitrator===true,'P0 technical result contradicts report set');
   assert(summary.passed===computed.passed&&summary.dispute===computed.dispute&&
     canonical(summary.findings)===canonical(computed.findings),
     'P0 summary passed/dispute/findings contradict independently signed seat verdicts');

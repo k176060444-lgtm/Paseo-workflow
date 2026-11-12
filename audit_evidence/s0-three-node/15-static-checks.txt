@@ -1,0 +1,180 @@
+{
+  "cwd": "E:\\opencode\\workspace\\wt-paseo-s0-v2-20261112T021428Z",
+  "checkedAt": "2026-11-12T03:07:51.852636+00:00",
+  "parent": "b4bcfe93fde5a2538d87659c084881b6b25cf5b0",
+  "runtimes": {
+    "node": "v26.6.0",
+    "python": "Python 3.14.7",
+    "git": "git version 2.54.0.windows.1",
+    "inspectedInstalledSdk": "0.15.2",
+    "sdkUsedByTests": "hand-written mock fixtures only",
+    "daemonContactedInThisRound": false
+  },
+  "results": [
+    {
+      "jsonSyntax": "config/remote-rusty.example.json",
+      "exitCode": 0,
+      "fileSha256": "2bb5ec56862f9b07871efa2c238dcb9668412a18d9d7bc4625ee42a3a782a307"
+    },
+    {
+      "jsonSyntax": "config/role-matrix.example.json",
+      "exitCode": 0,
+      "fileSha256": "e55a825f77feb666638946cf3792cbae963b51b03e5266af2e60b825dd4bb560"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "src/attestor.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "f37e3e7278d0271aeaa2f2319c256bfcbd6dd1501b937be857151d628a94d910"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "src/cli.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "1241d6543677f0bf49e25eb247a7fedd3833992bb8e0170e33c954defbb70913"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "src/controller.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "9bbc17a90f770f4aa6aceff88fd0827458538b1431ed0b7ccf64f832d8e603ab"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "src/deadline.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "04e4915fccd93277c8cb138f993fac5cd61a018c38f4d0407771d6196c355e3a"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "src/p0_paseo.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "6820805909d93ad33ef00109f06bd4e65a0630148ebc8920ba45cbdac507c507"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "src/policy.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "386fd71e7577fe2eeb7f2e55351ebb88640f93a20e722d7e0f1059a42481593f"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "src/store.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "8e5caf2643cb7964e7e7c74a36cc63315715a9d8394638845ea7a3639cc248b1"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "tests/controller.test.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "86f3dc65469ab980924aac1dbb7abba9966d40b5ec6192b0cdc5497d11daf1d1"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "tests/p0_paseo.test.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "33e4c1245f4041a27d6f25b215e8884ba8c3d04376e4b92b010ab746cd757e38"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "tests/s0_deadline_routes.test.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "a7ba8d6c34280fd2586e533e281695c902131b055f4e377806acc0afb0f6c412"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "tests/s0_p0_fixtures.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "e35d77e34a0580a639b0178f62907815aef6c7fe43bfa5b495c16d60352257db"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "tests/s0_recovery.test.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "3f6a6a77642a5eb151db7575188fa9d65ffc908482d4f8afd2cc7ffd499bea00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "tests/s0_store_p0.test.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "687e874c61721fabc70b8048e86a2950f83392334e9333c20053c433a9fbae1f"
+    },
+    {
+      "argv": [
+        "C:\\Users\\KK\\AppData\\Local\\hermes\\node\\node.exe",
+        "--check",
+        "tests/s0_three_node.test.mjs"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "",
+      "fileSha256": "e1cc13efb9d9c8d6be248bd3cf6c0ed9162bcf687f8f772b27cf93a93fd55f6a"
+    }
+  ]
+}
+exit code: 0
