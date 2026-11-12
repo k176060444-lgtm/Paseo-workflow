@@ -74,7 +74,15 @@ test('S0 Store: rejected '+attack+' closes paid Agent without forming a quorum',
     await assert.rejects(()=>collect(context),/physical quorum invalid/);
     assert.equal(store.dispatches(task.id).find(d=>d.agent_id==='srv_5bao:agent-5bao').state,'TERMINAL');
     assert.equal(x.seen.created.length,2);
-    assert.equal(x.seen.terminal.length,2);
+    const dispatches=store.dispatches(task.id);
+    assert.equal(dispatches.length,2);
+    assert.equal(dispatches.every(d=>d.state==='TERMINAL'),true);
+    const cancelDigest=store.evidenceDigest(task.id,'p0-initial-A1-5bao-cancel.json');
+    const cancelProof=JSON.parse(store.readEvidenceByDigest(task.id,cancelDigest).content);
+    assert.equal(cancelProof.statement.agentId,'agent-5bao');
+    const resultDigest=store.evidenceDigest(task.id,'p0-initial-A1-9bao-result.json');
+    const resultEnvelope=JSON.parse(store.readEvidenceByDigest(task.id,resultDigest).content);
+    assert.equal(resultEnvelope.report.agentId,'agent-9bao');
     const incompleteDigest=store.evidenceDigest(task.id,'p0-initial-A1-incomplete.json');
     const incomplete=JSON.parse(store.readEvidenceByDigest(task.id,incompleteDigest).content);
     assert.equal(incomplete.quorum.established,false);
@@ -163,8 +171,62 @@ test('S0-R2: independently signed cancellation without P0 quorum is recoverable 
       return e;
     };
     await assert.rejects(()=>collect(context),/physical quorum invalid/);
-    assert.equal(store.dispatches(task.id).every(d=>d.state==='TERMINAL'),true);
+    const rows=store.dispatches(task.id);
+    assert.equal(rows.length,2);
+    assert.equal(rows.every(d=>d.state==='TERMINAL'),true);
+    // One paid seat was independently cancelled; the other completed normally.
+    assert(store.evidenceDigest(task.id,'p0-initial-A1-5bao-cancel.json'));
+    assert(store.evidenceDigest(task.id,'p0-initial-A1-9bao-result.json'));
     assert.doesNotThrow(()=>store.assertRecoverableDispatches(task.id),
-      'signed cancellation must be recognized without inventing a P0 report');
+      'mixed signed cancellation/result outcomes must reconcile without inventing a P0 quorum');
+  });
+});
+
+
+test('S0-R2 F3: transient artifact fsync failure rolls back only its unregistered file and preserves signed cleanup evidence',async()=>{
+  await withStore(async context=>{
+    const {x,store,task}=context;
+    x.scopes.srv_9bao.agents.create=async()=>{throw new Error('SECOND_PRIMARY_CREATE_FAILED');};
+    const originalOpen=fs.openSync,originalFsync=fs.fsyncSync;
+    let targetFd=null,injected=false;
+    fs.openSync=function(file,...args){
+      const fd=originalOpen.call(this,file,...args);
+      if(String(file).endsWith('p0-initial-A1-5bao-cancel.json'))targetFd=fd;
+      return fd;
+    };
+    fs.fsyncSync=function(fd){
+      if(fd===targetFd&&!injected){
+        injected=true;
+        const e=new Error('INJECTED_CANCEL_FSYNC_EIO');e.code='EIO';throw e;
+      }
+      return originalFsync.call(this,fd);
+    };
+    try{
+      await assert.rejects(()=>collect(context),/SECOND_PRIMARY_CREATE_FAILED/);
+    }finally{
+      fs.openSync=originalOpen;fs.fsyncSync=originalFsync;
+    }
+    assert.equal(injected,true);
+    const evidenceDir=path.join(store.dir(task.id),'evidence');
+    assert.equal(fs.existsSync(path.join(evidenceDir,'p0-initial-A1-5bao-cancel.json')),false,
+      'unregistered cancel artifact must not remain as an orphan after safe rollback');
+    const errorDigest=store.evidenceDigest(task.id,'p0-initial-A1-5bao-cancel-error.json');
+    const cancelError=JSON.parse(store.readEvidenceByDigest(task.id,errorDigest).content);
+    assert.equal(cancelError.cancelEvidenceCleanupState,'REMOVED_AFTER_ROLLBACK');
+    assert.equal(cancelError.cancelEvidenceWriteFailed,true);
+    assert.equal(cancelError.terminateStage,'cancel-evidence');
+    assert.equal(cancelError.verifiedTerminationProof.statement.agentId,'agent-5bao');
+    const incompleteDigest=store.evidenceDigest(task.id,'p0-initial-A1-incomplete.json');
+    const incomplete=JSON.parse(store.readEvidenceByDigest(task.id,incompleteDigest).content);
+    const job=incomplete.execution.jobs.find(j=>j.nodeId==='5bao');
+    assert.equal(job.state,'UNKNOWN');
+    assert.equal(job.cancelEvidenceCleanupState,'REMOVED_AFTER_ROLLBACK');
+    assert.equal(job.cancelEvidenceWriteFailed,true);
+    assert.equal(job.verifiedTerminationProof.statement.agentId,'agent-5bao');
+    const rows=store.dispatches(task.id);
+    assert.equal(rows.find(d=>d.phase.endsWith(':5bao')).state,'ACKNOWLEDGED');
+    assert.equal(rows.find(d=>d.phase.endsWith(':9bao')).state,'DISPATCH_INTENT');
+    assert.equal(incomplete.execution.state,'NEEDS_RECONCILIATION');
+    store.verify(task.id);
   });
 });

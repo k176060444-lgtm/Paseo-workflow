@@ -262,7 +262,11 @@ export class PaseoP0Adapter{
     job.cancelEvidenceName='p0-'+cycle+'-'+job.node.id+'-cancel.json';
     let evidence;
     try{evidence=store.artifact(task.id,job.cancelEvidenceName,proof);}
-    catch(e){job.cancelEvidenceWriteFailed=true;throw e;}
+    catch(e){
+      job.cancelEvidenceWriteFailed=true;
+      job.cancelEvidenceCleanupState=e?.evidenceCleanupState??'UNKNOWN';
+      throw e;
+    }
     job.verifiedTerminationProof=null;
     job.terminateStage='dispatch-terminal';
     store.recordTerminal(job.jobId);job.state='CANCELLED';
@@ -389,6 +393,7 @@ export class PaseoP0Adapter{
                 terminateStage:job.terminateStage,cancelAck:job.cancelAck,
                 cancelError:job.cancelError??null,cleanupError:job.cleanupError,
                 cancelEvidenceWriteFailed:job.cancelEvidenceWriteFailed===true,
+                cancelEvidenceCleanupState:job.cancelEvidenceCleanupState??null,
                 attemptedEvidenceName:job.cancelEvidenceName??null,
                 verifiedTerminationProof:job.verifiedTerminationProof??null
               });
@@ -411,6 +416,7 @@ export class PaseoP0Adapter{
           cleanupError:j.cleanupError??null,
           cleanupEvidenceError:j.cleanupEvidenceError??null,
           cancelEvidenceWriteFailed:j.cancelEvidenceWriteFailed===true,
+          cancelEvidenceCleanupState:j.cancelEvidenceCleanupState??null,
           attemptedEvidenceName:j.cancelEvidenceName??null,
           verifiedTerminationProof:j.verifiedTerminationProof??null}))};
       const quorum={established:physicalIds.length>=2,validReportCount:result.length,physicalIds,

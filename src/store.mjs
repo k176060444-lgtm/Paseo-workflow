@@ -99,7 +99,49 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     return sha256(this.db.prepare('SELECT name,digest FROM artifacts WHERE task_id=? ORDER BY name').all(id));
   }
   artifact(id,name,content) {
-    return this.transaction(()=>this.#registerArtifactInTransaction(id,name,content));
+    let created=null;
+    try{
+      return this.transaction(()=>this.#registerArtifactInTransaction(id,name,content,
+        marker=>{created=marker;}));
+    }catch(error){
+      // Only a failure of this file's fsync is eligible for exact-byte cleanup.
+      // Other failures (ledger append, post-fsync state race, partial write,
+      // close, manifest uncertainty) preserve the orphan and remain fail-closed.
+      if(!created||error?.evidenceWritePhase!=='FILE_FSYNC')throw error;
+      let registered;
+      try{
+        registered=this.db.prepare(
+          'SELECT digest FROM artifacts WHERE task_id=? AND name=?').get(id,name);
+      }catch(checkError){
+        const combined=new AggregateError([error,checkError],
+          'artifact registration failed; manifest state unknown, evidence preserved for reconciliation');
+        combined.evidenceCleanupState='ORPHAN_PRESERVED';
+        throw combined;
+      }
+      if(registered){
+        if(error&&typeof error==='object')error.evidenceCleanupState='REGISTERED';
+        throw error;
+      }
+      try{
+        if(!fs.existsSync(created.file)){
+          if(error&&typeof error==='object')error.evidenceCleanupState='ABSENT_AFTER_ROLLBACK';
+        }else{
+          const stat=fs.lstatSync(created.file);
+          if(!stat.isFile()||stat.isSymbolicLink())
+            throw new Error('created evidence path changed type; refusing cleanup');
+          if(sha256(fs.readFileSync(created.file,'utf8'))!==created.digest)
+            throw new Error('created evidence bytes changed; refusing cleanup');
+          fs.unlinkSync(created.file);
+          if(error&&typeof error==='object')error.evidenceCleanupState='REMOVED_AFTER_ROLLBACK';
+        }
+      }catch(cleanupError){
+        const combined=new AggregateError([error,cleanupError],
+          'artifact registration failed; exclusive evidence cleanup failed and requires reconciliation');
+        combined.evidenceCleanupState='ORPHAN_PRESERVED';
+        throw combined;
+      }
+      throw error;
+    }
   }
   // Only called within the Store's existing BEGIN IMMEDIATE boundary.
   // The optional callback marks a uniquely created file for rollback cleanup,
@@ -132,7 +174,12 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
     const fd=fs.openSync(file,'wx',0o600);
     try{
       if(onFileCreated)onFileCreated({file,digest});
-      fs.writeFileSync(fd,data,'utf8');fs.fsyncSync(fd);
+      fs.writeFileSync(fd,data,'utf8');
+      try{fs.fsyncSync(fd);}
+      catch(error){
+        if(error&&typeof error==='object')error.evidenceWritePhase='FILE_FSYNC';
+        throw error;
+      }
     }finally{fs.closeSync(fd);}
     assert(anchor.state===sha256(this.get(id)),'task state changed during evidence fsync');
     assert(anchor.dispatch===this.dispatchHash(id),'dispatch changed during evidence fsync');
@@ -1283,11 +1330,40 @@ CREATE TABLE IF NOT EXISTS consumed_executions(key_id TEXT NOT NULL,nonce TEXT N
           this.evidenceDigest(id,preflightName)));
         verifyPaseoP0Preflight(this.p0TrustRoots(),node,preflight,
           id,original.commit,{allowHistorical:true});
-        const proof=JSON.parse(this.#requireArtifact(id,cancelName,
-          this.evidenceDigest(id,cancelName)));
+        const expectedAgentId=d.agent_id.slice(node.serverId.length+1);
+        assert(expectedAgentId.length>0,'P0 terminal dispatch has empty pinned Agent identity');
+        const resultName='p0-'+cycle+'-'+nodeId+'-result.json';
+        const resultEntry=this.db.prepare(
+          'SELECT digest FROM artifacts WHERE task_id=? AND name=?').get(id,resultName);
+        let completedResult=false,resultError=null;
+        if(resultEntry){
+          try{
+            assert(original.binding&&typeof original.binding==='object',
+              'P0 original request lacks the immutable result binding');
+            const envelope=JSON.parse(this.#requireArtifact(id,resultName,resultEntry.digest));
+            const body=verifyPaseoP0Envelope(this.p0TrustRoots(),node,envelope,{
+              taskId:id,cycle,jobId:d.id,commit:original.commit,
+              binding:original.binding,allowHistorical:true});
+            assert(body.agentId===expectedAgentId,
+              'P0 signed completed result Agent ID conflicts with original terminal dispatch');
+            completedResult=true;
+          }catch(e){resultError=e;}
+        }
+        // A normal completed result and a cancellation are different valid
+        // terminal outcomes. Do not demand a cancel proof from a seat whose
+        // own signed result is already valid. An invalid result never counts
+        // as completion; that seat still needs a valid signed cancellation.
+        if(completedResult)continue;
+        const cancelEntry=this.db.prepare(
+          'SELECT digest FROM artifacts WHERE task_id=? AND name=?').get(id,cancelName);
+        assert(cancelEntry,
+          resultError
+            ? 'P0 terminal dispatch has neither a valid signed result nor a registered signed cancellation'
+            : 'P0 terminal dispatch lacks a registered signed result or cancellation');
+        const proof=JSON.parse(this.#requireArtifact(id,cancelName,cancelEntry.digest));
         verifyPaseoP0Termination(this.p0TrustRoots(),node,proof,{
           taskId:id,cycle,jobId:d.id,commit:original.commit,
-          agentId:d.agent_id.slice(node.serverId.length+1),allowHistorical:true});
+          agentId:expectedAgentId,allowHistorical:true});
         continue;
       }
       const matches=[];
