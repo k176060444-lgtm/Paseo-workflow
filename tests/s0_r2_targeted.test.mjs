@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PaseoP0Adapter} from '../src/p0_paseo.mjs';
 import {WorkflowController} from '../src/controller.mjs';
+import {describeP0Reconciliation} from '../src/p0_reconciliation.mjs';
 import {mock,adapter} from './s0_p0_fixtures.mjs';
 
 const review=x=>adapter(x).review({task:x.task,commit:'a'.repeat(40),
@@ -125,4 +126,18 @@ test('S0-R2: termination witness rejects mismatched known original nativeTaskId'
   const first=x.seen.payloads['p0-initial-A1-incomplete.json'].execution.jobs.find(j=>j.nodeId==='5bao');
   assert.equal(first.state,'UNKNOWN');
   assert.match(first.cleanupError,/nativeTaskId/);
+});
+
+test('S0-R2 F6: no local ACK and no remote record remain UNKNOWN',()=>{
+  const r=describeP0Reconciliation({agent_id:null,state:'DISPATCH_INTENT'},[],'srv_5bao');
+  assert.equal(r.consistent,false);
+  assert.equal(r.outcome,'UNKNOWN_ACK');
+  assert.equal(r.manualReconciliationRequired,true);
+  const observed=describeP0Reconciliation({agent_id:null},[{id:'orphan'}],'srv_5bao');
+  assert.equal(observed.consistent,false);
+  assert.equal(observed.outcome,'UNACKNOWLEDGED_REMOTE_MATCH');
+  const matched=describeP0Reconciliation({agent_id:'srv_5bao:agent-1'},
+    [{id:'agent-1'}],'srv_5bao');
+  assert.equal(matched.consistent,true);
+  assert.equal(matched.outcome,'IDENTIFIED_NOT_RECOVERED');
 });
