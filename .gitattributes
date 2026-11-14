@@ -1,0 +1,5 @@
+# Soul bytes are integrity-checked byte-for-byte (SOUL_MANIFEST.json) and frozen
+# verbatim into new-task runtime state by freezeConfig (src/policy.mjs).
+# Pin LF checkout so Windows hosts with core.autocrlf=true produce the exact
+# blob bytes; otherwise frozen Soul SHA-256 diverges from the manifest (F-03).
+souls/*.md text eol=lf

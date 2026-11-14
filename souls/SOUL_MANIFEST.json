@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "applies_to": "new tasks only; E2 original freeze immutable",
+  "controller_baseline": "44273f09195d2e5687ce757b47adc86953ebcf94",
+  "local_source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+  "local_source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+  "p0_source_repository": "k176060444-lgtm/Paseo-workflow",
+  "p0_source_policy": "pin Workflow release commit externally, no mutable branch",
+  "freeze_behavior": "new task freezeConfig snapshots Soul text and sha256; no historical task rewrite",
+  "roles": [
+    {
+      "role_id": "planner",
+      "version": "2.3.0",
+      "path": "souls/planner.md",
+      "sha256": "bd9aaf338253f38dd0b541c9283045ce480c61aeade9d5fdda9a581c68657138",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "58ca066e6232fce14aebb7aabb1825698e3c5428"
+    },
+    {
+      "role_id": "worker",
+      "version": "1.2.0",
+      "path": "souls/worker.md",
+      "sha256": "ea8564160c24db365b49f6474214192d2158572fed94e23aa5757f424a825960",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "9d262f7ee45ced9df89356b36d76fe33ee89deb0"
+    },
+    {
+      "role_id": "spec_reviewer",
+      "version": "1.2.0",
+      "path": "souls/spec_reviewer.md",
+      "sha256": "81f3d7410ea707d23bc57a79560760616b3eba3454ebee83c5b8389be330d6fe",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "fb816718f3330f3a5f9452182e22fe219ae61a92"
+    },
+    {
+      "role_id": "quality_reviewer",
+      "version": "1.2.0",
+      "path": "souls/quality_reviewer.md",
+      "sha256": "0229356c781a91568ebf90cfab566815494c427bfe6cbdcc0b770017f9182d6e",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "5a0063523673be878e404199626bf830d7221927"
+    },
+    {
+      "role_id": "tester_gate_a",
+      "version": "1.2.0",
+      "path": "souls/tester_gate_a.md",
+      "sha256": "3296b87ef7fdcb172a558ee3ca4247b830f479ba75a96e3932674139bd686fe2",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "26bdf9a6a31d423a48977169e62f8b1c234b807b"
+    },
+    {
+      "role_id": "worker_remediation",
+      "version": "1.2.0",
+      "path": "souls/worker_remediation.md",
+      "sha256": "a418a8f46a2a10399b494c0e6f47696905db77233b09998a5371717e50f9871a",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "2fe39ef54fe670097e3d30b6ba7474fdffdc1132"
+    },
+    {
+      "role_id": "tester_gate_b",
+      "version": "1.2.0",
+      "path": "souls/tester_gate_b.md",
+      "sha256": "35231b0ee4db45b409e7d0e063498292d3f653d426e3c3f17939d932d2334f5d",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "328043dc65347d6990c1ebe44fad7b4de97c67c4"
+    },
+    {
+      "role_id": "arbitrator",
+      "version": "2.3.0",
+      "path": "souls/arbitrator.md",
+      "sha256": "511595f29215207507f971dd454420eba7a7200ac8458f70d49f86a6a8d11ec8",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "e9f20a38d5f06e9b5514d033ab6ec48bc7c48551"
+    },
+    {
+      "role_id": "pro_audit",
+      "version": "2.3.0",
+      "path": "souls/pro_audit.md",
+      "sha256": "6cb5462b40cde16a48a0027dd15e78df3dd7e5267c7ee2e6d488190105996423",
+      "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
+      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "previous_workflow_blob_sha1": "37ea42da7d813ddb79d9859dffa98b69381468c1"
+    },
+    {
+      "role_id": "blind_a",
+      "version": "2.0.0",
+      "path": "souls/blind_a.md",
+      "sha256": "c4bdc108e3c7b5101416890f1b860120b7b00e18ad30fe181585a4b1ab5c80b8",
+      "source_repository": "k176060444-lgtm/Paseo-workflow",
+      "source_commit_policy": "pin the released workflow commit separately; self-referential SHA impossible",
+      "previous_workflow_blob_sha1": "80e357ee866d9d35a237b43b9a2784f6adf2df9d"
+    },
+    {
+      "role_id": "blind_b",
+      "version": "2.0.0",
+      "path": "souls/blind_b.md",
+      "sha256": "fe877f95ceafb294fd6cf9026c34499ef01c2b8f37cd2817e3354f75d1d36379",
+      "source_repository": "k176060444-lgtm/Paseo-workflow",
+      "source_commit_policy": "pin the released workflow commit separately; self-referential SHA impossible",
+      "previous_workflow_blob_sha1": "0a4db0b5539e9021441a635881bc759b7e0c9744"
+    },
+    {
+      "role_id": "blind_c",
+      "version": "2.0.0",
+      "path": "souls/blind_c.md",
+      "sha256": "4066ffd22a4419ac5ea3ec204f4f98a36e083a84802c48e407d6975a5b513287",
+      "source_repository": "k176060444-lgtm/Paseo-workflow",
+      "source_commit_policy": "pin the released workflow commit separately; self-referential SHA impossible",
+      "previous_workflow_blob_sha1": "c6f507ae0b57f67eb81573bf4af4c72fd449d693"
+    }
+  ]
+}
