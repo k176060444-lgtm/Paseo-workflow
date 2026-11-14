@@ -1,6 +1,6 @@
 # Role Souls remediation — independent acceptance report, 2026-11-14
 
-**Scope:** Workflow baseline `44273f09195d2e5687ce757b47adc86953ebcf94`; local authoritative source `k176060444-lgtm/Hermes-Coding-Role-Souls@3ca4590146a3ac0f7fdafc5352362fb8dd2b2b05`. Source-only branch, no model calls, real P0 jobs, production writes or Controller changes.
+**Scope:** Workflow baseline `44273f09195d2e5687ce757b47adc86953ebcf94`; local authoritative source `k176060444-lgtm/Hermes-Coding-Role-Souls@313b731d568ddd5394619c2f89f3ea1f1c3c4806`. Source-only branch, no model calls, real P0 jobs, production writes or Controller changes.
 
 ## SOUL_INVENTORY / ROLE_BOUNDARY_AUDIT
 
@@ -34,7 +34,7 @@ Process-only PRE/POST for every actual role dispatch, never self-audit. No techn
 12 Souls specify a single final standalone JSON object with `verdict,summary,findings`, valid Controller verdict vocabulary, severity labels and non-fabrication rule. Planner additionally requires `taskSpec` and `userAlignment` during candidate planning. Signed P0 and Agent execution proof are separate from text JSON. **Text-contract alignment** is distinct from **runtime final Gate compatibility**, which remains blocked on the two gaps.
 
 ## SOUL_SOURCE_OF_TRUTH / VERSION_AND_SHA_MAPPING
-9 original roles: canonical independent repo fixed `3ca4590146a3ac0f7fdafc5352362fb8dd2b2b05`, `roles.json` and `SHA256SUMS.txt`; Workflow copies byte-identical. P0 canonical Workflow `blind_*.md`, pinned to approved immutable Workflow release commit. Exact per-role hashes and source paths in `souls/SOUL_MANIFEST.json`; runtime new-task Soul freeze in `src/policy.mjs`.
+9 original roles: canonical independent repo fixed `313b731d568ddd5394619c2f89f3ea1f1c3c4806`, `roles.json` and `SHA256SUMS.txt`; Workflow copies byte-identical. P0 canonical Workflow `blind_*.md`, pinned to approved immutable Workflow release commit. Exact per-role hashes and source paths in `souls/SOUL_MANIFEST.json`; runtime new-task Soul freeze in `src/policy.mjs`.
 
 ## OFFLINE_TEST_RESULTS
 Added `tests/soul_contract_static.test.mjs` for all 12 text/HASH paths, Matrix, P0 boundaries, output text, new task freeze persistence and explicit hard gap assertions. No model/pipeline work. Review results against actual CI status; no claims of runtime P0 pass.
