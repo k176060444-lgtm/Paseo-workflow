@@ -37,7 +37,13 @@ Process-only PRE/POST for every actual role dispatch, never self-audit. No techn
 9 original roles: canonical independent repo fixed `313b731d568ddd5394619c2f89f3ea1f1c3c4806`, `roles.json` and `SHA256SUMS.txt`; Workflow copies byte-identical. P0 canonical Workflow `blind_*.md`, pinned to approved immutable Workflow release commit. Exact per-role hashes and source paths in `souls/SOUL_MANIFEST.json`; runtime new-task Soul freeze in `src/policy.mjs`.
 
 ## OFFLINE_TEST_RESULTS
-Added `tests/soul_contract_static.test.mjs` for all 12 text/HASH paths, Matrix, P0 boundaries, output text, new task freeze persistence and explicit hard gap assertions. No model/pipeline work. Review results against actual CI status; no claims of runtime P0 pass.
+**Verified from GitHub Actions original job log**, workflow PR #10 source commit `a2cdd4f8e89ae946f112f8bc459cb7ca1f9c514a`:
+- GitHub Actions run [43588802939](https://github.com/k176060444-lgtm/Paseo-workflow/actions/runs/43588802939), job 132428916013: **SUCCESS**. JS syntax check, `npm test` offline Node suite and `python3 -m unittest discover -s remote/tests -v` all succeeded.
+- Node TAP: **232 tests / 231 passed / 0 failed / 1 other (skip or TODO; inspect raw TAP)**. The four new Soul-specific tests numbered 229–232 were each **ok**, covering 12 Soul files, SHA-256/versions, Matrix resolution, machine JSON/transport/role boundaries, simulated new-task `freezeConfig` snapshots and explicit Controller-hard gap checks.
+- Python offline remote-runner: **Ran 11 tests ... OK**.
+- Independent local-source SHA verification via read-only repository file content calculation: `SHA256SUMS.txt` **20/20 matching SHA-256**, 9/9 role versions and Soul hashes match `roles.json`. Source's standalone `tests/soul_contract_static.mjs` was added and reviewed but **not independently run in source CI**, so do not conflate checksum verification with an executed source test.
+
+No real model/provider turn, production P0, production deployment, SSH, live coding pipeline or E2 Store modification occurred. This is source-and-offline-contract validation; it cannot certify actual rusty A2A integration or conditional final Arbitration in the unchanged Controller. Both are documented hard interface conflicts.
 
 ## E2_FROZEN_EVIDENCE_UNCHANGED
 Original E2 baseline commit remains accessible; only Soul/docs/test files changed on isolated branch. E2 Store, actual task-frozen Soul texts, signed witness and ledger **NOT_VERIFIED** externally; cannot infer them from Git.
