@@ -39,7 +39,7 @@ Process-only PRE/POST for every actual role dispatch, never self-audit. No techn
 ## OFFLINE_TEST_RESULTS
 **Verified from GitHub Actions original job log**, workflow PR #10 source commit `a2cdd4f8e89ae946f112f8bc459cb7ca1f9c514a`:
 - GitHub Actions run [43588802939](https://github.com/k176060444-lgtm/Paseo-workflow/actions/runs/43588802939), job 132428916013: **SUCCESS**. JS syntax check, `npm test` offline Node suite and `python3 -m unittest discover -s remote/tests -v` all succeeded.
-- Node TAP: **232 tests / 231 passed / 0 failed / 1 other (skip or TODO; inspect raw TAP)**. The four new Soul-specific tests numbered 229–232 were each **ok**, covering 12 Soul files, SHA-256/versions, Matrix resolution, machine JSON/transport/role boundaries, simulated new-task `freezeConfig` snapshots and explicit Controller-hard gap checks.
+- Node TAP: **232 tests / 231 passed / 0 failed / 1 skipped** (preexisting native SDK constructor test skipped because the SDK was unavailable in CI; see TAP test 145). The four new Soul-specific tests numbered 229–232 were each **ok**, covering 12 Soul files, SHA-256/versions, Matrix resolution, machine JSON/transport/role boundaries, simulated new-task `freezeConfig` snapshots and explicit Controller-hard gap checks.
 - Python offline remote-runner: **Ran 11 tests ... OK**.
 - Independent local-source SHA verification via read-only repository file content calculation: `SHA256SUMS.txt` **20/20 matching SHA-256**, 9/9 role versions and Soul hashes match `roles.json`. Source's standalone `tests/soul_contract_static.mjs` was added and reviewed but **not independently run in source CI**, so do not conflate checksum verification with an executed source test.
 
