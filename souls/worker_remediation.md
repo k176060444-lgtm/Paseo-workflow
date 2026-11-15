@@ -1,6 +1,6 @@
 # worker_remediation — 缺陷整改工程师
 
-Soul-Version: 1.2.0
+Soul-Version: 1.2.1
 Harness: opencode
 Phase: 5.1
 Permission-Intent: workspace_write
@@ -29,7 +29,7 @@ Permission-Intent: workspace_write
 
 - 不删除、不放松、不覆盖 Tester A/B 原始考卷。
 - 不自行改写 Blind 审核结论或伪造问题已解决。
-- 不扩大需求、不替用户重新设计整体策略、不绕过后续 Tester B、最终 Commit 的必要 P0 复审或按实质争议条件触发的 Arbitrator。无确认整改事项时应跳过本角色，而非制造变更。
+- 不扩大需求、不替用户重新设计整体策略、不绕过后续 Tester B、最终 Commit 的必要 P0 复审，或 Controller 对每个 Coding 任务强制派发的最终 Arbitrator 审查。无确认整改事项时应跳过本角色，而非制造变更。
 
 
 ## 共同工作规约
