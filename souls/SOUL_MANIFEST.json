@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "applies_to": "new tasks only; E2 original freeze immutable",
+  "applies_to": "new tasks only; E2 original freeze immutable; prior current-souls publication 1028b48 immutable",
   "controller_baseline": "44273f09195d2e5687ce757b47adc86953ebcf94",
   "local_source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
-  "local_source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+  "local_source_commit": "d5b30102d5fdd258163023f1fdbe29438d42fd78",
   "p0_source_repository": "k176060444-lgtm/Paseo-workflow",
   "p0_source_policy": "pin Workflow release commit externally, no mutable branch",
   "freeze_behavior": "new task freezeConfig snapshots Soul text and sha256; no historical task rewrite",
@@ -55,11 +55,11 @@
     },
     {
       "role_id": "worker_remediation",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "path": "souls/worker_remediation.md",
-      "sha256": "a418a8f46a2a10399b494c0e6f47696905db77233b09998a5371717e50f9871a",
+      "sha256": "4adeca71c6a2414b253c076761cf0f00b4cb8681ccb32cecabc23882c6acc5bb",
       "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
-      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "source_commit": "d5b30102d5fdd258163023f1fdbe29438d42fd78",
       "previous_workflow_blob_sha1": "2fe39ef54fe670097e3d30b6ba7474fdffdc1132"
     },
     {
@@ -73,20 +73,20 @@
     },
     {
       "role_id": "arbitrator",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "path": "souls/arbitrator.md",
-      "sha256": "511595f29215207507f971dd454420eba7a7200ac8458f70d49f86a6a8d11ec8",
+      "sha256": "46d56b7c37e182b20ca629b120ffc4c6391ba810a027077869744afbfe3f7a67",
       "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
-      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "source_commit": "d5b30102d5fdd258163023f1fdbe29438d42fd78",
       "previous_workflow_blob_sha1": "e9f20a38d5f06e9b5514d033ab6ec48bc7c48551"
     },
     {
       "role_id": "pro_audit",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "path": "souls/pro_audit.md",
-      "sha256": "6cb5462b40cde16a48a0027dd15e78df3dd7e5267c7ee2e6d488190105996423",
+      "sha256": "46771d17941746aa69d2e9f106a0cf2a71bfe433611bae0449eabadb9d90355c",
       "source_repository": "k176060444-lgtm/Hermes-Coding-Role-Souls",
-      "source_commit": "313b731d568ddd5394619c2f89f3ea1f1c3c4806",
+      "source_commit": "d5b30102d5fdd258163023f1fdbe29438d42fd78",
       "previous_workflow_blob_sha1": "37ea42da7d813ddb79d9859dffa98b69381468c1"
     },
     {
