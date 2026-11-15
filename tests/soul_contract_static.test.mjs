@@ -20,7 +20,7 @@ test('12 final machine JSON statements and transport, arbitration, Pro-Audit bou
  for(const r of manifest.roles){const c=readFileSync(path.join(root,r.path),'utf8');for(const term of ['"verdict"','"summary"','"findings"'])assert(c.includes(term),r.role_id+': missing '+term);}
  for(const n of ['blind_a','blind_b']){const c=readFileSync(path.join(root,'souls',n+'.md'),'utf8');assert(c.includes('Paseo 原生 SDK'));assert(c.includes('不是 A2A'));}
  const c=readFileSync(path.join(root,'souls/blind_c.md'),'utf8');assert(c.includes('Hermes 原生 A2A')&&c.includes('可选第三席'));
- const arb=readFileSync(path.join(root,'souls/arbitrator.md'),'utf8');assert(arb.includes('实质技术争议')&&!arb.includes('无争议也不得跳过'));
+ const arb=readFileSync(path.join(root,'souls/arbitrator.md'),'utf8');assert(arb.includes('实质技术争议')&&!arb.includes('无争议也不得跳过')&&arb.includes('不以是否存在实质技术争议为条件')&&arb.includes('强制派发本角色')&&arb.includes('不得豁免双物理节点 P0、缺失签名、人工 Gate、未闭环派发')&&arb.includes('不得替代 Compliance、Spec Reviewer、Quality Reviewer、Tester 或 P0'));
  const audit=readFileSync(path.join(root,'souls/pro_audit.md'),'utf8');assert(audit.includes('PRE / POST')&&audit.includes('OPTIONAL TELEMETRY')&&audit.includes('不对代码质量或技术正确性作裁决'));
 });
 test('freezeConfig snapshots bytes/sha for new task and does not alter prior frozen version',()=>{
